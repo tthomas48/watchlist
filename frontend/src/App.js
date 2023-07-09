@@ -1,12 +1,14 @@
 import React, { useState, useEffect } from 'react';
 import './App.css';
 
+const { REACT_APP_API_URL } = process.env;
+
 function App() {
   const [data, setData] = useState(null);
 
   useEffect(() => {
     const fetchData = async () => {
-      const response = await fetch('http://localhost:8001/watchlist');
+      const response = await fetch(`${REACT_APP_API_URL}/watchlist`);
       const json = await response.json();
       setData(json);
     };

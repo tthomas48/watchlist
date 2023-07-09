@@ -1,17 +1,21 @@
 const axios = require('axios');
 const http = require('http');
 const JustWatch = require('justwatch-api');
-const secrets = require('./secrets');
 const express = require('express');
 const app = express();
 const cors = require('cors');
 const fs = require('fs');
+const dotenv = require('dotenv')
+dotenv.config();
 
-const clientId = secrets.clientIdTrakt;
-const clientSecret = secrets.clientSecretTrakt;
-const traktUsername = secrets.usernameTrakt;
-const redirectUri = 'http://localhost:8000/callback'; // This needs to match your Trakt app settings
+const clientId = process.env['TRAKT_CLIENT_ID'];
+const clientSecret = process.env['TRAKT_CLIENT_SECRET'];
+const traktUsername = process.env['USERNAME'];
+const redirectUri = process.env['OAUTH_CALLBACK']; // This needs to match your Trakt app settings
 const justwatch = new JustWatch({ locale: 'en_US' });
+const port = process.env['PORT'];
+const apiPort = process.env['API_PORT'];
+const bindHost = process.env['BIND_HOST'];
 
 app.use(cors());
 
@@ -26,13 +30,13 @@ app.get('/watchlist', (req, res) => {
 	});
 });
 
-app.listen(8001, () => {
-  console.log('API listening at http://localhost:8001');
+app.listen(apiPort, bindHost, () => {
+  console.log(`API listening at http://${bindHost}:${apiPort}`);
 });
 
 const server = http.createServer((req, res) => {
   if (req.url.startsWith('/callback')) {
-    const authorizationCode = new URL(req.url, 'http://localhost:8000').searchParams.get('code');
+    const authorizationCode = new URL(req.url, `http://localhost:${apiPort}`).searchParams.get('code');
     res.write('Authorization code received. You can close this window.');
     res.end();
 
@@ -61,8 +65,8 @@ const server = http.createServer((req, res) => {
   }
 });
 
-server.listen(8000, () => {
-  console.log('Server running at http://localhost:8000/');
+server.listen(port, bindHost, () => {
+  console.log(`Server running at http://${bindHost}:${port}/`);
   console.log('Please visit the following URL to authorize the application:');
   console.log(`https://trakt.tv/oauth/authorize?response_type=code&client_id=${clientId}&redirect_uri=${redirectUri}`);
 });
