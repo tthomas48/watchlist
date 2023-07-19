@@ -17,3 +17,9 @@ The data will be saved to watchlistData.json
 - $ cp .env.example .env
 - $ npm run start 
 - Navigate to http://localhost:3000/ 
+
+## Generate models
+- npx sequelize-cli model:generate --name User --attributes firstName:string,lastName:string,email:string --models-path=models
+
+## Running migrations
+- npx sequelize-cli db:migrate
