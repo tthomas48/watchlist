@@ -16,6 +16,7 @@
     "express": "^4.18.2",
     "express-session": "^1.17.3",
     "justwatch-api": "^1.0.7",
+    "node-singleflight": "^0.1.2",
     "passport": "^0.6.0",
     "passport-trakt": "^1.0.4",
     "sequelize": "^6.32.1",

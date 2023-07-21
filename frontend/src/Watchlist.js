@@ -6,12 +6,21 @@ import {
 import { getWatchlist } from './api';
 
 
-function Watchlist() {
+function Watchlist({ list }) {
     // Access the client
     // const queryClient = useQueryClient()
 
     // Queries
-    const query = useQuery({ queryKey: ['watchlist'], queryFn: getWatchlist })
+    console.log('here');
+    console.log(list);
+    const { data, isLoading, isError, error } = useQuery({ queryKey: ['watchlist', list], queryFn: () => getWatchlist(list) });
+    console.log(error);
+    console.log(isLoading);
+
+    const watch = (item) => {
+        console.log(item);
+        return false;
+    };
 
     // Mutations
     // const mutation = useMutation({
@@ -26,10 +35,13 @@ function Watchlist() {
         <div className="provider-container">
             <h2>To Watch</h2>
             <ul>
-                {query.data?.map((item) => (
-                    <li key={item.show.title}>
-                        <img src={item.image} alt={item.show.title} className="title-image" />
-                        <a href={item.url} target="_blank" rel="noopener noreferrer">{item.show.title}</a>
+                {isLoading && <div>Loading...</div>}
+                {isError && <div>Error: {error.message}</div>}
+                {data?.map((item) => (
+                    <li key={item.title}>
+                        <img src={item.image} alt={item.title} className="title-image" />
+                        {/* <a onClick={watch(item)} target="_blank" rel="noopener noreferrer">{item.title}</a> */}
+                        <a name={item.trakt_id}>{item.title}</a>
                     </li>
                 ))}
             </ul>

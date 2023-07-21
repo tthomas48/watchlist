@@ -1,24 +1,19 @@
 const axios = require('axios');
-const http = require('http');
 const JustWatch = require('justwatch-api');
 const express = require('express');
 const cors = require('cors');
 const bodyParser = require('body-parser');
 const session = require('express-session');
 const SequelizeStore = require('connect-session-sequelize')(session.Store);
-const Sequelize = require('sequelize');
 const passport = require('passport');
 const TraktStrategy = require('passport-trakt').Strategy;
-const path = require('path');
-const fs = require('fs');
 const dotenv = require('dotenv')
 dotenv.config();
 const db = require('./models');
-const { monitorEventLoopDelay } = require('perf_hooks');
+const singleflight = require('node-singleflight')
 
 const clientId = process.env['TRAKT_CLIENT_ID'];
 const clientSecret = process.env['TRAKT_CLIENT_SECRET'];
-const traktUsername = process.env['USERNAME'];
 const oauthHost = process.env['OAUTH_HOST']; // This needs to match your Trakt app settings
 const justwatch = new JustWatch({ locale: 'en_US' });
 const port = process.env['PORT'];
@@ -30,7 +25,7 @@ passport.serializeUser((user, next) => {
   next(null, user.trakt_id);
 });
 passport.deserializeUser((req, traktUserId, next) => {
-  req.models.User.findOne({where: { trakt_id: traktUserId }}).then((user) => {
+  req.models.User.findOne({ where: { trakt_id: traktUserId } }).then((user) => {
     next(null, user);
   }).catch((err) => next(err));
 });
@@ -55,13 +50,13 @@ if (app.get('env') === 'production') {
 }
 app.use(session(sessionSettings));
 app.use(function sequelizeDecorator(req, res, next) {
-    if (!req.models) {
-      req.models = db;
-    }
-    if (!req.sequelize) {
-      req.sequelize = db.sequelize;
-    }
-    next();
+  if (!req.models) {
+    req.models = db;
+  }
+  if (!req.sequelize) {
+    req.sequelize = db.sequelize;
+  }
+  next();
 });
 app.use(passport.initialize());
 app.use(passport.session());
@@ -70,8 +65,8 @@ passport.use(new TraktStrategy({
   clientSecret: clientSecret,
   callbackURL: `${oauthHost}/api/auth/trakt/callback`,
 },
-async function(accessToken, refreshToken, params, profile, done) {
-    let user = await db.User.findOne({where: { trakt_id: profile.id }});
+  async function (accessToken, refreshToken, params, profile, done) {
+    let user = await db.User.findOne({ where: { trakt_id: profile.id } });
     if (!user) {
       user = await db.User.create({
         trakt_id: profile.id,
@@ -84,14 +79,14 @@ async function(accessToken, refreshToken, params, profile, done) {
         refresh_token: refreshToken,
       });
     } else {
-      user = await user.update({access_token: accessToken, refresh_token: refreshToken});
+      user = await user.update({ access_token: accessToken, refresh_token: refreshToken });
     }
     console.log(accessToken);
     console.log(refreshToken);
     console.log(user);
 
     return done(null, user);
-}
+  }
 ));
 
 const requireLogin = (req, res, next) => {
@@ -107,21 +102,21 @@ app.use(express.static('./frontend/build/'));
 
 const apiRouter = new express.Router();
 
-apiRouter.get('/login', function(req, res){
+apiRouter.get('/login', function (req, res) {
   res.redirect('/api/auth/trakt');
   // res.redirect(`https://trakt.tv/oauth/authorize?response_type=code&client_id=${clientId}&redirect_uri=${redirectUri}`);
 });
 
 apiRouter.get('/auth/trakt',
   passport.authenticate('trakt'),
-  function(req, res){
+  function (req, res) {
     // The request will be redirected to Trakt for authentication, so this
     // function will not be called.
   });
 
-  apiRouter.get('/auth/trakt/callback', 
+apiRouter.get('/auth/trakt/callback',
   passport.authenticate('trakt', { failureRedirect: '/api/login' }),
-  function(req, res) {
+  function (req, res) {
     if (req.session.returnTo) {
       res.redirect(req.session.returnTo);
       return;
@@ -130,27 +125,131 @@ apiRouter.get('/auth/trakt',
     res.redirect('/');
   });
 
-  apiRouter.get('/logout', function(req, res){
+apiRouter.get('/logout', function (req, res) {
   req.logout();
   res.redirect('/');
-});  
+});
 
-
-apiRouter.get('/watchlist', requireLogin, async (req, res, next) => {
-  try {
-    const items = await getTraktWatchlist(req.user);
-    // console.log(items);
-    res.json(items);
-  } catch(e) {
-    console.log(e);
-    if (e.response && e.response.status) {
-      res.status(e.response.status).json(e);
+function addUrls(req, watchable, urls, serviceType) {
+  let i = 0;
+  urls.forEach((link) => {
+    if (!link) {
       return;
     }
-    res.status(500).json(e);
-    
+    watchable.urls.push({
+      url: link,
+      service_type: serviceType,
+      select: i === 0,
+    });
+    i++;
+  });
+}
+
+async function createWatchable(req, traktListId, watchable) {
+  const props = {
+    title: getTitle(watchable),
+    trakt_id: getTraktId(watchable),
+    trakt_list_id: traktListId,
+    justwatch_id: watchable.justwatch_id,
+    image: watchable.image,
+    media_type: watchable.type,
+    urls: [],
+  };
+  addUrls(req, props, watchable.deeplink_android_tv, 'android_tv');
+  addUrls(req, props, watchable.deeplink_fire_tv, 'fire_tv');
+  addUrls(req, props, watchable.deeplink_web, 'web');
+  return await req.models.Watchable.create(props, { include: [{ model: req.models.WatchableUrl, as: 'urls' }] });
+}
+
+async function updateWatchable(req, watchable) {
+
+  addUrls(req, props, watchable.deeplink_android_tv, 'android_tv');
+  addUrls(req, props, watchable.deeplink_fire_tv, 'fire_tv');
+  addUrls(req, props, watchable.deeplink_web, 'web');
+  return await req.models.Watchable.create(props, { include: [{ model: req.models.WatchableUrl, as: 'urls' }] });
+}
+
+async function refresh(req, traktListId, existingWatchables) {
+  console.log('in refresh');
+  const tasks = [];
+  const explicitRefresh = false;
+  const traktItems = await getTraktWatchlist(req.user);
+  console.log(traktItems);
+
+  // 1. load all existing req.models.Watchable
+  if (existingWatchables == null) {
+
+    existingWatchables = await req.models.Watchable.findAll();
   }
+  // 2. find all that no longer exist in watchables
+  const existingTraktIds = traktItems.map((traktItem) => traktItem[traktItem.type].ids.trakt);
+  console.log(existingTraktIds);
+  const deletedItems = existingWatchables.filter((watchable) => !existingTraktIds.includes(watchable.trakt_id));
+  const updateItems = traktItems.filter((watchable) => existingTraktIds.includes(watchable.trakt_id));
+  const newItems = traktItems.filter((watchable) => !existingTraktIds.includes(watchable.trakt_id));
+
+  // 3. delete them
+  deletedItems.forEach((deletedItem) => {
+    tasks.push(deletedItem.destroy());
+  });
+  // 4. find all that exist in watchables
+  const justWatchTasks = [];
+  justWatchTasks.push(addJustWatchData(updateItems));
+  justWatchTasks.push(addJustWatchData(newItems));
+  await Promise.all(justWatchTasks);
+
+  // updateItems.forEach((traktItem) => {
+  //   const existingWatchable = existingWatchables.find((existingWatchable) => existingWatchable.trakt_id === watchable.trakt_id);
+  //   tasks.push(updateWatchable(req, traktItem, existingWatchable));
+  // });
+
+  newItems.forEach((traktItem) => {
+    tasks.push(createWatchable(req, traktListId, traktItem));
+  });
+  await Promise.all(tasks);
+}
+apiRouter.get('/refresh/:trakt_list_id/', requireLogin, async (req, res, next) => {
+  const traktListId = req.params['trakt_list_id'];
+  refresh(req, traktListId, null);
+  const existingWatchables = await req.models.Watchable.findAll({ where: { trakt_list_id: traktListId }});
+  res.json(existingWatchables);
 });
+
+apiRouter.get('/lists', requireLogin, async (req, res, next) => {
+  const user = req.user;
+  const response = await axios.get(`https://api.trakt.tv/users/${user.trakt_id}/lists/`, {
+    headers: {
+      'Content-Type': 'application/json',
+      'trakt-api-version': '2',
+      'trakt-api-key': clientId,
+      'Authorization': `Bearer ${user.access_token}`,
+    },
+  });
+  res.json(response.data);
+});
+
+apiRouter.get('/watchlist/:trakt_list_id/', requireLogin, async (req, res, next) => {
+  
+  const traktListId = req.params['trakt_list_id'];
+  let existingWatchables = await req.models.Watchable.findAll({ where: { trakt_list_id: traktListId } });
+  // get the most recent updated_at from existingWatchables
+  const mostRecentUpdate = existingWatchables.reduce((acc, watchable) => {
+    if (watchable.updatedAt > acc) {
+      return watchable.updatedAt;
+    }
+    return acc;
+  }, new Date(0));
+  // if the most recent_update is more than a day ago then we should call refresh
+  if (mostRecentUpdate < new Date(Date.now() - 1000 * 60 * 60 * 24)) {
+    await singleflight.Do(traktListId, async () => {
+      console.log("Refreshing because " + mostRecentUpdate + " is more than a day ago");
+      await refresh(req, traktListId, existingWatchables);
+    });
+  }
+  existingWatchables = await req.models.Watchable.findAll({ where: { trakt_list_id: traktListId } });
+  res.json(existingWatchables);
+});
+
 app.use("/api", apiRouter);
 
 app.listen(port, bindHost, () => {
@@ -217,16 +316,24 @@ async function getTraktWatchlist(user) {
     },
   });
   // console.log(response.data);
-  await addJustWatchData(response.data);
-
   return response.data;
+}
+
+function getTitle(item) {
+  var type = item.type;
+  return item[type].title;
+}
+
+function getTraktId(item) {
+  var type = item.type;
+  return item[type].ids.trakt;
 }
 
 async function addJustWatchData(items) {
   // so I think we should cache this information and then another lookup when you want to watch
   var tasks = [];
   for (let i = 0; i < items.length; i++) {
-    var title = items[i].type === "show" ? items[i].show.title : items[i].movie.title;
+    var title = getTitle(items[i]);
     tasks[i] = justwatch.search({ query: title, content_types: [items[i].type], providers: ['amc_plus'] });
   }
   // const providers = await justwatch.getProviders();
@@ -242,17 +349,23 @@ async function addJustWatchData(items) {
   // console.log(results);
   for (let i = 0; i < results.length; i++) {
     var resultItems = results[i].items;
-    for(let j = 0; j < resultItems.length; j++) {
+    for (let j = 0; j < resultItems.length; j++) {
       var resultItem = resultItems[j];
       var type = items[i].type;
 
       if (resultItem.title === title) {
+        // console.log(resultItem);
+        items[i].justwatch_id = resultItem.id;
         items[i].providers = [];
         items[i].deeplink_android_tv = [];
+        items[i].deeplink_fire_tv = [];
+        items[i].deeplink_web = [];
         resultItem.offers?.forEach((offer) => {
           if (supportedProviders.indexOf(String(offer.provider_id)) > -1) {
             items[i].providers.push(offer.provider_id);
             items[i].deeplink_android_tv.push(offer.urls.deeplink_android_tv);
+            items[i].deeplink_fire_tv.push(offer.urls.deeplink_fire_tv);
+            items[i].deeplink_web.push(offer.urls.deeplink_web);
           }
         });
 
@@ -266,26 +379,26 @@ async function addJustWatchData(items) {
     }
     // console.log(items[i]);
   }
-  
-//   const searchResults = await justwatch.search({ query: title, content_types: [type] });
 
-//   return searchResults.items.reduce((results, item) => {
-//     if (item.title === title) {
-//       item.offers?.forEach((offer) => {
-//         if (offer.provider_id === 8 || offer.provider_id === 9) {
-//           results.providers.add(offer.provider_id);
-//         }
-//       });
+  //   const searchResults = await justwatch.search({ query: title, content_types: [type] });
 
-// 			results.image = item.poster ? `https://images.justwatch.com${item.poster.replace('{profile}', 's592')}` : '';
+  //   return searchResults.items.reduce((results, item) => {
+  //     if (item.title === title) {
+  //       item.offers?.forEach((offer) => {
+  //         if (offer.provider_id === 8 || offer.provider_id === 9) {
+  //           results.providers.add(offer.provider_id);
+  //         }
+  //       });
 
-// 			const urlType = type === 'movie' ? 'movie' : 'tv-show';
-// 			const titleNoApostraphe = title.replace(/[']/g, '');
-// 			const titleCleaned = titleNoApostraphe.replace(/[^a-z0-9]+/gi, '-').toLowerCase();
-// 			results.url = `https://www.justwatch.com/us/${urlType}/${titleCleaned}`;
-//     }
-//     return results;
-//   }, { providers: new Set(), image: null, url: null });
+  // 			results.image = item.poster ? `https://images.justwatch.com${item.poster.replace('{profile}', 's592')}` : '';
+
+  // 			const urlType = type === 'movie' ? 'movie' : 'tv-show';
+  // 			const titleNoApostraphe = title.replace(/[']/g, '');
+  // 			const titleCleaned = titleNoApostraphe.replace(/[^a-z0-9]+/gi, '-').toLowerCase();
+  // 			results.url = `https://www.justwatch.com/us/${urlType}/${titleCleaned}`;
+  //     }
+  //     return results;
+  //   }, { providers: new Set(), image: null, url: null });
 }
 
 // async function checkStreamingAvailability(title, type) {
