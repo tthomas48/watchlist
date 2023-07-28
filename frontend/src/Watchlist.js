@@ -4,18 +4,15 @@ import {
     // useQueryClient,
 } from '@tanstack/react-query'
 import { getWatchlist } from './api';
+import PlayButton from './PlayButton';
 
 
-function Watchlist({ list }) {
+function Watchlist({ list, player }) {
     // Access the client
     // const queryClient = useQueryClient()
 
     // Queries
-    console.log('here');
-    console.log(list);
     const { data, isLoading, isError, error } = useQuery({ queryKey: ['watchlist', list], queryFn: () => getWatchlist(list) });
-    console.log(error);
-    console.log(isLoading);
 
     const watch = (item) => {
         console.log(item);
@@ -42,6 +39,7 @@ function Watchlist({ list }) {
                         <img src={item.image} alt={item.title} className="title-image" />
                         {/* <a onClick={watch(item)} target="_blank" rel="noopener noreferrer">{item.title}</a> */}
                         <a name={item.trakt_id}>{item.title}</a>
+                        <PlayButton player={player} id={item.id}></PlayButton>
                     </li>
                 ))}
             </ul>

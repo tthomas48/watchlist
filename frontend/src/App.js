@@ -7,9 +7,11 @@ import RefreshButton from './RefreshButton';
 import Grid from '@mui/material/Unstable_Grid2'; 
 import { useLocalStorage } from "./hooks/useLocalStorage";
 
-const localStorageKey = "watchlist.trakt_list";
+const localStorageKey = "watchlist.player";
+const listStorageKey = "watchlist.trakt_list";
 function App() {
-  const [list, setList] = useLocalStorage(localStorageKey, "");
+  const [player, setPlayer] = useLocalStorage(localStorageKey, "");
+  const [list, setList] = useLocalStorage(listStorageKey, "");
 
   return (
     <div className="App">
@@ -21,13 +23,13 @@ function App() {
           <ListPicker setList={setList} list={list}></ListPicker>
         </Grid>
         <Grid xs={4}>
-          <PlayerPicker></PlayerPicker>
+          <PlayerPicker setPlayer={setPlayer} player={player}></PlayerPicker>
         </Grid>
         <Grid xs={2}>
-          <RefreshButton></RefreshButton>
+          <RefreshButton list={list}></RefreshButton>
         </Grid>
         <Grid xs={12}>
-          <Watchlist list={list}></Watchlist>
+          <Watchlist list={list} player={player}></Watchlist>
         </Grid>
       </Grid>
       

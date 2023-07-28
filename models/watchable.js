@@ -12,6 +12,11 @@ module.exports = (sequelize, DataTypes) => {
     static associate(models) {
       // define association here
       models.Watchable.hasMany(models.WatchableUrl, { as: 'urls', foreignKey: 'watchable_id', onDelete: 'CASCADE' });
+      for (let assoc of Object.keys(models.Watchable.associations)) {
+        for (let accessor of Object.keys(models.Watchable.associations[assoc].accessors)) {
+          console.log(models.Watchable.name + '.' + models.Watchable.associations[assoc].accessors[accessor]+'()');
+        }
+      }
     }
   }
   Watchable.init({

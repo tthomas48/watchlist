@@ -1,20 +1,14 @@
-import { isAndroid, isIOS, isBrowser } from 'react-device-detect';
+import { isAndroid, isBrowser } from 'react-device-detect';
 import FormControl from '@mui/material/FormControl';
 import InputLabel from '@mui/material/InputLabel';
 import { NativeSelect } from '@mui/material';
-import { useLocalStorage } from "./hooks/useLocalStorage";
 
 
-const localStorageKey = "watchlist.player";
-function PlayerPicker() {
-    const [player, setPlayer] = useLocalStorage(localStorageKey, "");
+function PlayerPicker({ setPlayer, player }) {
 
     var options = [];
     if (isBrowser) {
         options.push({ label: "Browser", value: "browser" });
-    }
-    if (isIOS) {
-        options.push({ label: "IOS", value: "ios" });
     }
     if (isAndroid) {
         options.push({ label: "Android", value: "android" });
