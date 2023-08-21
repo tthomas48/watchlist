@@ -3,7 +3,7 @@ const {
   Model
 } = require('sequelize');
 module.exports = (sequelize, DataTypes) => {
-  class WatchableUrl extends Model {
+  class Settings extends Model {
     /**
      * Helper method for defining associations.
      * This method is not a part of Sequelize lifecycle.
@@ -11,17 +11,14 @@ module.exports = (sequelize, DataTypes) => {
      */
     static associate(models) {
       // define association here
-      models.WatchableUrl.belongsTo(models.Watchable, {foreignKey: 'watchable_id'});
     }
   }
-  WatchableUrl.init({
-    url: DataTypes.STRING,
-    service_type: DataTypes.STRING,
-    custom: DataTypes.BOOLEAN,
-    provider_id: DataTypes.STRING,
+  Settings.init({
+    googletv_host: DataTypes.STRING,
+    googletv_port: DataTypes.STRING
   }, {
     sequelize,
-    modelName: 'WatchableUrl',
-  });  
-  return WatchableUrl;
+    modelName: 'Settings',
+  });
+  return Settings;
 };

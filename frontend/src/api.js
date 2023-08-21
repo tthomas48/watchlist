@@ -9,7 +9,6 @@ const handleResponse = (res) => {
     return res.json();
 };
 export function getWatchlist(list) { 
-    console.log(list);
     return fetch(`/api/watchlist/${list}/`, {
         withCredentials: true,
     }).then(handleResponse); 
@@ -27,4 +26,42 @@ export function play(serviceType, id) {
     }).then(handleResponse);
 }
 
+export function getSettings() {
+    return fetch(`/api/settings`, {
+        withCredentials: true,
+    }).then(handleResponse);
+}
 
+export function saveSettings(settings) {
+    return fetch(`/api/settings`, {
+        method: "POST",
+        withCredentials: true,
+        headers: {
+            "Content-Type": "application/json",
+        },
+        body: JSON.stringify(settings),
+    }).then(handleResponse);
+}
+
+export function getWatchable(id) {
+    return fetch(`/api/watchables/${id}/`, {
+        withCredentials: true,
+    }).then(handleResponse);    
+}
+
+export function getWatchableUrls(id, providerId) {
+    return fetch(`/api/watchables/${id}/urls/${providerId}`, {
+        withCredentials: true,
+    }).then(handleResponse);    
+}
+
+export function saveWatchable(id, watchable) {
+    return fetch(`/api/watchables/${id}/`, {
+        method: "POST",
+        withCredentials: true,
+        headers: {
+            "Content-Type": "application/json",
+        },
+        body: JSON.stringify(watchable),
+    }).then(handleResponse);
+}

@@ -1,14 +1,14 @@
 {
   "development": {
     "dialect": "sqlite",
-    "storage": "watchlist.sqlite"
+    "storage": "data/watchlist.sqlite"
   },
   "test": {
     "dialect": "sqlite",
-    "storage": "watchlist.sqlite"
+    "storage": "data/watchlist.sqlite"
   },
   "production": {
     "dialect": "sqlite",
-    "storage": "watchlist.sqlite"
+    "storage": "data/watchlist.sqlite"
   }
 }

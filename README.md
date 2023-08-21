@@ -23,3 +23,27 @@ The data will be saved to watchlistData.json
 
 ## Running migrations
 - npx sequelize-cli db:migrate
+
+## Pushing up docker image
+- gcloud auth configure-docker
+- docker build -t us-docker.pkg.dev/watchlist-396421/gcr.io/watchlist:latest .
+- docker push us-docker.pkg.dev/watchlist-396421/gcr.io/watchlist:latest
+
+## Running docker image
+- mkdir -p /usr/share/watchlist/data/
+- cp .env.example /usr/share/watchlist/.env/ # and edit with your values
+- docker run --name=watchlist --voluments=/user/share/watchlist/data/:/usr/src/watchlist/data/ --network-host --restart=unless-stopped --env-file=/usr/share/watchlist/.env --detach=true gcr.io/watchlist-396421/
+watchlist:latest
+
+# ADB Stuff
+## get current activity
+- dumpsys activity | grep -E 'mCurrentFocus|mFocusedApp'
+- dumpsys activity activities
+- https://github.com/selfhostedshow/wiki/blob/81eacbd9352602244787866da71056faec667ae2/docs/home-automation/home-assistant/supervisor-addons/android-debug-bridge/adb.md?plain=1#L99
+
+
+For AMC: Go view the show and get the URL. Put that in the android TV intent field:
+
+https://www.amcplus.com/shows/dark-winds--1053387
+
+For Hulu: Just use the web URL as well

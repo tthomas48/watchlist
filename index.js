@@ -28,6 +28,7 @@ passport.deserializeUser((req, traktUserId, next) => {
 
 const app = express();
 app.use(cors());
+app.use(express.json());
 app.use(bodyParser.urlencoded({ extended: false }));
 const sessionSettings = {
   secret: process.env['SESSION_SECRET'],
@@ -81,9 +82,14 @@ passport.use(new TraktStrategy({
   }
 ));
 
+const settingsPromise = db.Settings.findOne();
+
 
 app.use(express.static('./frontend/build/'));
-app.use("/api", api(clientId, passport));
+app.use("/api", api(clientId, passport, settingsPromise));
+app.get('/*', (req, res) => {
+  res.sendFile(__dirname + '/frontend/build/index.html');
+})
 
 app.listen(port, bindHost, () => {
   console.log(`API listening at http://${bindHost}:${port}`);

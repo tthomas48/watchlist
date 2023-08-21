@@ -1,48 +1,45 @@
-import {
-    useQuery,
-    // useMutation,
-    // useQueryClient,
-} from '@tanstack/react-query'
+import { useQuery } from '@tanstack/react-query';
+import { useOutletContext } from "react-router-dom";
 import { getWatchlist } from './api';
+import {CardHeader, Card, CardMedia, CardActions} from '@mui/material';
+import Grid from '@mui/material/Unstable_Grid2'; 
 import PlayButton from './PlayButton';
+import EditButton from './EditButton';
 
 
-function Watchlist({ list, player }) {
-    // Access the client
-    // const queryClient = useQueryClient()
-
+function Watchlist() {
     // Queries
+    const [list, player] = useOutletContext();
     const { data, isLoading, isError, error } = useQuery({ queryKey: ['watchlist', list], queryFn: () => getWatchlist(list) });
-
-    const watch = (item) => {
-        console.log(item);
-        return false;
-    };
-
-    // Mutations
-    // const mutation = useMutation({
-    //   mutationFn: postTodo,
-    //   onSuccess: () => {
-    //     // Invalidate and refetch
-    //     queryClient.invalidateQueries({ queryKey: ['todos'] })
-    //   },
-    // })
-
+    
     return (
         <div className="provider-container">
             <h2>To Watch</h2>
-            <ul>
+            <div>
                 {isLoading && <div>Loading...</div>}
                 {isError && <div>Error: {error.message}</div>}
+                <Grid container spacing={2}>
                 {data?.map((item) => (
-                    <li key={item.title}>
-                        <img src={item.image} alt={item.title} className="title-image" />
-                        {/* <a onClick={watch(item)} target="_blank" rel="noopener noreferrer">{item.title}</a> */}
-                        <a name={item.trakt_id}>{item.title}</a>
-                        <PlayButton player={player} id={item.id}></PlayButton>
-                    </li>
+                    <Grid xs={6} md={3}>
+                        <Card key={item.title} sx={{
+                            backgroundColor: '#278056',
+                        }}>
+                            <CardHeader title={item.title} sx={{
+                                fontSize: '1.0rem',
+                                textOverflow: 'ellipsis',
+                                whiteSpace: 'nowrap',
+                                overflow: 'hidden',
+                            }}></CardHeader>
+                            <CardMedia component="img" image={item.image} alt={item.title} />
+                            <CardActions disableSpacing>
+                                <PlayButton player={player} id={item.id}></PlayButton>
+                                <EditButton id={item.id}></EditButton>
+                            </CardActions>
+                        </Card>
+                    </Grid>                        
                 ))}
-            </ul>
+                </Grid>
+            </div>
         </div>
     );
 }

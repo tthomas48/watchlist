@@ -9,40 +9,41 @@ const justwatch = new JustWatch({ locale: 'en_US' });
 const providerRaw = process.env['SUPPORTED_PROVIDERS']
 const supportedProviders = providerRaw.split(',');
 
-providerFactory.init();
-
 async function refresh(clientId, req, traktListId, existingWatchables) {
-    console.log('in refresh');
-    const tasks = [];
-    const explicitRefresh = false;
-    const traktItems = await getTraktWatchlist(clientId, req.user, traktListId);
+    await singleflight.Do(traktListId, async () => {
 
-    // 2. find all that no longer exist in watchables
-    const existingTraktIds = traktItems.map((traktItem) => getTraktId(traktItem));
-    const existingWatchableTraktIds = existingWatchables.map((watchable) => watchable.trakt_id);
-    const deletedItems = existingWatchables.filter((watchable) => !existingTraktIds.includes(watchable.trakt_id));
-    const updateItems = traktItems.filter((traktItem) => existingWatchableTraktIds.includes(getTraktId(traktItem)));
-    const newItems = traktItems.filter((traktItem) => !existingWatchableTraktIds.includes(getTraktId(traktItem)));
+        console.log('in refresh');
+        const tasks = [];
+        const explicitRefresh = false;
+        const traktItems = await getTraktWatchlist(clientId, req.user, traktListId);
+                
+        // 2. find all that no longer exist in watchables
+        const existingTraktIds = traktItems.map((traktItem) => getTraktId(traktItem));
+        const existingWatchableTraktIds = existingWatchables.map((watchable) => watchable.trakt_id);
+        const deletedItems = existingWatchables.filter((watchable) => !existingTraktIds.includes(watchable.trakt_id));
+        const updateItems = traktItems.filter((traktItem) => existingWatchableTraktIds.includes(getTraktId(traktItem)));
+        const newItems = traktItems.filter((traktItem) => !existingWatchableTraktIds.includes(getTraktId(traktItem)));
 
-    // 3. delete them
-    deletedItems.forEach((deletedItem) => {
-        tasks.push(deletedItem.destroy());
+        // 3. delete them
+        deletedItems.forEach((deletedItem) => {
+            tasks.push(deletedItem.destroy());
+        });
+        // 4. find all that exist in watchables
+        const justWatchTasks = [];
+        justWatchTasks.push(addJustWatchData(updateItems));
+        justWatchTasks.push(addJustWatchData(newItems));
+        await Promise.all(justWatchTasks);
+
+        updateItems.forEach((traktItem) => {
+            const existingWatchable = existingWatchables.find((ew) => getTraktId(traktItem) === ew.trakt_id);
+            tasks.push(updateWatchable(req, traktItem, existingWatchable));
+        });
+
+        newItems.forEach((traktItem) => {
+            tasks.push(createWatchable(req, traktListId, traktItem));
+        });
+        await Promise.all(tasks);
     });
-    // 4. find all that exist in watchables
-    const justWatchTasks = [];
-    justWatchTasks.push(addJustWatchData(updateItems));
-    justWatchTasks.push(addJustWatchData(newItems));
-    await Promise.all(justWatchTasks);
-
-    updateItems.forEach((traktItem) => {
-        const existingWatchable = existingWatchables.find((ew) => getTraktId(traktItem) === ew.trakt_id);
-        tasks.push(updateWatchable(req, traktItem, existingWatchable));
-    });
-
-    newItems.forEach((traktItem) => {
-        tasks.push(createWatchable(req, traktListId, traktItem));
-    });
-    await Promise.all(tasks);
 }
 
 
@@ -81,9 +82,60 @@ function getTmdbId(item) {
     return String(item[type].ids.tmdb);
 }
 
+async function getJustWatchProviders(watchable) {
+    const providers = await justwatch.getProviders();
+
+    var title = watchable.title;
+    const result = [];
+    const results = await justwatch.search({ query: title, content_types: [watchable.media_type] });
+    results.items.every((justwatchItem) => {
+        if (justwatchItem.title === title) {
+            justwatchItem.offers?.forEach((offer) => {
+                if (supportedProviders.indexOf(String(offer.provider_id)) > -1) {
+                    const providerObj = providers.find((provider) => provider.id === offer.provider_id);
+                    if (!result.find((r) => r.id == offer.provider_id)) {
+                        result.push(providerObj);
+                    }                    
+                }
+            });
+            return false;
+        }
+        return true;
+    });
+    return result;
+}
+
+async function getJustWatchUrls(watchable, providerId) {
+    const empty = {
+        urls: {
+            deeplink_android_tv: "",
+            deeplink_fire_tv: "",
+            standard_web: "",
+        }
+    };
+    if (providerId == "undefined") {
+        return empty;
+    }
+    
+    var title = watchable.title;
+    let item;
+    const results = await justwatch.search({ query: title, content_types: [watchable.media_type] });
+    for (let i = 0; i < results.items.length; i++) {
+        const justwatchItem = results.items[i];
+        if (justwatchItem.title === title) {
+            item = justwatchItem.offers?.find((offer) => {
+                return offer.provider_id == providerId;
+            });
+            break;
+        }
+    }
+    return item || empty;
+}
+
+
 async function addJustWatchData(items) {
     // const providers = await justwatch.getProviders();
-    // const appleproviders = providers.filter((provider) => provider.clear_name.startsWith('Amazon'));
+    // const appleproviders = providers.filter((provider) => provider.clear_name.startsWith('PBS'));
     // console.log(appleproviders);
 
     // so I think we should cache this information and then another lookup when you want to watch
@@ -94,60 +146,60 @@ async function addJustWatchData(items) {
     }
 
     const results = await Promise.all(tasks);
-    // console.log(results);
     for (let i = 0; i < results.length; i++) {
         var title = getTitle(items[i]);
         var resultItems = results[i].items;
-        for (let j = 0; j < resultItems.length; j++) {
-            var resultItem = resultItems[j];
-            var type = items[i].type;
-
-            if (resultItem.title === title) {
-                //console.log(resultItem);
-                items[i].justwatch_id = resultItem.id;
-                items[i].providers = [];
-                items[i].deeplink_android_tv = [];
-                items[i].deeplink_fire_tv = [];
-                items[i].deeplink_web = [];
-                resultItem.offers?.forEach((offer) => {
-                    if (title === 'Lucky Hank') {
-                        console.log(offer);
-                    }
-                    if (supportedProviders.indexOf(String(offer.provider_id)) > -1) {
-                        //console.log(offer.urls);
-                        items[i].providers.push(offer.provider_id);
-                        items[i].deeplink_android_tv.push(offer.urls.deeplink_android_tv);
-                        items[i].deeplink_fire_tv.push(offer.urls.deeplink_fire_tv);
-                        items[i].deeplink_web.push(offer.urls.standard_web);
-                    }
-                });
-
-                // console.log(items[i]);
-                items[i].image = resultItem.poster ? `https://images.justwatch.com${resultItem.poster.replace('{profile}', 's592')}` : '';
-
-                const urlType = type === 'movie' ? 'movie' : 'tv-show';
-                const titleNoApostraphe = title.replace(/[']/g, '');
-                const titleCleaned = titleNoApostraphe.replace(/[^a-z0-9]+/gi, '-').toLowerCase();
-                items[i].url = `https://www.justwatch.com/us/${urlType}/${titleCleaned}`;
-            }
-        }
+        resultItems.every((resultItem) => {
+            var foundTitle = addJustWatchTitle(items[i], resultItem);
+            // continue only if we didn't find a title
+            return !foundTitle;
+        });
     }
+}
+
+function addJustWatchTitle(traktItem, justwatchItem) {
+    var title = getTitle(traktItem);
+    var type = traktItem.type;
+    if (justwatchItem.title === title) {
+        traktItem.justwatch_id = justwatchItem.id;
+        traktItem.deeplink_android_tv = [];
+        traktItem.deeplink_fire_tv = [];
+        traktItem.deeplink_web = [];
+        traktItem.image = justwatchItem.poster ? `https://images.justwatch.com${justwatchItem.poster.replace('{profile}', 's592')}` : '';
+        const urlType = type === 'movie' ? 'movie' : 'tv-show';
+        const titleNoApostraphe = title.replace(/[']/g, '');
+        const titleCleaned = titleNoApostraphe.replace(/[^a-z0-9]+/gi, '-').toLowerCase();
+        traktItem.url = `https://www.justwatch.com/us/${urlType}/${titleCleaned}`;
+
+        // TODO: should we move this to belongsTo?
+        justwatchItem.offers?.every((offer) => {
+            if (supportedProviders.indexOf(String(offer.provider_id)) > -1) {
+                traktItem.provider_id = offer.provider_id;
+                traktItem.deeplink_android_tv.push(offer.urls.deeplink_android_tv);
+                traktItem.deeplink_fire_tv.push(offer.urls.deeplink_fire_tv);
+                traktItem.deeplink_web.push(offer.urls.standard_web);
+                return false;
+            }
+            return true;
+        });
+        return true;
+    }
+    return false;
 }
 
 async function createWatchable(req, traktListId, watchable) {
     const props = {
         title: getTitle(watchable),
         trakt_id: getTraktId(watchable),
-        tmdb_id: getTmdbId(watchable),
         trakt_list_id: traktListId,
         justwatch_id: watchable.justwatch_id,
         image: watchable.image,
         media_type: watchable.type,
         urls: [],
     };
-    addUrls(req, props, watchable.deeplink_android_tv, 'android_tv');
-    addUrls(req, props, watchable.deeplink_fire_tv, 'fire_tv');
-    addUrls(req, props, watchable.deeplink_web, 'web');
+    addUrls(req, props, watchable.provider_id, watchable.deeplink_android_tv, 'android_tv');
+    addUrls(req, props, watchable.provider_id, watchable.deeplink_fire_tv, 'fire_tv');
+    addUrls(req, props, watchable.provider_id, watchable.deeplink_web, 'web');
     return await req.models.Watchable.create(props, { include: [{ model: req.models.WatchableUrl, as: 'urls' }] });
 }
 
@@ -155,17 +207,27 @@ async function updateWatchable(req, traktItem, watchable) {
     const props = {
         urls: [],
     };
-    addUrls(req, props, traktItem.deeplink_android_tv, 'android_tv');
-    addUrls(req, props, traktItem.deeplink_fire_tv, 'fire_tv');
-    addUrls(req, props, traktItem.deeplink_web, 'web');
-
-    var newUrls = props.urls;
+    var isCustom = false;
     var foundUrl = [];
     var urls = await watchable.getUrls();
     urls.forEach((url) => {
+        if (url.provider_id == -1) {
+            isCustom = true;
+            return;
+        }
         // initialize all of our urls
         foundUrl[url.service_type + "." + url.url] = url;
     });
+    if (isCustom) {
+        return Promise.resolve(watchable);
+    }
+
+    addUrls(req, props, traktItem.provider_id, traktItem.deeplink_android_tv, 'android_tv');
+    addUrls(req, props, traktItem.provider_id, traktItem.deeplink_fire_tv, 'fire_tv');
+    addUrls(req, props, traktItem.provider_id, traktItem.deeplink_web, 'web');
+
+    var newUrls = props.urls;
+
 
     var toAdd = [];
     newUrls.forEach((url) => {
@@ -196,7 +258,7 @@ const requireLogin = (req, res, next) => {
     next("Unauthorized");
 }
 
-function addUrls(req, watchable, urls, serviceType) {
+function addUrls(req, watchable, provider_id, urls, serviceType) {
     let i = 0;
     if (!urls) {
         return;
@@ -208,14 +270,19 @@ function addUrls(req, watchable, urls, serviceType) {
         watchable.urls.push({
             url: link,
             service_type: serviceType,
-            select: i === 0,
+            custom: false,
+            provider_id: provider_id,
         });
         i++;
     });
 }
 
 
-function api(clientId, passport) {
+function api(clientId, passport, settingsPromise) {
+    settingsPromise.then((settings) => {
+        providerFactory.init(settings);
+    });    
+
     const apiRouter = new express.Router();
 
     apiRouter.get('/login', function (req, res) {
@@ -283,10 +350,8 @@ function api(clientId, passport) {
         }, new Date(0));
         // if the most recent_update is more than a day ago then we should call refresh
         if (mostRecentUpdate < new Date(Date.now() - 1000 * 60 * 60 * 24)) {
-            await singleflight.Do(traktListId, async () => {
-                console.log("Refreshing because " + mostRecentUpdate + " is more than a day ago");
-                await refresh(clientId, req, traktListId, existingWatchables);
-            });
+            console.log("Refreshing because " + mostRecentUpdate + " is more than a day ago");
+            await refresh(clientId, req, traktListId, existingWatchables);
         }
         existingWatchables = await req.models.Watchable.findAll({ where: { trakt_list_id: traktListId } });
         res.json(existingWatchables);
@@ -305,7 +370,6 @@ function api(clientId, passport) {
             // console.log(urls);
             // console.log(watchableUrlType);
             const uris = urls.filter((url) => url.service_type === watchableUrlType);
-            console.log(uris);
             let watchableUrl = uris.find((url) => url.selected === true);
             if (!watchableUrl) {
                 watchableUrl = uris[0];
@@ -324,6 +388,89 @@ function api(clientId, passport) {
             res.status(500).json(e);
         }        
     });
+    apiRouter.get('/settings', requireLogin, async (req, res) => {
+        const settings = await req.models.Settings.findOne();
+        res.json(settings);
+    });
+
+    apiRouter.post('/settings', requireLogin, async (req, res) => {
+        const newSettings = req.body;       
+        let settings = await req.models.Settings.findOne();
+        if (!settings) {
+            settings = req.models.Settings.build({
+                googletv_host: newSettings.googletv_host, 
+                googletv_port: newSettings.googletv_port, 
+            });
+        } else {
+            settings.googletv_host = newSettings.googletv_host;
+            settings.googletv_port = newSettings.googletv_port;
+        }
+        await settings.save();
+        await providerFactory.update(settings);
+        res.json(settings);
+    });
+
+    apiRouter.get('/watchables/:id', requireLogin, async (req, res) => {        
+        const watchable = await req.models.Watchable.findOne({
+            where: { id: req.params.id },
+            include: [{ model: req.models.WatchableUrl, as: 'urls'}],
+        });
+        const providers = await getJustWatchProviders(watchable);
+        watchable.providers = providers;
+        res.json({watchable, providers});
+    });
+
+    apiRouter.get('/watchables/:id/urls/:provider_id', requireLogin, async (req, res) => {        
+        const providerId = req.params.provider_id;
+        const watchable = await req.models.Watchable.findOne({
+            where: { id: req.params.id },
+            include: [{ model: req.models.WatchableUrl, as: 'urls'}],
+        });
+        const offer = await getJustWatchUrls(watchable, providerId);
+        res.json([
+            { service_type: "android_tv", url: offer.urls.deeplink_android_tv},
+            { service_type: "fire_tv", url: offer.urls.deeplink_fire_tv},
+            { service_type: "web", url: offer.urls.standard_web},
+        ]);
+    });
+
+
+    apiRouter.post('/watchables/:id', requireLogin, async (req, res) => {
+        const watchableUpdate = req.body;       
+        const watchable = await req.models.Watchable.findOne({
+            where: { id: req.params.id }, 
+            include: [{ model: req.models.WatchableUrl, as: 'urls'}],
+        });
+        var tasks = [];
+        if (!watchable) {
+            res.status(404).json({error: "not found"});
+            return;
+        } else {
+            watchable.urls.forEach((url) => {
+                if (url.service_type === 'android_tv') {
+                    url.url = watchableUpdate.googletv_url || "";
+                    url.provider_id = -1;
+                    tasks.push(url.save());
+                }
+                if (url.service_type === 'fire_tv') {
+                    url.url = watchableUpdate.firetv_url || "";
+                    url.provider_id = -1;
+                    tasks.push(url.save());
+                }
+                if (url.service_type === 'web') {
+                    url.url = watchableUpdate.web_url || "";
+                    url.provider_id = -1;
+                    tasks.push(url.save());
+                }
+            });
+            // do the update here, and mark all the provider ids as -1
+        }
+        await watchable.save();
+        await Promise.all(tasks);
+        res.json(watchable);
+    });
+    
+
     return apiRouter;
 }
 

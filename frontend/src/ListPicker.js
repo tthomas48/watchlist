@@ -4,9 +4,7 @@ import InputLabel from '@mui/material/InputLabel';
 import { NativeSelect } from '@mui/material';
 import { getLists } from './api';
 
-
-
-function ListPicker({list, setList}) {
+function ListPicker({list, setList }) {
     const query = useQuery({ queryKey: ['lists'], queryFn: getLists })
 
     return (

@@ -4,7 +4,8 @@
   "description": "Checks the availability of movies and shows from your Trakt.tv watchlist on Netflix and Prime Video.",
   "main": "index.js",
   "scripts": {
-    "start": "node index.js"
+    "build-ui": "cd frontend && npm run build",
+    "start": "npx sequelize-cli db:migrate && node index.js"
   },
   "dependencies": {
     "@devicefarmer/adbkit": "^3.2.5",

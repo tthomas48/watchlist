@@ -9,11 +9,20 @@ class ProviderFactory {
             "redirect": redirect,
         };
     }
-    async init() {
+    async init(settings) {
         var tasks = [];
         Object.keys(this.providers).forEach(key => {
-            console.log(this.providers[key]);
-            tasks.push(this.providers[key].init());
+            tasks.push(this.providers[key].init(settings));
+        });
+        return await Promise.all(tasks);
+    }
+    async update(settings) {
+        var tasks = [];
+        Object.keys(this.providers).forEach(key => {
+            tasks.push(async () => {
+                await this.providers[key].disconnect();
+                await this.providers[key].init(settings);
+            });
         });
         return await Promise.all(tasks);
     }

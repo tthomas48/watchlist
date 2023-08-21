@@ -28,10 +28,14 @@ module.exports = {
         type: Sequelize.STRING,
         allowNull: false
       },
-      selected: {
+      custom: {
         type: Sequelize.BOOLEAN,
         allowNull: false,
         defaultValue: false,
+      },
+      provider_id: {
+        type: Sequelize.STRING,
+        allowNull: false
       },      
       createdAt: {
         allowNull: false,

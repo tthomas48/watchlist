@@ -1,5 +1,8 @@
 class Redirect {
-    async init() {
+    async init(settings) {
+
+    }
+    async disconnect() {
 
     }
     async play(uri) {

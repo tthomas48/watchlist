@@ -2,29 +2,17 @@
 /** @type {import('sequelize-cli').Migration} */
 module.exports = {
   async up(queryInterface, Sequelize) {
-    await queryInterface.createTable('Watchables', {
+    await queryInterface.createTable('Settings', {
       id: {
         allowNull: false,
         autoIncrement: true,
         primaryKey: true,
         type: Sequelize.INTEGER
       },
-      title: {
+      googletv_host: {
         type: Sequelize.STRING
       },
-      trakt_id: {
-        type: Sequelize.STRING
-      },
-      trakt_list_id: {
-        type: Sequelize.STRING
-      },
-      justwatch_id: {
-        type: Sequelize.STRING
-      },
-      image: {
-        type: Sequelize.STRING
-      },
-      media_type: {
+      googletv_port: {
         type: Sequelize.STRING
       },
       createdAt: {
@@ -38,6 +26,6 @@ module.exports = {
     });
   },
   async down(queryInterface, Sequelize) {
-    await queryInterface.dropTable('Watchables');
+    await queryInterface.dropTable('Settings');
   }
 };
