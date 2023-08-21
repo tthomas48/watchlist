@@ -126,5 +126,40 @@ class Adb {
         }
         return "unknown";
     }
+    async pushButton(button) {
+        let keyEvent = "";
+        switch(button) {
+            case "up":
+                keyEvent = "DPAD_UP";
+                break;
+            case "down":
+                keyEvent = "DPAD_DOWN";
+                break;
+            case "left":
+                keyEvent = "DPAD_LEFT";
+                break;
+            case "right":
+                keyEvent = "DPAD_RIGHT";
+                break;
+            case "enter":
+                keyEvent = "ENTER";
+                break;
+            case "home":
+                keyEvent = "HOME";
+                break;
+            case "back":
+                keyEvent = "BACK";
+                break;                
+            default: 
+                console.log(`unknown button ${button}`);                
+        }
+        if (keyEvent === "") {
+            return;
+        }
+
+        console.log(`pushing button ${keyEvent}`);
+        const device = this.client.getDevice(this.remoteID);
+        await device.shell(`input keyevent ${keyEvent}`);
+    }
 }
 module.exports = new Adb();

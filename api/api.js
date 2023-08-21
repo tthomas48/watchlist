@@ -108,8 +108,6 @@ async function getJustWatchProviders(watchable) {
 async function getJustWatchUrls(watchable, providerId) {
     const empty = {
         urls: {
-            deeplink_android_tv: "",
-            deeplink_fire_tv: "",
             standard_web: "",
         }
     };
@@ -162,8 +160,6 @@ function addJustWatchTitle(traktItem, justwatchItem) {
     var type = traktItem.type;
     if (justwatchItem.title === title) {
         traktItem.justwatch_id = justwatchItem.id;
-        traktItem.deeplink_android_tv = [];
-        traktItem.deeplink_fire_tv = [];
         traktItem.deeplink_web = [];
         traktItem.image = justwatchItem.poster ? `https://images.justwatch.com${justwatchItem.poster.replace('{profile}', 's592')}` : '';
         const urlType = type === 'movie' ? 'movie' : 'tv-show';
@@ -175,8 +171,6 @@ function addJustWatchTitle(traktItem, justwatchItem) {
         justwatchItem.offers?.every((offer) => {
             if (supportedProviders.indexOf(String(offer.provider_id)) > -1) {
                 traktItem.provider_id = offer.provider_id;
-                traktItem.deeplink_android_tv.push(offer.urls.deeplink_android_tv);
-                traktItem.deeplink_fire_tv.push(offer.urls.deeplink_fire_tv);
                 traktItem.deeplink_web.push(offer.urls.standard_web);
                 return false;
             }
@@ -197,8 +191,6 @@ async function createWatchable(req, traktListId, watchable) {
         media_type: watchable.type,
         urls: [],
     };
-    addUrls(req, props, watchable.provider_id, watchable.deeplink_android_tv, 'android_tv');
-    addUrls(req, props, watchable.provider_id, watchable.deeplink_fire_tv, 'fire_tv');
     addUrls(req, props, watchable.provider_id, watchable.deeplink_web, 'web');
     return await req.models.Watchable.create(props, { include: [{ model: req.models.WatchableUrl, as: 'urls' }] });
 }
@@ -222,8 +214,6 @@ async function updateWatchable(req, traktItem, watchable) {
         return Promise.resolve(watchable);
     }
 
-    addUrls(req, props, traktItem.provider_id, traktItem.deeplink_android_tv, 'android_tv');
-    addUrls(req, props, traktItem.provider_id, traktItem.deeplink_fire_tv, 'fire_tv');
     addUrls(req, props, traktItem.provider_id, traktItem.deeplink_web, 'web');
 
     var newUrls = props.urls;
@@ -362,13 +352,10 @@ function api(clientId, passport, settingsPromise) {
             const id = req.params['id'];
             const serviceType = req.params['service_type'];
             let watchableUrlType = "web";
-            if (serviceType == "googletv" || serviceType == "android") {
-                watchableUrlType = "android_tv";
-            }
+
             const watchable = await req.models.Watchable.findByPk(id);
             const urls = await watchable.getUrls();
-            // console.log(urls);
-            // console.log(watchableUrlType);
+
             const uris = urls.filter((url) => url.service_type === watchableUrlType);
             let watchableUrl = uris.find((url) => url.selected === true);
             if (!watchableUrl) {
@@ -428,8 +415,6 @@ function api(clientId, passport, settingsPromise) {
         });
         const offer = await getJustWatchUrls(watchable, providerId);
         res.json([
-            { service_type: "android_tv", url: offer.urls.deeplink_android_tv},
-            { service_type: "fire_tv", url: offer.urls.deeplink_fire_tv},
             { service_type: "web", url: offer.urls.standard_web},
         ]);
     });
@@ -446,28 +431,41 @@ function api(clientId, passport, settingsPromise) {
             res.status(404).json({error: "not found"});
             return;
         } else {
+            var foundUrl = false;
             watchable.urls.forEach((url) => {
-                if (url.service_type === 'android_tv') {
-                    url.url = watchableUpdate.googletv_url || "";
-                    url.provider_id = -1;
-                    tasks.push(url.save());
-                }
-                if (url.service_type === 'fire_tv') {
-                    url.url = watchableUpdate.firetv_url || "";
-                    url.provider_id = -1;
-                    tasks.push(url.save());
-                }
                 if (url.service_type === 'web') {
                     url.url = watchableUpdate.web_url || "";
                     url.provider_id = -1;
+                    url.custom = true;
                     tasks.push(url.save());
+                    foundUrl = true;
                 }
             });
-            // do the update here, and mark all the provider ids as -1
+            if (!foundUrl) {
+                tasks.push(req.models.WatchableUrl.create({
+                    watchable_id: watchable.id,                    
+                    url: watchableUpdate.web_url,
+                    service_type: 'web',
+                    custom: true,
+                    provider_id: -1,
+                }));
+            }
         }
         await watchable.save();
         await Promise.all(tasks);
         res.json(watchable);
+    });
+
+    apiRouter.post('/remote/:service_type/:button', requireLogin, async (req, res) => {
+        console.log('here');
+        const button = req.params['button'];
+        const serviceType = req.params['service_type'];
+
+        const provider = providerFactory.getProvider(serviceType);
+        console.log(provider);
+        console.log(serviceType);
+        await provider.pushButton(button);
+        res.status(200).json("ok");
     });
     
 

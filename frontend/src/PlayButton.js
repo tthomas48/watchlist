@@ -10,8 +10,7 @@ function PlayButton({ player, id }) {
             console.log(result);
             return;
         }
-        console.log(result);
-        window.location.href = result.uri;
+        window.open(result.uri, "watchlist_view_window", "noreferrer");
     };
 
     return (

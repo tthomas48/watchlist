@@ -1,4 +1,3 @@
-import { isAndroid, isBrowser } from 'react-device-detect';
 import FormControl from '@mui/material/FormControl';
 import InputLabel from '@mui/material/InputLabel';
 import { NativeSelect } from '@mui/material';
@@ -7,12 +6,7 @@ import { NativeSelect } from '@mui/material';
 function PlayerPicker({ setPlayer, player }) {
 
     var options = [];
-    if (isBrowser) {
-        options.push({ label: "Browser", value: "browser" });
-    }
-    if (isAndroid) {
-        options.push({ label: "Android", value: "android" });
-    }
+    options.push({ label: "Local", value: "browser" });
     var isADBSupported = true;
     if (isADBSupported) {
         options.push({ label: "GoogleTV", value: "googletv" });

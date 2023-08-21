@@ -8,9 +8,11 @@ Freevee - No
 PBS - No
 
 TODO:
-Just store web.
 Add a remote that you can use to select a profile
-Need to be able to add when nothing is found. See Primo
+Add the ability to store comments
+Add sorting
+Add the ability to mark as watched
+
 
 Later
 * Allow configuring different databases

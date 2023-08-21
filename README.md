@@ -35,6 +35,14 @@ The data will be saved to watchlistData.json
 - docker run --name=watchlist --voluments=/user/share/watchlist/data/:/usr/src/watchlist/data/ --network-host --restart=unless-stopped --env-file=/usr/share/watchlist/.env --detach=true gcr.io/watchlist-396421/
 watchlist:latest
 
+## Initial setup
+I haven't yet figured out how to do the initial adb setup. So I:
+
+- docker exec -it watchlist /bin/sh
+- adb connect [GOOGLE_TV_IP]
+
+And then it asks you to accept.
+
 # ADB Stuff
 ## get current activity
 - dumpsys activity | grep -E 'mCurrentFocus|mFocusedApp'

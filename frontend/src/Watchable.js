@@ -32,7 +32,7 @@ function Watchable() {
 
     const providerIdField = register("provider_id");
     const watched = watch("provider_id");
-    let {provider_id, firetv_url, googletv_url, web_url} = ["", "", "", ""];
+    let {provider_id, web_url} = ["", "", "", ""];
     useQuery({ 
         queryKey: ['watchlist', id + watched], 
         queryFn: async () => {
@@ -41,16 +41,10 @@ function Watchable() {
                 if (data.watchable.urls.length > 0 && data.watchable.urls[0].provider_id === -1) {
                     return { data: data.watchable.urls, isFetched: true, isLoading: false };
                 }
-                return { data: [{service_type: 'android_tv', url: ""}, {service_type: 'fire_tv', url: ""}, {service_type: 'web', url: ""}, ], isFetched: true, isLoading: false };                
+                return { data: [{service_type: 'web', url: ""}, ], isFetched: true, isLoading: false };                
             }
             const res = await getWatchableUrls(id, watched);
             res.forEach((url) => {
-                if (url.service_type === 'android_tv') {
-                    setValue('googletv_url', url.url);
-                }
-                if (url.service_type === 'fire_tv') {
-                    setValue('firetv_url', url.url);
-                }
                 if (url.service_type === 'web') {
                     setValue('web_url', url.url);
                 }
@@ -67,22 +61,10 @@ function Watchable() {
     }
     data.watchable.urls.forEach((url) => {
         provider_id = url.provider_id;
-        if (url.service_type === 'android_tv') {
-            googletv_url = url.url;
-        }
-        if (url.service_type === 'fire_tv') {
-            firetv_url = url.url;
-        }
         if (url.service_type === 'web') {
             web_url = url.url;
         }
     });    
-
-
-    // let urls = data.watchable.urls;
-    // if (watchlistRes.isFetched) {
-    //     urls = watchlistRes.data;
-    // }
 
 
     return (
@@ -124,12 +106,6 @@ function Watchable() {
                     <TextField {...register("web_url")} label="Web URL" variant="outlined" sx={{
                         color: 'text.paper',
                     }} defaultValue={web_url} InputLabelProps={{ shrink: true }}/>
-                    <TextField {...register("googletv_url")} label="GoogleTV URL" variant="outlined" sx={{
-                        color: 'text.paper',
-                    }} defaultValue={googletv_url} InputLabelProps={{ shrink: true }} />                    
-                    <TextField {...register("firetv_url")} label="FireTV URL" variant="outlined" sx={{
-                        color: 'text.paper',
-                    }} defaultValue={firetv_url} InputLabelProps={{ shrink: true }} />
                     <Stack
                         direction="row"
                         justifyContent="center"

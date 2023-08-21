@@ -65,3 +65,16 @@ export function saveWatchable(id, watchable) {
         body: JSON.stringify(watchable),
     }).then(handleResponse);
 }
+
+export function pushButton(serviceType, button) {
+    return fetch(`/api/remote/${serviceType}/${button}/`, {
+        method: "POST",
+        withCredentials: true,
+        headers: {
+            "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+            button,
+        }),
+    }).then(handleResponse);
+}
