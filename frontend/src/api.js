@@ -9,13 +9,19 @@ const handleResponse = (res) => {
     return res.json();
 };
 export function getWatchlist(list) { 
-    return fetch(`/api/watchlist/${list}/`, {
+    if (!list) {
+        return Promise.resolve([]);
+    }
+    return fetch(`/api/watchlist/${list.user.username}/${list.ids.trakt}/`, {
         withCredentials: true,
     }).then(handleResponse); 
 }
 export function getLists() { return fetch("/api/lists").then(handleResponse); }
 export function refresh(list) { 
-    return fetch(`/api/refresh/${list}/`, {
+    if (!list) {
+        return Promise.resolve([]);
+    }
+    return fetch(`/api/refresh/${list.user.username}/${list.ids.trakt}/`, {
         withCredentials: true,
     }).then(handleResponse); 
 }

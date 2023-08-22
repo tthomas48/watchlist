@@ -9,13 +9,13 @@ const justwatch = new JustWatch({ locale: 'en_US' });
 const providerRaw = process.env['SUPPORTED_PROVIDERS']
 const supportedProviders = providerRaw.split(',');
 
-async function refresh(clientId, req, traktListId, existingWatchables) {
+async function refresh(clientId, req, traktListUserId, traktListId, existingWatchables) {
     await singleflight.Do(traktListId, async () => {
 
         console.log('in refresh');
         const tasks = [];
         const explicitRefresh = false;
-        const traktItems = await getTraktWatchlist(clientId, req.user, traktListId);
+        const traktItems = await getTraktWatchlist(clientId, req.user, traktListUserId, traktListId);
                 
         // 2. find all that no longer exist in watchables
         const existingTraktIds = traktItems.map((traktItem) => getTraktId(traktItem));
@@ -48,9 +48,9 @@ async function refresh(clientId, req, traktListId, existingWatchables) {
 
 
 
-async function getTraktWatchlist(clientId, user, traktListId) {
+async function getTraktWatchlist(clientId, user, traktListUserId, traktListId) {
     try {
-        const response = await axios.get(`https://api.trakt.tv/users/${user.trakt_id}/lists/${traktListId}/items/`, {
+        const response = await axios.get(`https://api.trakt.tv/users/${traktListUserId}/lists/${traktListId}/items/`, {
             headers: {
                 'Content-Type': 'application/json',
                 'trakt-api-version': '2',
@@ -304,11 +304,12 @@ function api(clientId, passport, settingsPromise) {
     });
 
     // FIXME: should this be a POST since it does something?
-    apiRouter.get('/refresh/:trakt_list_id/', requireLogin, async (req, res, next) => {
+    apiRouter.get('/refresh/:trakt_list_user_id/:trakt_list_id/', requireLogin, async (req, res, next) => {
         console.log("refresh api");
         const traktListId = req.params['trakt_list_id'];
+        const traktListUserId = req.params['trakt_list_user_id'];
         existingWatchables = await req.models.Watchable.findAll({ where: { trakt_list_id: traktListId } });
-        refresh(clientId, req, traktListId, existingWatchables);
+        refresh(clientId, req, traktListUserId, traktListId, existingWatchables);
 
         existingWatchables = await req.models.Watchable.findAll({ where: { trakt_list_id: traktListId } });
         res.json(existingWatchables);
@@ -324,12 +325,24 @@ function api(clientId, passport, settingsPromise) {
                 'Authorization': `Bearer ${user.access_token}`,
             },
         });
-        res.json(response.data);
+        const response2 = await axios.get(`https://api.trakt.tv/users/${user.trakt_id}/lists/collaborations/`, {
+            headers: {
+                'Content-Type': 'application/json',
+                'trakt-api-version': '2',
+                'trakt-api-key': clientId,
+                'Authorization': `Bearer ${user.access_token}`,
+            },
+        });
+        const result = response.data.concat(response2.data);
+        console.log(result);
+        res.json(result);
     });
 
-    apiRouter.get('/watchlist/:trakt_list_id/', requireLogin, async (req, res) => {
+    apiRouter.get('/watchlist/:trakt_list_user_id/:trakt_list_id/', requireLogin, async (req, res) => {
 
         const traktListId = req.params['trakt_list_id'];
+        const traktListUserId = req.params['trakt_list_user_id'];
+        console.log(`Trakt: ${traktListId} ${traktListUserId}`);
         let existingWatchables = await req.models.Watchable.findAll({ where: { trakt_list_id: traktListId } });
         // get the most recent updated_at from existingWatchables
         const mostRecentUpdate = existingWatchables.reduce((acc, watchable) => {
@@ -341,7 +354,7 @@ function api(clientId, passport, settingsPromise) {
         // if the most recent_update is more than a day ago then we should call refresh
         if (mostRecentUpdate < new Date(Date.now() - 1000 * 60 * 60 * 24)) {
             console.log("Refreshing because " + mostRecentUpdate + " is more than a day ago");
-            await refresh(clientId, req, traktListId, existingWatchables);
+            await refresh(clientId, req, traktListUserId, traktListId, existingWatchables);
         }
         existingWatchables = await req.models.Watchable.findAll({ where: { trakt_list_id: traktListId } });
         res.json(existingWatchables);

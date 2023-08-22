@@ -8,10 +8,12 @@ Freevee - No
 PBS - No
 
 TODO:
-Add a remote that you can use to select a profile
+Store "last played", then sort by least recently played
+Add sorting 
+Add hide show and "show hidden" option
 Add the ability to store comments
-Add sorting
-Add the ability to mark as watched
+Add the ability to mark as completely watched, and check for new episodes
+Do a better job of showing that we are using JustWatch
 
 
 Later
