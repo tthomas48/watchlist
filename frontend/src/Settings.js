@@ -1,6 +1,7 @@
 import {useNavigate} from 'react-router-dom';
 import {
     useQuery,
+    useQueryClient,
     useMutation,
 } from '@tanstack/react-query';
 import { useForm } from 'react-hook-form';
@@ -10,6 +11,7 @@ import './Settings.css';
 
 function Settings() {
     const navigate = useNavigate();
+    const queryClient = useQueryClient();
 
     let { data, isLoading } = useQuery({ 
         queryKey: ['settings'], 
@@ -20,6 +22,7 @@ function Settings() {
     const { mutate } = useMutation({
         mutationFn: (newSettings) => {
             if (saveSettings(newSettings)) {
+                queryClient.invalidateQueries({ queryKey: ['settings'] });
                 navigate('/');
                 return true;
             }

@@ -343,7 +343,13 @@ function api(clientId, passport, settingsPromise) {
         const traktListId = req.params['trakt_list_id'];
         const traktListUserId = req.params['trakt_list_user_id'];
         console.log(`Trakt: ${traktListId} ${traktListUserId}`);
-        let existingWatchables = await req.models.Watchable.findAll({ where: { trakt_list_id: traktListId } });
+        const order = [];
+        order.push(['last_played', 'ASC']);
+        const findAllOptions = { 
+            where: { trakt_list_id: traktListId },
+            order,
+        };
+        let existingWatchables = await req.models.Watchable.findAll(findAllOptions);
         // get the most recent updated_at from existingWatchables
         const mostRecentUpdate = existingWatchables.reduce((acc, watchable) => {
             if (watchable.updatedAt > acc) {
@@ -356,7 +362,7 @@ function api(clientId, passport, settingsPromise) {
             console.log("Refreshing because " + mostRecentUpdate + " is more than a day ago");
             await refresh(clientId, req, traktListUserId, traktListId, existingWatchables);
         }
-        existingWatchables = await req.models.Watchable.findAll({ where: { trakt_list_id: traktListId } });
+        existingWatchables = await req.models.Watchable.findAll(findAllOptions);
         res.json(existingWatchables);
     });
 
@@ -367,6 +373,7 @@ function api(clientId, passport, settingsPromise) {
             let watchableUrlType = "web";
 
             const watchable = await req.models.Watchable.findByPk(id);
+            watchable.last_played = new Date();
             const urls = await watchable.getUrls();
 
             const uris = urls.filter((url) => url.service_type === watchableUrlType);
@@ -379,6 +386,7 @@ function api(clientId, passport, settingsPromise) {
             const provider = providerFactory.getProvider(serviceType);
             console.log(`Playing ${uri} with ${serviceType}`)
             if (await provider.play(uri)) {
+                await watchable.save();
                 res.json({uri});
                 return;
             }
@@ -444,6 +452,8 @@ function api(clientId, passport, settingsPromise) {
             res.status(404).json({error: "not found"});
             return;
         } else {
+            watchable.hidden = watchableUpdate.hidden;
+
             var foundUrl = false;
             watchable.urls.forEach((url) => {
                 if (url.service_type === 'web') {
@@ -457,7 +467,7 @@ function api(clientId, passport, settingsPromise) {
             if (!foundUrl) {
                 tasks.push(req.models.WatchableUrl.create({
                     watchable_id: watchable.id,                    
-                    url: watchableUpdate.web_url,
+                    url: watchableUpdate.web_url || "",
                     service_type: 'web',
                     custom: true,
                     provider_id: -1,

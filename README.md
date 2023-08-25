@@ -21,6 +21,9 @@ The data will be saved to watchlistData.json
 ## Generate models
 - npx sequelize-cli model:generate --name User --attributes firstName:string,lastName:string,email:string --models-path=models
 
+## Generate migration
+- px sequelize-cli migration:create --migrations-path=migrations/ --name my_migration_name
+
 ## Running migrations
 - npx sequelize-cli db:migrate
 
@@ -32,8 +35,7 @@ The data will be saved to watchlistData.json
 ## Running docker image
 - mkdir -p /usr/share/watchlist/data/
 - cp .env.example /usr/share/watchlist/.env/ # and edit with your values
-- docker run --name=watchlist --voluments=/user/share/watchlist/data/:/usr/src/watchlist/data/ --network-host --restart=unless-stopped --env-file=/usr/share/watchlist/.env --detach=true gcr.io/watchlist-396421/
-watchlist:latest
+- docker run --name=watchlist --voluments=/user/share/watchlist/data/:/usr/src/watchlist/data/ --network-host --restart=unless-stopped --env-file=/usr/share/watchlist/.env --detach=true gcr.io/watchlist-396421/watchlist:latest
 
 ## Initial setup
 I haven't yet figured out how to do the initial adb setup. So I:

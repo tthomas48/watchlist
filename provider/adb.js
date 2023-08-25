@@ -14,7 +14,6 @@ class Adb {
         } catch(e) {
             console.error(e);
         }
-        // '192.168.86.21', 5555
     }
     async disconnect() {
         if (this.host && this.port) {
@@ -30,35 +29,17 @@ class Adb {
             this.addExtras(extras, uri);
             // const cmd = 'am start -a android.intent.action.VIEW -d https://www.netflix.com/title/70264888 -f 0x10808000 -e source 30 com.netflix.ninja/.MainActivity';
             const device = this.client.getDevice(this.remoteID);
-            // let result = await device.shell("input keyevent MENU");
-            // console.log(`Waiting on menu`, result);
-
-            // const isRunningStream = await device.shell(`dumpsys activity activities | grep ${component}`);
-            // const isRunningOutput = await ADB.Adb.util.readAll(isRunningStream);
-            // console.log('*****');
-            // console.log(component, isRunningOutput.length);
-            // console.log('*****');
-            // if (isRunningOutput.length === 0) {
-                // so I only want to start the activity if it's not already running
-                // otherwise I want to just send the intent using am start
-
-                // adb shell am start
-                var options = {
-                    action: 'android.intent.action.VIEW',
-                    category: 'android.intent.category.LEANBACK_LAUNCHER',
-                    data,
-                    wait: true,
-                    flags: 0x10808000,
-                    extras,
-                    component,
-                };
-                let result = await device.startActivity(options);
-                console.log(result);
-            // }
-            // the activity should be running, and this lets us reuse an open activity that is potentially
-            // already logged in
-            // console.log(`am start -a android.intent.action.VIEW -d ${uri}`);
-            // const result = await device.shell(`am start -a android.intent.action.VIEW -d ${uri}`);
+            var options = {
+                action: 'android.intent.action.VIEW',
+                category: 'android.intent.category.LEANBACK_LAUNCHER',
+                data,
+                wait: true,
+                flags: 0x10808000,
+                extras,
+                component,
+            };
+            let result = await device.startActivity(options);
+            console.log(result);
             return result;
         } catch(e) {
             console.error(e);
@@ -89,13 +70,13 @@ class Adb {
             return "unknown";
         }
         // detect compponent type
-        if (uri.startsWith("intent://tv.apple.com")) {
+        if (uri.includes("tv.apple.com")) {
             return "com.apple.atve.androidtv.appletv/.MainActivity";
         }
         if (uri.includes("www.netflix.com/")) {
             return "com.netflix.ninja/.MainActivity";
         }
-        if (uri.startsWith("intent://www.peacocktv.com/")) {
+        if (uri.includes("www.peacocktv.com")) {
             return "com.peacocktv.peacockandroid/com.peacock.peacocktv.GoogleMainActivity";
         }
         if (uri.includes("www.amcplus.com")) {
@@ -107,10 +88,10 @@ class Adb {
         if (uri.includes("intent://watch.amazon.com") || uri.includes("watch.amazon.com")) {
             return "com.amazon.amazonvideo.livingroom/com.amazon.ignition.IgnitionActivity";
         }
-        if (uri.includes("intent://www.disneyplus.com/")) {
+        if (uri.includes("www.disneyplus.com")) {
             return "com.disney.disneyplus/com.bamtechmedia.dominguez.main.MainActivity";
         }
-        if (uri.includes("intent://play.max.com/") || uri.includes("play.max.com")) {
+        if (uri.includes("play.max.com")) {
             return "com.wbd.stream/com.wbd.beam.BeamActivity";
         }
         if (uri.includes("component=com.britbox.us")) {

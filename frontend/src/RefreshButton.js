@@ -1,12 +1,12 @@
-import IconButton from '@mui/material/IconButton';
+import Button from '@mui/material/Button';
 import RefreshIcon from '@mui/icons-material/Refresh';
 import {refresh} from './api';
 
 function RefreshButton({ list }) {
     return (
-        <IconButton aria-label="refresh list" volot="secondary" onClick={() => refresh(list)}>
-            <RefreshIcon />
-        </IconButton>
+        <Button aria-label="refresh list" volot="secondary" onClick={() => refresh(list)} startIcon={<RefreshIcon />}>
+             Refresh
+        </Button>
     );
 }
 export default RefreshButton;

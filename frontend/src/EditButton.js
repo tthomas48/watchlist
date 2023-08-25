@@ -10,7 +10,7 @@ function EditButton({ id }) {
     };
 
     return (
-        <Button onClick={editAction} variant="outlined" startIcon={<Edit />}>
+        <Button onClick={editAction} startIcon={<Edit />}>
             Edit
         </Button>
     );

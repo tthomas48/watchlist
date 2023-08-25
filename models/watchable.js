@@ -26,6 +26,9 @@ module.exports = (sequelize, DataTypes) => {
     justwatch_id: DataTypes.STRING,
     image: DataTypes.STRING,
     media_type: DataTypes.STRING,
+    last_played: DataTypes.DATE,
+    comment: DataTypes.TEXT,
+    hidden: DataTypes.BOOLEAN,
   }, {
     sequelize,
     modelName: 'Watchable',

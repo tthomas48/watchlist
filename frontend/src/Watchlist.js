@@ -1,17 +1,40 @@
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, useQueryClient, useMutation } from '@tanstack/react-query';
 import { useOutletContext } from "react-router-dom";
-import { getWatchlist } from './api';
-import {CardHeader, Card, CardMedia, CardActions, Box} from '@mui/material';
-import Grid from '@mui/material/Unstable_Grid2'; 
-import PlayButton from './PlayButton';
-import EditButton from './EditButton';
+import { getWatchlist, saveWatchable } from './api';
+import { Box } from '@mui/material';
+import Grid from '@mui/material/Unstable_Grid2';
+import WatchlistItem from './WatchlistItem';
 import RemoteControl from './RemoteControl';
+
+function showItem(item, player, saveWatchableMutation, showHidden) {
+    if (!showHidden && item.hidden) {
+        return;
+    }
+    return (
+        <Grid xs={6} md={3}>
+            <WatchlistItem item={item} player={player} saveWatchable={saveWatchableMutation.mutate}/>
+        </Grid>
+    );
+}
 
 function Watchlist() {
     // Queries
-    const [list, player] = useOutletContext();
+    const queryClient = useQueryClient()
+    const [list, player, showHidden] = useOutletContext();
     const { data, isLoading, isError, error } = useQuery({ queryKey: ['watchlist', list], queryFn: () => getWatchlist(list) });
-    
+    const saveWatchableMutation = useMutation({
+        mutationFn: async (watchable) => {
+            try {
+                const updated = await saveWatchable(watchable.id, watchable);
+                queryClient.setQueryData(['watchlist', { id: watchable.id }], updated)
+                return true;
+            } catch(e) {
+                console.error(e);
+            }
+            return false;
+        },
+      });
+
     return (
         <div>
             <div className="provider-container">
@@ -20,25 +43,7 @@ function Watchlist() {
                     {isLoading && <div>Loading...</div>}
                     {isError && <div>Error: {error.message}</div>}
                     <Grid container spacing={2}>
-                    {data?.map((item) => (
-                        <Grid xs={6} md={3}>
-                            <Card key={item.title} sx={{
-                                backgroundColor: '#278056',
-                            }}>
-                                <CardHeader title={item.title} sx={{
-                                    fontSize: '1.0rem',
-                                    textOverflow: 'ellipsis',
-                                    whiteSpace: 'nowrap',
-                                    overflow: 'hidden',
-                                }}></CardHeader>
-                                <CardMedia component="img" image={item.image} alt={item.title} />
-                                <CardActions disableSpacing>
-                                    <PlayButton player={player} id={item.id}></PlayButton>
-                                    <EditButton id={item.id}></EditButton>
-                                </CardActions>
-                            </Card>
-                        </Grid>                        
-                    ))}
+                        {data?.map((item) => showItem(item, player, saveWatchableMutation, showHidden))}
                     </Grid>
                 </div>
             </div>
@@ -49,7 +54,7 @@ function Watchlist() {
             }}>
                 <RemoteControl player={player} />
             </Box>
-        </div>        
+        </div>
     );
 }
 export default Watchlist;
