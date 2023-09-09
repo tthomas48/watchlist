@@ -21,6 +21,7 @@ module.exports = (sequelize, DataTypes) => {
   }
   Watchable.init({
     title: DataTypes.STRING,
+    sortable_title: DataTypes.STRING,
     trakt_id: DataTypes.STRING,
     trakt_list_id: DataTypes.STRING,
     justwatch_id: DataTypes.STRING,
@@ -32,6 +33,12 @@ module.exports = (sequelize, DataTypes) => {
   }, {
     sequelize,
     modelName: 'Watchable',
+  });
+  Watchable.beforeCreate(async (user, options) => {
+    user.sortable_title = user.title.toLowerCase().replace(/^(the|a|an) /, '');
+  });
+  Watchable.beforeUpdate(async (user, options) => {
+    user.sortable_title = user.title.toLowerCase().replace(/^(the|a|an) /, '');
   });
   return Watchable;
 };

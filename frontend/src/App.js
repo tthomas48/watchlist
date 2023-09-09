@@ -7,8 +7,9 @@ import PlayerPicker from './PlayerPicker';
 import RefreshButton from './RefreshButton';
 import SettingsButton from './SettingsButton';
 import ShowHiddenButton from './ShowHiddenButton';
-import {Typography,  Toolbar, Container, AppBar, IconButton, Menu, MenuItem} from '@mui/material';
-import Grid from '@mui/material/Unstable_Grid2'; 
+import SortPicker from './SortPicker';
+import { Typography, Toolbar, Container, AppBar, IconButton, Menu, MenuItem, Paper } from '@mui/material';
+import Grid from '@mui/material/Unstable_Grid2';
 import MenuIcon from '@mui/icons-material/Menu';
 import { useLocalStorage } from "./hooks/useLocalStorage";
 
@@ -16,23 +17,25 @@ import { useLocalStorage } from "./hooks/useLocalStorage";
 const listStorageKey = "watchlist.trakt_list";
 const localStorageKey = "watchlist.player";
 const hiddenStorageKey = "watchlist.hidden";
+const sortStorageKey = "watchlist.sort";
 function App() {
   const [anchorEl, setAnchorEl] = useState(null);
   const open = Boolean(anchorEl);
   const handleClick = (event) => {
-      setAnchorEl(event.currentTarget);
+    setAnchorEl(event.currentTarget);
   };
   const handleClose = () => {
-      setAnchorEl(null);
+    setAnchorEl(null);
   };
 
   const [list, setList] = useLocalStorage(listStorageKey, "");
   const [player, setPlayer] = useLocalStorage(localStorageKey, "");
+  const [sort, setSort] = useLocalStorage(sortStorageKey, "");
   const [showHidden, setShowHidden] = useLocalStorage(hiddenStorageKey, false);
-  
 
+  // 80px margin is space for remote control
   return (    
-    <Container>
+    <Container sx={{marginBottom: '80px'}}>
       <AppBar position="static">
         <Container maxWidth="xl">
           <Toolbar disableGutters>
@@ -75,12 +78,19 @@ function App() {
           </Toolbar>
         </Container>
       </AppBar>
-      <Grid container spacing={2} className="App">
-        <Grid xs={12}>
-          <Outlet context={[list, player, showHidden]}></Outlet>
+      <Paper elevation={0} variant="outlined" square sx={{padding: '8px'}}>
+        <Grid container spacing={2} className="SortBar">
+          <Grid xs={5} md={3}>
+            <SortPicker sort={sort} setSort={setSort} />
+          </Grid>
         </Grid>
-      </Grid>
-    </Container>      
+        <Grid container spacing={2} className="App">
+          <Grid xs={12}>
+            <Outlet context={[list, player, showHidden, sort]}></Outlet>
+          </Grid>
+        </Grid>
+      </Paper>
+    </Container >      
   );
 }
 

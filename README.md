@@ -1,5 +1,9 @@
 # watchlist
-Find movies and shows from your Trakt.tv watchlist available on Netflix and Prime Video
+Watchlist integrates with Trakt.tv to make it easy to keep track of all the series and movies you're watching. 
+
+You can launch show and movies on your web browser, or can used to watch on Google TV. 
+
+Would love assistance in adding more integrations (FireTV, others?).
 
 ## Install
 - $ npm i
@@ -22,7 +26,7 @@ The data will be saved to watchlistData.json
 - npx sequelize-cli model:generate --name User --attributes firstName:string,lastName:string,email:string --models-path=models
 
 ## Generate migration
-- px sequelize-cli migration:create --migrations-path=migrations/ --name my_migration_name
+- npx sequelize-cli migration:create --migrations-path=migrations/ --name my_migration_name
 
 ## Running migrations
 - npx sequelize-cli db:migrate

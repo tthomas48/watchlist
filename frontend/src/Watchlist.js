@@ -20,8 +20,8 @@ function showItem(item, player, saveWatchableMutation, showHidden) {
 function Watchlist() {
     // Queries
     const queryClient = useQueryClient()
-    const [list, player, showHidden] = useOutletContext();
-    const { data, isLoading, isError, error } = useQuery({ queryKey: ['watchlist', list], queryFn: () => getWatchlist(list) });
+    const [list, player, showHidden, sort] = useOutletContext();
+    const { data, isLoading, isError, error } = useQuery({ queryKey: ['watchlist', list, sort], queryFn: () => getWatchlist(list, sort) });
     const saveWatchableMutation = useMutation({
         mutationFn: async (watchable) => {
             try {
@@ -38,7 +38,6 @@ function Watchlist() {
     return (
         <div>
             <div className="provider-container">
-                <h2>To Watch</h2>
                 <div>
                     {isLoading && <div>Loading...</div>}
                     {isError && <div>Error: {error.message}</div>}

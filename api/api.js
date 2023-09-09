@@ -343,8 +343,24 @@ function api(clientId, passport, settingsPromise) {
         const traktListId = req.params['trakt_list_id'];
         const traktListUserId = req.params['trakt_list_user_id'];
         console.log(`Trakt: ${traktListId} ${traktListUserId}`);
+        const sort = req.query.sort || 'least_watched';
         const order = [];
-        order.push(['last_played', 'ASC']);
+        switch(sort) {
+            case 'most-watched':
+                order.push(['last_played', 'DESC']);
+                break;
+            case 'alpha-asc':
+                order.push(['sortable_title', 'ASC']);
+                break;
+            case'alpha-desc':
+                order.push(['sortable_title', 'DESC']);
+                break;
+            case 'least-watched':
+            default:
+                order.push(['last_played', 'ASC']);
+                break;
+        }
+        
         const findAllOptions = { 
             where: { trakt_list_id: traktListId },
             order,

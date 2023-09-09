@@ -8,11 +8,11 @@ const handleResponse = (res) => {
       }
     return res.json();
 };
-export function getWatchlist(list) { 
+export function getWatchlist(list, sort) { 
     if (!list) {
         return Promise.resolve([]);
     }
-    return fetch(`/api/watchlist/${list.user.username}/${list.ids.trakt}/`, {
+    return fetch(`/api/watchlist/${list.user.username}/${list.ids.trakt}/?sort=${sort}`, {
         withCredentials: true,
     }).then(handleResponse); 
 }
