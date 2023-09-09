@@ -25,6 +25,12 @@ export function refresh(list) {
         withCredentials: true,
     }).then(handleResponse); 
 }
+export function reconnect() {
+    return fetch(`/api/reconnect/`, {
+        method: "POST",
+        withCredentials: true,
+    }).then(handleResponse); 
+}
 export function play(serviceType, id) {
     return fetch(`/api/play/${serviceType}/${id}`, {
         method: "POST",

@@ -7,6 +7,7 @@ import PlayerPicker from './PlayerPicker';
 import RefreshButton from './RefreshButton';
 import SettingsButton from './SettingsButton';
 import ShowHiddenButton from './ShowHiddenButton';
+import ReconnectButton from './ReconnectButton';
 import SortPicker from './SortPicker';
 import { Typography, Toolbar, Container, AppBar, IconButton, Menu, MenuItem, Paper } from '@mui/material';
 import Grid from '@mui/material/Unstable_Grid2';
@@ -68,8 +69,9 @@ function App() {
                           'aria-labelledby': 'basic-button',
                       }}
                 >
-                  <MenuItem onClick={handleClose}><RefreshButton list={list}></RefreshButton></MenuItem>
+                  <MenuItem onClick={handleClose}><RefreshButton list={list}></RefreshButton></MenuItem>                  
                   <MenuItem onClick={handleClose}><ShowHiddenButton showHidden={showHidden} setShowHidden={setShowHidden}></ShowHiddenButton></MenuItem>
+                  <MenuItem onClick={handleClose}><ReconnectButton player={player}></ReconnectButton></MenuItem>
                   <MenuItem onClick={handleClose}><SettingsButton></SettingsButton></MenuItem>
                   
                 </Menu>

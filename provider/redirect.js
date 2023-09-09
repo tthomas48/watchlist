@@ -12,6 +12,5 @@ class Redirect {
     async pushButton(button) {
         // NOOP;
     }
-
 }
 module.exports = new Redirect();

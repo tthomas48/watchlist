@@ -434,6 +434,16 @@ function api(clientId, passport, settingsPromise) {
         res.json(settings);
     });
 
+    apiRouter.post('/reconnect', requireLogin, async (req, res) => {
+        let settings = await req.models.Settings.findOne();
+        if (!settings) {
+            res.status(500).json({error: "player has not been configured"});
+            return;
+        }
+        await providerFactory.update(settings);
+        res.json({});
+    });
+
     apiRouter.get('/watchables/:id', requireLogin, async (req, res) => {        
         const watchable = await req.models.Watchable.findOne({
             where: { id: req.params.id },

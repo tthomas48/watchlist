@@ -25,7 +25,7 @@ class ProviderFactory {
             });
         });
         return await Promise.all(tasks);
-    }
+    }    
     getProvider(name) {
         switch(name) {
             case "googletv":
