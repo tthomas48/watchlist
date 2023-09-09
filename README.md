@@ -1,9 +1,11 @@
 # watchlist
 Watchlist integrates with Trakt.tv to make it easy to keep track of all the series and movies you're watching. 
 
-You can launch show and movies on your web browser, or can used to watch on Google TV. 
+![Watchlist UI](images/ui.png?raw=true "UI")
 
-Would love assistance in adding more integrations (FireTV, others?).
+You can launch show and movies in your web browser, or can play directly on your Google TV. 
+
+Would love assistance in adding more integrations (FireTV, others?) and writing tests and documentation.
 
 ## Install
 - $ npm i

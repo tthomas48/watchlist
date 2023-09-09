@@ -14,7 +14,7 @@ function PlayButton({ player, id }) {
     };
 
     return (
-        <Button onClick={playAction} variant="outlined" startIcon={<PlayArrow />}>
+        <Button onClick={playAction} variant="outlined" startIcon={<PlayArrow />} sx={{flexGrow: 1}}>
             Play
         </Button>
     );
