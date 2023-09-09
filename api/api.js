@@ -466,7 +466,6 @@ function api(clientId, passport, settingsPromise) {
         ]);
     });
 
-
     apiRouter.post('/watchables/:id', requireLogin, async (req, res) => {
         const watchableUpdate = req.body;       
         const watchable = await req.models.Watchable.findOne({
@@ -479,6 +478,7 @@ function api(clientId, passport, settingsPromise) {
             return;
         } else {
             watchable.hidden = watchableUpdate.hidden;
+            watchable.comment = watchableUpdate.comment;
 
             var foundUrl = false;
             watchable.urls.forEach((url) => {

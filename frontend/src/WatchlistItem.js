@@ -4,6 +4,7 @@ import MenuIcon from '@mui/icons-material/Menu';
 import PlayButton from './PlayButton';
 import EditButton from './EditButton';
 import HideButton from './HideButton';
+import CommentButton from './CommentButton';
 
 function WatchlistItem({ item, player, saveWatchable }) {
     const [anchorEl, setAnchorEl] = useState(null);
@@ -23,9 +24,11 @@ function WatchlistItem({ item, player, saveWatchable }) {
             whiteSpace: 'nowrap',
             overflow: 'hidden',
         }}></CardHeader>
-        <CardMedia component="img" image={item.image} alt={item.title} />
+
+        <CardMedia component="img" image={item.image} alt={item.title}/>
         <CardActions disableSpacing>
             <PlayButton player={player} id={item.id}></PlayButton>
+            <CommentButton item={item} saveWatchable={saveWatchable}></CommentButton>
             <Button
                 id="basic-button"
                 aria-controls={open ? 'basic-menu' : undefined}
