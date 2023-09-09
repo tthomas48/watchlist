@@ -3,7 +3,7 @@ Watchlist integrates with Trakt.tv to make it easy to keep track of all the seri
 
 ![Watchlist UI](images/ui.png?raw=true "UI")
 
-You can launch show and movies in your web browser, or can play directly on your Google TV. 
+You can launch showw and movies in your web browser, or play them directly on your Google TV. 
 
 Would love assistance in adding more integrations (FireTV, others?) and writing tests and documentation.
 
