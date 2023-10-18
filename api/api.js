@@ -4,7 +4,6 @@ const singleflight = require('node-singleflight')
 const JustWatch = require('justwatch-api');
 const providerFactory = require('../provider/factory');
 
-
 const justwatch = new JustWatch({ locale: 'en_US' });
 const providerRaw = process.env['SUPPORTED_PROVIDERS']
 const supportedProviders = providerRaw.split(',');
@@ -16,7 +15,7 @@ async function refresh(clientId, req, traktListUserId, traktListId, existingWatc
         const tasks = [];
         const explicitRefresh = false;
         const traktItems = await getTraktWatchlist(clientId, req.user, traktListUserId, traktListId);
-                
+
         // 2. find all that no longer exist in watchables
         const existingTraktIds = traktItems.map((traktItem) => getTraktId(traktItem));
         const existingWatchableTraktIds = existingWatchables.map((watchable) => watchable.trakt_id);
@@ -95,7 +94,7 @@ async function getJustWatchProviders(watchable) {
                     const providerObj = providers.find((provider) => provider.id === offer.provider_id);
                     if (!result.find((r) => r.id == offer.provider_id)) {
                         result.push(providerObj);
-                    }                    
+                    }
                 }
             });
             return false;
@@ -114,7 +113,7 @@ async function getJustWatchUrls(watchable, providerId) {
     if (providerId == "undefined") {
         return empty;
     }
-    
+
     var title = watchable.title;
     let item;
     const results = await justwatch.search({ query: title, content_types: [watchable.media_type] });
@@ -139,8 +138,9 @@ async function addJustWatchData(items) {
     // so I think we should cache this information and then another lookup when you want to watch
     var tasks = [];
     for (let i = 0; i < items.length; i++) {
-        var title = getTitle(items[i]);
-        tasks[i] = justwatch.search({ query: title, content_types: [items[i].type] });
+        // currently this is broken :(
+        // var title = getTitle(items[i]);
+        // tasks[i] = justwatch.search({ query: title, content_types: [items[i].type] });
     }
 
     const results = await Promise.all(tasks);
@@ -271,7 +271,7 @@ function addUrls(req, watchable, provider_id, urls, serviceType) {
 function api(clientId, passport, settingsPromise) {
     settingsPromise.then((settings) => {
         providerFactory.init(settings);
-    });    
+    });
 
     const apiRouter = new express.Router();
 
@@ -305,14 +305,19 @@ function api(clientId, passport, settingsPromise) {
 
     // FIXME: should this be a POST since it does something?
     apiRouter.get('/refresh/:trakt_list_user_id/:trakt_list_id/', requireLogin, async (req, res, next) => {
-        console.log("refresh api");
-        const traktListId = req.params['trakt_list_id'];
-        const traktListUserId = req.params['trakt_list_user_id'];
-        existingWatchables = await req.models.Watchable.findAll({ where: { trakt_list_id: traktListId } });
-        refresh(clientId, req, traktListUserId, traktListId, existingWatchables);
+        try {
+            console.log("refresh api");
+            const traktListId = req.params['trakt_list_id'];
+            const traktListUserId = req.params['trakt_list_user_id'];
+            existingWatchables = await req.models.Watchable.findAll({ where: { trakt_list_id: traktListId } });
+            refresh(clientId, req, traktListUserId, traktListId, existingWatchables);
 
-        existingWatchables = await req.models.Watchable.findAll({ where: { trakt_list_id: traktListId } });
-        res.json(existingWatchables);
+            existingWatchables = await req.models.Watchable.findAll({ where: { trakt_list_id: traktListId } });
+            res.json(existingWatchables);
+        } catch (e) {
+            console.error(e);
+            res.json(500, { error: e });
+        }
     });
 
     apiRouter.get('/lists', requireLogin, async (req, res, next) => {
@@ -339,47 +344,51 @@ function api(clientId, passport, settingsPromise) {
     });
 
     apiRouter.get('/watchlist/:trakt_list_user_id/:trakt_list_id/', requireLogin, async (req, res) => {
-
-        const traktListId = req.params['trakt_list_id'];
-        const traktListUserId = req.params['trakt_list_user_id'];
-        console.log(`Trakt: ${traktListId} ${traktListUserId}`);
-        const sort = req.query.sort || 'least_watched';
-        const order = [];
-        switch(sort) {
-            case 'most-watched':
-                order.push(['last_played', 'DESC']);
-                break;
-            case 'alpha-asc':
-                order.push(['sortable_title', 'ASC']);
-                break;
-            case'alpha-desc':
-                order.push(['sortable_title', 'DESC']);
-                break;
-            case 'least-watched':
-            default:
-                order.push(['last_played', 'ASC']);
-                break;
-        }
-        
-        const findAllOptions = { 
-            where: { trakt_list_id: traktListId },
-            order,
-        };
-        let existingWatchables = await req.models.Watchable.findAll(findAllOptions);
-        // get the most recent updated_at from existingWatchables
-        const mostRecentUpdate = existingWatchables.reduce((acc, watchable) => {
-            if (watchable.updatedAt > acc) {
-                return watchable.updatedAt;
+        try {
+            const traktListId = req.params['trakt_list_id'];
+            const traktListUserId = req.params['trakt_list_user_id'];
+            console.log(`Trakt: ${traktListId} ${traktListUserId}`);
+            const sort = req.query.sort || 'least_watched';
+            const order = [];
+            switch (sort) {
+                case 'most-watched':
+                    order.push(['last_played', 'DESC']);
+                    break;
+                case 'alpha-asc':
+                    order.push(['sortable_title', 'ASC']);
+                    break;
+                case 'alpha-desc':
+                    order.push(['sortable_title', 'DESC']);
+                    break;
+                case 'least-watched':
+                default:
+                    order.push(['last_played', 'ASC']);
+                    break;
             }
-            return acc;
-        }, new Date(0));
-        // if the most recent_update is more than a day ago then we should call refresh
-        if (mostRecentUpdate < new Date(Date.now() - 1000 * 60 * 60 * 24)) {
-            console.log("Refreshing because " + mostRecentUpdate + " is more than a day ago");
-            await refresh(clientId, req, traktListUserId, traktListId, existingWatchables);
+
+            const findAllOptions = {
+                where: { trakt_list_id: traktListId },
+                order,
+            };
+            let existingWatchables = await req.models.Watchable.findAll(findAllOptions);
+            // get the most recent updated_at from existingWatchables
+            const mostRecentUpdate = existingWatchables.reduce((acc, watchable) => {
+                if (watchable.updatedAt > acc) {
+                    return watchable.updatedAt;
+                }
+                return acc;
+            }, new Date(0));
+            // if the most recent_update is more than a day ago then we should call refresh
+            if (mostRecentUpdate < new Date(Date.now() - 1000 * 60 * 60 * 24)) {
+                console.log("Refreshing because " + mostRecentUpdate + " is more than a day ago");
+                await refresh(clientId, req, traktListUserId, traktListId, existingWatchables);
+            }
+            existingWatchables = await req.models.Watchable.findAll(findAllOptions);
+            res.json(existingWatchables);
+        } catch (e) {
+            console.error(e);
+            res.json(500, { error: e });
         }
-        existingWatchables = await req.models.Watchable.findAll(findAllOptions);
-        res.json(existingWatchables);
     });
 
     apiRouter.post('/play/:service_type/:id/', requireLogin, async (req, res) => {
@@ -403,14 +412,14 @@ function api(clientId, passport, settingsPromise) {
             console.log(`Playing ${uri} with ${serviceType}`)
             if (await provider.play(uri)) {
                 await watchable.save();
-                res.json({uri});
+                res.json({ uri });
                 return;
             }
             throw new Error("unable to play");
         } catch (e) {
             console.error(e);
             res.status(500).json(e);
-        }        
+        }
     });
     apiRouter.get('/settings', requireLogin, async (req, res) => {
         const settings = await req.models.Settings.findOne();
@@ -418,12 +427,12 @@ function api(clientId, passport, settingsPromise) {
     });
 
     apiRouter.post('/settings', requireLogin, async (req, res) => {
-        const newSettings = req.body;       
+        const newSettings = req.body;
         let settings = await req.models.Settings.findOne();
         if (!settings) {
             settings = req.models.Settings.build({
-                googletv_host: newSettings.googletv_host, 
-                googletv_port: newSettings.googletv_port, 
+                googletv_host: newSettings.googletv_host,
+                googletv_port: newSettings.googletv_port,
             });
         } else {
             settings.googletv_host = newSettings.googletv_host;
@@ -437,44 +446,49 @@ function api(clientId, passport, settingsPromise) {
     apiRouter.post('/reconnect', requireLogin, async (req, res) => {
         let settings = await req.models.Settings.findOne();
         if (!settings) {
-            res.status(500).json({error: "player has not been configured"});
+            res.status(500).json({ error: "player has not been configured" });
             return;
         }
         await providerFactory.update(settings);
         res.json({});
     });
 
-    apiRouter.get('/watchables/:id', requireLogin, async (req, res) => {        
-        const watchable = await req.models.Watchable.findOne({
-            where: { id: req.params.id },
-            include: [{ model: req.models.WatchableUrl, as: 'urls'}],
-        });
-        const providers = await getJustWatchProviders(watchable);
-        watchable.providers = providers;
-        res.json({watchable, providers});
+    apiRouter.get('/watchables/:id', requireLogin, async (req, res) => {
+        try {
+            const watchable = await req.models.Watchable.findOne({
+                where: { id: req.params.id },
+                include: [{ model: req.models.WatchableUrl, as: 'urls' }],
+            });
+            const providers = await getJustWatchProviders(watchable);
+            watchable.providers = providers;
+            res.json({ watchable, providers });
+        } catch (e) {
+            console.error(e);
+            res.json(500, { error: e });
+        }
     });
 
-    apiRouter.get('/watchables/:id/urls/:provider_id', requireLogin, async (req, res) => {        
+    apiRouter.get('/watchables/:id/urls/:provider_id', requireLogin, async (req, res) => {
         const providerId = req.params.provider_id;
         const watchable = await req.models.Watchable.findOne({
             where: { id: req.params.id },
-            include: [{ model: req.models.WatchableUrl, as: 'urls'}],
+            include: [{ model: req.models.WatchableUrl, as: 'urls' }],
         });
         const offer = await getJustWatchUrls(watchable, providerId);
         res.json([
-            { service_type: "web", url: offer.urls.standard_web},
+            { service_type: "web", url: offer.urls.standard_web },
         ]);
     });
 
     apiRouter.post('/watchables/:id', requireLogin, async (req, res) => {
-        const watchableUpdate = req.body;       
+        const watchableUpdate = req.body;
         const watchable = await req.models.Watchable.findOne({
-            where: { id: req.params.id }, 
-            include: [{ model: req.models.WatchableUrl, as: 'urls'}],
+            where: { id: req.params.id },
+            include: [{ model: req.models.WatchableUrl, as: 'urls' }],
         });
         var tasks = [];
         if (!watchable) {
-            res.status(404).json({error: "not found"});
+            res.status(404).json({ error: "not found" });
             return;
         } else {
             watchable.hidden = watchableUpdate.hidden;
@@ -492,7 +506,7 @@ function api(clientId, passport, settingsPromise) {
             });
             if (!foundUrl) {
                 tasks.push(req.models.WatchableUrl.create({
-                    watchable_id: watchable.id,                    
+                    watchable_id: watchable.id,
                     url: watchableUpdate.web_url || "",
                     service_type: 'web',
                     custom: true,
@@ -516,7 +530,7 @@ function api(clientId, passport, settingsPromise) {
         await provider.pushButton(button);
         res.status(200).json("ok");
     });
-    
+
 
     return apiRouter;
 }
