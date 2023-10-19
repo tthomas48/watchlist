@@ -18,6 +18,7 @@ Add the ability to add a show. Figure out how to maybe search by service?
 * https://play.max.com/search/result?q=house%20hunters
 * https://www.disneyplus.com/search
 * https://www.hulu.com/search
+* https://www.paramountplus.com/search/
 
 So maybe it opens the search in an iframe, and then when you close the iframe it takes the URL.
 Provide a way to define a provider and its search URL

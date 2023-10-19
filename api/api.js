@@ -1,7 +1,12 @@
+const fs = require('fs');
+const path = require('path');
+const { PassThrough } = require('stream')
 const express = require('express');
 const axios = require('axios');
 const singleflight = require('node-singleflight')
 const JustWatch = require('justwatch-api');
+const Trakt = require('trakt.tv');
+const TraktImages = require('trakt.tv-images');
 const providerFactory = require('../provider/factory');
 
 const justwatch = new JustWatch({ locale: 'en_US' });
@@ -57,7 +62,6 @@ async function getTraktWatchlist(clientId, user, traktListUserId, traktListId) {
                 'Authorization': `Bearer ${user.access_token}`,
             },
         });
-        // console.log(response.data);
         return response.data;
     } catch (e) {
         // FIXME: Handle this error better
@@ -339,7 +343,6 @@ function api(clientId, passport, settingsPromise) {
             },
         });
         const result = response.data.concat(response2.data);
-        console.log(result);
         res.json(result);
     });
 
@@ -347,7 +350,6 @@ function api(clientId, passport, settingsPromise) {
         try {
             const traktListId = req.params['trakt_list_id'];
             const traktListUserId = req.params['trakt_list_user_id'];
-            console.log(`Trakt: ${traktListId} ${traktListUserId}`);
             const sort = req.query.sort || 'least_watched';
             const order = [];
             switch (sort) {
@@ -520,15 +522,75 @@ function api(clientId, passport, settingsPromise) {
     });
 
     apiRouter.post('/remote/:service_type/:button', requireLogin, async (req, res) => {
-        console.log('here');
         const button = req.params['button'];
         const serviceType = req.params['service_type'];
 
         const provider = providerFactory.getProvider(serviceType);
-        console.log(provider);
-        console.log(serviceType);
         await provider.pushButton(button);
         res.status(200).json("ok");
+    });
+
+    apiRouter.get('/img/:media_type/:trakt_id', requireLogin, async (req, res) => {
+
+        let sres;
+        try {
+            const imagePath = path.join(__dirname, `../data/img/${req.params.media_type}/`);
+            const fileName = `${req.params.trakt_id}.jpg`
+            const fullPath = path.join(imagePath, fileName);
+            if (fs.existsSync(fullPath)) {
+                await fs.createReadStream(fullPath).pipe(res);
+                return;
+            }
+            const trakt = new Trakt({
+                client_id: clientId,
+                plugins: {
+                    images: TraktImages
+                },
+                options: {
+                    images: {
+                        tmdbApiKey: process.env.IMG_TMDB_APIKEY,
+                        tvdbApiKey: process.env.IMG_TVDB_APIKEY,
+                        fanartApiKey: process.env.IMG_FANART_APIKEY,
+                        smallerImages: true,                 // reduce image size, save bandwidth. defaults to false.
+                        cached: true                        // requires trakt.tv-cached
+                    }
+                }
+            }, true);
+
+            const user = req.user;
+            await trakt.import_token(user.access_token);
+            // hmm, so we need to store the type?
+            sres = await trakt.search.id({ id_type: 'trakt', id: req.params.trakt_id, type: req.params.media_type });
+            if (sres.length === 0) {
+                // TODO: find a way to cache this with an empty image
+                res.json(404, { err: `could not find trakt item ${req.params.media_type} ${req.params.trakt_id}` });
+                return;
+            }
+            const ids = sres[0][req.params.media_type].ids;
+            ids.type = req.params.media_type;
+
+            const images = await trakt.images.get(ids);
+            if (!images.poster) {
+                // TODO: find a way to cache this with an empty image
+                res.json(404, { err: `could not find poster ${req.params.media_type} ${req.params.trakt_id}` });
+                return;
+            }
+
+            if (!fs.existsSync(imagePath)) {
+                fs.mkdirSync(imagePath, {recursive: true});
+            }
+            const response = await axios({
+                method: "get",
+                url: images.poster,
+                responseType: "stream"
+            });
+            combined = PassThrough();
+            combined.pipe(fs.createWriteStream(fullPath));
+            combined.pipe(res);
+            await response.data.pipe(combined);
+        } catch (e) {
+            console.error(sres, e);
+        }
     });
 
 

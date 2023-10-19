@@ -22,6 +22,8 @@
     "passport": "^0.6.0",
     "passport-trakt": "^1.0.4",
     "sequelize": "^6.32.1",
-    "sqlite3": "^5.1.6"
+    "sqlite3": "^5.1.6",
+    "trakt.tv": "^8.2.0",
+    "trakt.tv-images": "^5.2.0"
   }
 }
