@@ -30,29 +30,30 @@ function Watchable() {
         staleTime: Infinity, // do not refresh data
     });
 
-    const providerIdField = register("provider_id");
-    const watched = watch("provider_id");
-    let {provider_id, web_url} = ["", "", "", ""];
-    useQuery({ 
-        queryKey: ['watchlist', id + watched], 
-        queryFn: async () => {
-            if (watched === -1 || watched === undefined) { 
-                // so this should probably use the values from the watchable
-                if (data.watchable.urls.length > 0 && data.watchable.urls[0].provider_id === -1) {
-                    return { data: data.watchable.urls, isFetched: true, isLoading: false };
-                }
-                return { data: [{service_type: 'web', url: ""}, ], isFetched: true, isLoading: false };                
-            }
-            const res = await getWatchableUrls(id, watched);
-            res.forEach((url) => {
-                if (url.service_type === 'web') {
-                    setValue('web_url', url.url);
-                }
-            });
-            return res;
-        }, 
-        notifyOnChangeProps: [watched],
-        enabled: !isLoading });
+    let {web_url} = [""];
+    // const providerIdField = register("provider_id");
+    // const watched = watch("provider_id");
+    // let {provider_id, web_url} = ["", "", "", ""];
+    // useQuery({ 
+    //     queryKey: ['watchlist', id + watched], 
+    //     queryFn: async () => {
+    //         if (watched === -1 || watched === undefined) { 
+    //             // so this should probably use the values from the watchable
+    //             if (data.watchable.urls.length > 0 && data.watchable.urls[0].provider_id === -1) {
+    //                 return { data: data.watchable.urls, isFetched: true, isLoading: false };
+    //             }
+    //             return { data: [{service_type: 'web', url: ""}, ], isFetched: true, isLoading: false };                
+    //         }
+    //         const res = await getWatchableUrls(id, watched);
+    //         res.forEach((url) => {
+    //             if (url.service_type === 'web') {
+    //                 setValue('web_url', url.url);
+    //             }
+    //         });
+    //         return res;
+    //     }, 
+    //     notifyOnChangeProps: [watched],
+    //     enabled: !isLoading });
 
  
     if (isLoading) {
@@ -60,7 +61,7 @@ function Watchable() {
         return (<h5>Loading...</h5>);
     }
     data.watchable.urls.forEach((url) => {
-        provider_id = url.provider_id;
+        // provider_id = url.provider_id;
         if (url.service_type === 'web') {
             web_url = url.url;
         }
@@ -84,7 +85,7 @@ function Watchable() {
                         Edit {data.watchable.title}
                     </Typography>
                     {/* // on change needs to load new URLs */}
-                    <FormControl>
+                    {/* <FormControl>
                         <InputLabel variant="standard" htmlFor="uncontrolled-native">
                             Provider
                         </InputLabel>
@@ -102,7 +103,7 @@ function Watchable() {
                                 return (<option value={String(item.id)}>{item.clear_name}</option>);
                             })}
                         </NativeSelect>
-                    </FormControl>
+                    </FormControl> */}
                     <TextField {...register("web_url")} label="Web URL" variant="outlined" sx={{
                         color: 'text.paper',
                     }} defaultValue={web_url} InputLabelProps={{ shrink: true }}/>

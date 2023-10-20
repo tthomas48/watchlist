@@ -4,12 +4,12 @@ const { PassThrough } = require('stream')
 const express = require('express');
 const axios = require('axios');
 const singleflight = require('node-singleflight')
-const JustWatch = require('justwatch-api');
+// const JustWatch = require('justwatch-api');
 const Trakt = require('trakt.tv');
 const TraktImages = require('trakt.tv-images');
 const providerFactory = require('../provider/factory');
 
-const justwatch = new JustWatch({ locale: 'en_US' });
+// const justwatch = new JustWatch({ locale: 'en_US' });
 const providerRaw = process.env['SUPPORTED_PROVIDERS']
 const supportedProviders = providerRaw.split(',');
 
@@ -33,10 +33,10 @@ async function refresh(clientId, req, traktListUserId, traktListId, existingWatc
             tasks.push(deletedItem.destroy());
         });
         // 4. find all that exist in watchables
-        const justWatchTasks = [];
-        justWatchTasks.push(addJustWatchData(updateItems));
-        justWatchTasks.push(addJustWatchData(newItems));
-        await Promise.all(justWatchTasks);
+        // const justWatchTasks = [];
+        // justWatchTasks.push(addJustWatchData(updateItems));
+        // justWatchTasks.push(addJustWatchData(newItems));
+        // await Promise.all(justWatchTasks);
 
         updateItems.forEach((traktItem) => {
             const existingWatchable = existingWatchables.find((ew) => getTraktId(traktItem) === ew.trakt_id);
@@ -85,112 +85,112 @@ function getTmdbId(item) {
     return String(item[type].ids.tmdb);
 }
 
-async function getJustWatchProviders(watchable) {
-    const providers = await justwatch.getProviders();
+// async function getJustWatchProviders(watchable) {
+//     const providers = await justwatch.getProviders();
 
-    var title = watchable.title;
-    const result = [];
-    const results = await justwatch.search({ query: title, content_types: [watchable.media_type] });
-    results.items.every((justwatchItem) => {
-        if (justwatchItem.title === title) {
-            justwatchItem.offers?.forEach((offer) => {
-                if (supportedProviders.indexOf(String(offer.provider_id)) > -1) {
-                    const providerObj = providers.find((provider) => provider.id === offer.provider_id);
-                    if (!result.find((r) => r.id == offer.provider_id)) {
-                        result.push(providerObj);
-                    }
-                }
-            });
-            return false;
-        }
-        return true;
-    });
-    return result;
-}
+//     var title = watchable.title;
+//     const result = [];
+//     const results = await justwatch.search({ query: title, content_types: [watchable.media_type] });
+//     results.items.every((justwatchItem) => {
+//         if (justwatchItem.title === title) {
+//             justwatchItem.offers?.forEach((offer) => {
+//                 if (supportedProviders.indexOf(String(offer.provider_id)) > -1) {
+//                     const providerObj = providers.find((provider) => provider.id === offer.provider_id);
+//                     if (!result.find((r) => r.id == offer.provider_id)) {
+//                         result.push(providerObj);
+//                     }
+//                 }
+//             });
+//             return false;
+//         }
+//         return true;
+//     });
+//     return result;
+// }
 
-async function getJustWatchUrls(watchable, providerId) {
-    const empty = {
-        urls: {
-            standard_web: "",
-        }
-    };
-    if (providerId == "undefined") {
-        return empty;
-    }
+// async function getJustWatchUrls(watchable, providerId) {
+//     const empty = {
+//         urls: {
+//             standard_web: "",
+//         }
+//     };
+//     if (providerId == "undefined") {
+//         return empty;
+//     }
 
-    var title = watchable.title;
-    let item;
-    const results = await justwatch.search({ query: title, content_types: [watchable.media_type] });
-    for (let i = 0; i < results.items.length; i++) {
-        const justwatchItem = results.items[i];
-        if (justwatchItem.title === title) {
-            item = justwatchItem.offers?.find((offer) => {
-                return offer.provider_id == providerId;
-            });
-            break;
-        }
-    }
-    return item || empty;
-}
+//     var title = watchable.title;
+//     let item;
+//     const results = await justwatch.search({ query: title, content_types: [watchable.media_type] });
+//     for (let i = 0; i < results.items.length; i++) {
+//         const justwatchItem = results.items[i];
+//         if (justwatchItem.title === title) {
+//             item = justwatchItem.offers?.find((offer) => {
+//                 return offer.provider_id == providerId;
+//             });
+//             break;
+//         }
+//     }
+//     return item || empty;
+// }
 
 
-async function addJustWatchData(items) {
-    // const providers = await justwatch.getProviders();
-    // const appleproviders = providers.filter((provider) => provider.clear_name.startsWith('PBS'));
-    // console.log(appleproviders);
+// async function addJustWatchData(items) {
+//     // const providers = await justwatch.getProviders();
+//     // const appleproviders = providers.filter((provider) => provider.clear_name.startsWith('PBS'));
+//     // console.log(appleproviders);
 
-    // so I think we should cache this information and then another lookup when you want to watch
-    var tasks = [];
-    for (let i = 0; i < items.length; i++) {
-        // currently this is broken :(
-        // var title = getTitle(items[i]);
-        // tasks[i] = justwatch.search({ query: title, content_types: [items[i].type] });
-    }
+//     // so I think we should cache this information and then another lookup when you want to watch
+//     var tasks = [];
+//     for (let i = 0; i < items.length; i++) {
+//         // currently this is broken :(
+//         // var title = getTitle(items[i]);
+//         // tasks[i] = justwatch.search({ query: title, content_types: [items[i].type] });
+//     }
 
-    const results = await Promise.all(tasks);
-    for (let i = 0; i < results.length; i++) {
-        var title = getTitle(items[i]);
-        var resultItems = results[i].items;
-        resultItems.every((resultItem) => {
-            var foundTitle = addJustWatchTitle(items[i], resultItem);
-            // continue only if we didn't find a title
-            return !foundTitle;
-        });
-    }
-}
+//     const results = await Promise.all(tasks);
+//     for (let i = 0; i < results.length; i++) {
+//         var title = getTitle(items[i]);
+//         var resultItems = results[i].items;
+//         resultItems.every((resultItem) => {
+//             var foundTitle = addJustWatchTitle(items[i], resultItem);
+//             // continue only if we didn't find a title
+//             return !foundTitle;
+//         });
+//     }
+// }
 
-function addJustWatchTitle(traktItem, justwatchItem) {
-    var title = getTitle(traktItem);
-    var type = traktItem.type;
-    if (justwatchItem.title === title) {
-        traktItem.justwatch_id = justwatchItem.id;
-        traktItem.deeplink_web = [];
-        traktItem.image = justwatchItem.poster ? `https://images.justwatch.com${justwatchItem.poster.replace('{profile}', 's592')}` : '';
-        const urlType = type === 'movie' ? 'movie' : 'tv-show';
-        const titleNoApostraphe = title.replace(/[']/g, '');
-        const titleCleaned = titleNoApostraphe.replace(/[^a-z0-9]+/gi, '-').toLowerCase();
-        traktItem.url = `https://www.justwatch.com/us/${urlType}/${titleCleaned}`;
+// function addJustWatchTitle(traktItem, justwatchItem) {
+//     var title = getTitle(traktItem);
+//     var type = traktItem.type;
+//     if (justwatchItem.title === title) {
+//         traktItem.justwatch_id = justwatchItem.id;
+//         traktItem.deeplink_web = [];
+//         traktItem.image = justwatchItem.poster ? `https://images.justwatch.com${justwatchItem.poster.replace('{profile}', 's592')}` : '';
+//         const urlType = type === 'movie' ? 'movie' : 'tv-show';
+//         const titleNoApostraphe = title.replace(/[']/g, '');
+//         const titleCleaned = titleNoApostraphe.replace(/[^a-z0-9]+/gi, '-').toLowerCase();
+//         traktItem.url = `https://www.justwatch.com/us/${urlType}/${titleCleaned}`;
 
-        // TODO: should we move this to belongsTo?
-        justwatchItem.offers?.every((offer) => {
-            if (supportedProviders.indexOf(String(offer.provider_id)) > -1) {
-                traktItem.provider_id = offer.provider_id;
-                traktItem.deeplink_web.push(offer.urls.standard_web);
-                return false;
-            }
-            return true;
-        });
-        return true;
-    }
-    return false;
-}
+//         // TODO: should we move this to belongsTo?
+//         justwatchItem.offers?.every((offer) => {
+//             if (supportedProviders.indexOf(String(offer.provider_id)) > -1) {
+//                 traktItem.provider_id = offer.provider_id;
+//                 traktItem.deeplink_web.push(offer.urls.standard_web);
+//                 return false;
+//             }
+//             return true;
+//         });
+//         return true;
+//     }
+//     return false;
+// }
 
 async function createWatchable(req, traktListId, watchable) {
     const props = {
         title: getTitle(watchable),
         trakt_id: getTraktId(watchable),
         trakt_list_id: traktListId,
-        justwatch_id: watchable.justwatch_id,
+        // justwatch_id: watchable.justwatch_id,
         image: watchable.image,
         media_type: watchable.type,
         urls: [],
@@ -461,26 +461,26 @@ function api(clientId, passport, settingsPromise) {
                 where: { id: req.params.id },
                 include: [{ model: req.models.WatchableUrl, as: 'urls' }],
             });
-            const providers = await getJustWatchProviders(watchable);
-            watchable.providers = providers;
-            res.json({ watchable, providers });
+            // const providers = await getJustWatchProviders(watchable);
+            watchable.providers = [];
+            res.json({ watchable, providers: [] });
         } catch (e) {
             console.error(e);
             res.json(500, { error: e });
         }
     });
 
-    apiRouter.get('/watchables/:id/urls/:provider_id', requireLogin, async (req, res) => {
-        const providerId = req.params.provider_id;
-        const watchable = await req.models.Watchable.findOne({
-            where: { id: req.params.id },
-            include: [{ model: req.models.WatchableUrl, as: 'urls' }],
-        });
-        const offer = await getJustWatchUrls(watchable, providerId);
-        res.json([
-            { service_type: "web", url: offer.urls.standard_web },
-        ]);
-    });
+    // apiRouter.get('/watchables/:id/urls/:provider_id', requireLogin, async (req, res) => {
+    //     const providerId = req.params.provider_id;
+    //     const watchable = await req.models.Watchable.findOne({
+    //         where: { id: req.params.id },
+    //         include: [{ model: req.models.WatchableUrl, as: 'urls' }],
+    //     });
+    //     const offer = await getJustWatchUrls(watchable, providerId);
+    //     res.json([
+    //         { service_type: "web", url: offer.urls.standard_web },
+    //     ]);
+    // });
 
     apiRouter.post('/watchables/:id', requireLogin, async (req, res) => {
         const watchableUpdate = req.body;
@@ -534,6 +534,7 @@ function api(clientId, passport, settingsPromise) {
 
         let sres;
         try {
+            const defaultImagePath = path.join(__dirname, `../images/movie.jpg`);
             const imagePath = path.join(__dirname, `../data/img/${req.params.media_type}/`);
             const fileName = `${req.params.trakt_id}.jpg`
             const fullPath = path.join(imagePath, fileName);
@@ -541,6 +542,17 @@ function api(clientId, passport, settingsPromise) {
                 await fs.createReadStream(fullPath).pipe(res);
                 return;
             }
+
+            const writeFile = async (input) => {
+                if (!fs.existsSync(imagePath)) {
+                    fs.mkdirSync(imagePath, {recursive: true});
+                }
+                combined = PassThrough();
+                combined.pipe(fs.createWriteStream(fullPath));
+                combined.pipe(res);
+                await input.pipe(combined);
+            }
+
             const trakt = new Trakt({
                 client_id: clientId,
                 plugins: {
@@ -563,7 +575,8 @@ function api(clientId, passport, settingsPromise) {
             sres = await trakt.search.id({ id_type: 'trakt', id: req.params.trakt_id, type: req.params.media_type });
             if (sres.length === 0) {
                 // TODO: find a way to cache this with an empty image
-                res.json(404, { err: `could not find trakt item ${req.params.media_type} ${req.params.trakt_id}` });
+                // res.json(404, { err: `could not find trakt item ${req.params.media_type} ${req.params.trakt_id}` });
+                await writeFile(fs.createReadStream(defaultImagePath));
                 return;
             }
             const ids = sres[0][req.params.media_type].ids;
@@ -572,26 +585,21 @@ function api(clientId, passport, settingsPromise) {
             const images = await trakt.images.get(ids);
             if (!images.poster) {
                 // TODO: find a way to cache this with an empty image
-                res.json(404, { err: `could not find poster ${req.params.media_type} ${req.params.trakt_id}` });
+                // res.json(404, { err: `could not find poster ${req.params.media_type} ${req.params.trakt_id}` });
+                await writeFile(fs.createReadStream(defaultImagePath));
                 return;
-            }
-
-            if (!fs.existsSync(imagePath)) {
-                fs.mkdirSync(imagePath, {recursive: true});
             }
             const response = await axios({
                 method: "get",
                 url: images.poster,
                 responseType: "stream"
             });
-            combined = PassThrough();
-            combined.pipe(fs.createWriteStream(fullPath));
-            combined.pipe(res);
-            await response.data.pipe(combined);
+            await writeFile(response.data);
         } catch (e) {
             console.error(sres, e);
         }
     });
+
 
 
     return apiRouter;

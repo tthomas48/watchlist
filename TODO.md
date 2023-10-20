@@ -24,6 +24,7 @@ So maybe it opens the search in an iframe, and then when you close the iframe it
 Provide a way to define a provider and its search URL
 Add the ability to add to trakt.tv
 Add the ability to view the trakt.tv page to see where something is playing.
+Abb the ability to put in an image URL and have the system download it to its cache.
 
 Maybe add a bookmarklet that can add a show if you go to it on a website.
 
