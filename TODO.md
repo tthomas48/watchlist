@@ -8,7 +8,6 @@ Freevee - No
 PBS - No
 
 TODO:
-Get image from trakt or other source
 Add the ability to add a show. Figure out how to maybe search by service?
 * https://www.amcplus.com/search?search=test
 * https://www.netflix.com/search?q=test
@@ -20,6 +19,8 @@ Add the ability to add a show. Figure out how to maybe search by service?
 * https://www.hulu.com/search
 * https://www.paramountplus.com/search/
 
+Rename providers internally to something like recievers?
+Do I need trak.tv?
 So maybe it opens the search in an iframe, and then when you close the iframe it takes the URL.
 Provide a way to define a provider and its search URL
 Add the ability to add to trakt.tv

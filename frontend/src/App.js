@@ -5,6 +5,7 @@ import {
 import ListPicker from './ListPicker';
 import PlayerPicker from './PlayerPicker';
 import RefreshButton from './RefreshButton';
+import ProvidersButton from './ProvidersButton';
 import SettingsButton from './SettingsButton';
 import ShowHiddenButton from './ShowHiddenButton';
 import ReconnectButton from './ReconnectButton';
@@ -72,6 +73,7 @@ function App() {
                   <MenuItem onClick={handleClose}><RefreshButton list={list}></RefreshButton></MenuItem>                  
                   <MenuItem onClick={handleClose}><ShowHiddenButton showHidden={showHidden} setShowHidden={setShowHidden}></ShowHiddenButton></MenuItem>
                   <MenuItem onClick={handleClose}><ReconnectButton player={player}></ReconnectButton></MenuItem>
+                  <MenuItem onClick={handleClose}><ProvidersButton></ProvidersButton></MenuItem>
                   <MenuItem onClick={handleClose}><SettingsButton></SettingsButton></MenuItem>
                   
                 </Menu>

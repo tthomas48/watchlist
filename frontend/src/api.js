@@ -90,3 +90,45 @@ export function pushButton(serviceType, button) {
         }),
     }).then(handleResponse);
 }
+
+export function getProviders() {
+    return fetch(`/api/providers`, {
+        withCredentials: true,
+    }).then(handleResponse);
+}
+
+export function createProvider(provider) {
+    return fetch(`/api/providers`, {
+        method: "POST",
+        withCredentials: true,
+        headers: {
+            "Content-Type": "application/json",
+        },
+        body: JSON.stringify(provider),
+    }).then(handleResponse);
+}
+
+export function updateProvider(id, provider) {
+    return fetch(`/api/providers/${id}/`, {
+        method: "PUT",
+        withCredentials: true,
+        headers: {
+            "Content-Type": "application/json",
+        },
+        body: JSON.stringify(provider),
+    }).then(handleResponse);
+}
+
+export function deleteProvider(id) {
+    return fetch(`/api/providers/${id}/`, {
+        method: "DELETE",
+        withCredentials: true,
+        headers: {
+            "Content-Type": "application/json",
+        },
+    }).then(handleResponse);
+}
+
+
+
+

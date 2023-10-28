@@ -521,6 +521,49 @@ function api(clientId, passport, settingsPromise) {
         res.json(watchable);
     });
 
+    apiRouter.get('/providers', requireLogin, async (req, res) => {
+        const providers = await req.models.Provider.findAll();
+        res.json(providers);
+    });
+    
+    apiRouter.post('/providers', requireLogin, async (req, res) => {
+        const providerCreate = req.body;
+        console.log(providerCreate);
+        const provider = await req.models.Provider.create(
+            {
+                searchUrl: providerCreate.searchUrl,
+                name: providerCreate.name
+            });
+        res.json(provider);
+    });
+
+    apiRouter.put('/providers/:id', requireLogin, async (req, res) => {
+        const providerUpdate = req.body;
+        const provider = await req.models.Provider.findOne({
+            where: { id: req.params.id },
+        });
+        if (!provider) {
+            res.status(404).json({ error: "not found" });
+            return;
+        }
+        provider.name = providerUpdate.name;
+        provider.searchUrl = providerUpdate.searchUrl;
+        await provider.save();
+        res.json(provider);
+    });
+
+    apiRouter.delete('/providers/:id', requireLogin, async (req, res) => {
+        const provider = await req.models.Provider.findOne({
+            where: { id: req.params.id },
+        });
+        if (!provider) {
+            res.status(404).json({ error: "not found" });
+            return;
+        }
+        await provider.destroy();
+        res.json({});
+    });
+
     apiRouter.post('/remote/:service_type/:button', requireLogin, async (req, res) => {
         const button = req.params['button'];
         const serviceType = req.params['service_type'];

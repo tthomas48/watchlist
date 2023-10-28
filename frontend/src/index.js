@@ -15,6 +15,7 @@ import { themeOptions } from './theme';
 import './index.css';
 import App from './App';
 import Settings from './Settings';
+import Providers from './Providers';
 import Watchlist from './Watchlist';
 import Watchable from './Watchable';
 
@@ -36,6 +37,10 @@ const router = createBrowserRouter([
         path: "/settings",
         element: <Settings />,
       },
+      {
+        path: "/providers",
+        element: <Providers />,
+      },      
       {
         path: "/watchable/:id",
         element: <Watchable />,

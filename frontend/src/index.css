@@ -1,3 +1,6 @@
+.MuiDataGrid-root {
+  background-color: rgb(39, 128, 86);
+}
 input.MuiInputBase-input, option, .MuiNativeSelect-root, select, .MuiDialogTitle-root, textarea, .MuiInputBase-root  {
   color: #333;
 }
