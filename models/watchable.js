@@ -25,6 +25,8 @@ module.exports = (sequelize, DataTypes) => {
     trakt_id: DataTypes.STRING,
     trakt_list_id: DataTypes.STRING,
     justwatch_id: DataTypes.STRING,
+    imdb_id: DataTypes.INTEGER,
+    tmdb_id: DataTypes.INTEGER,
     image: DataTypes.STRING,
     media_type: DataTypes.STRING,
     last_played: DataTypes.DATE,

@@ -1,14 +1,17 @@
 {
   "development": {
     "dialect": "sqlite",
-    "storage": "data/watchlist.sqlite"
+    "storage": "data/watchlist.sqlite",
+    "logging": false
   },
   "test": {
     "dialect": "sqlite",
-    "storage": "data/watchlist.sqlite"
+    "storage": "data/watchlist.sqlite",
+    "logging": false
   },
   "production": {
     "dialect": "sqlite",
-    "storage": "data/watchlist.sqlite"
+    "storage": "data/watchlist.sqlite",
+    "logging": false
   }
 }

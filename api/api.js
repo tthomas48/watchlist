@@ -7,7 +7,7 @@ const singleflight = require('node-singleflight')
 // const JustWatch = require('justwatch-api');
 const Trakt = require('trakt.tv');
 const TraktImages = require('trakt.tv-images');
-const providerFactory = require('../provider/factory');
+const receiverFactory = require('../receiver/factory');
 
 // const justwatch = new JustWatch({ locale: 'en_US' });
 const providerRaw = process.env['SUPPORTED_PROVIDERS']
@@ -20,6 +20,7 @@ async function refresh(clientId, req, traktListUserId, traktListId, existingWatc
         const tasks = [];
         const explicitRefresh = false;
         const traktItems = await getTraktWatchlist(clientId, req.user, traktListUserId, traktListId);
+        console.log(traktItems[0]['show'].ids);
 
         // 2. find all that no longer exist in watchables
         const existingTraktIds = traktItems.map((traktItem) => getTraktId(traktItem));
@@ -185,6 +186,42 @@ function getTmdbId(item) {
 //     return false;
 // }
 
+// function updateWatchableFromCache(watchable, cache) {
+//     console.log(cache);
+//     watchable.imdb_id = cache.imdbId;
+//     watchable.tmdb_id = cache.tmdbId;
+//     watchable.tmdb_type = cache.tmdbType;
+//     //watchable.watchmode_id = cache.watchmode_id;
+// }
+
+// async function updateFromWatchmodeCache(req, watchable) {
+//     console.log(watchable.tmdb_id);
+//     if (watchable.tmdb_id) {
+//         const item = await req.models.WatchmodeCache.findOne({ where: { tmdbId: watchable.tmdb_id } });
+//         console.log(item);
+//         if (item) {
+//             updateWatchableFromCache(watchable, item);
+//             return;
+//         }
+//     }
+
+//     if (watchable.imdb_id) {
+//         const item = await req.models.WatchmodeCache.findOne({ where: { tmdbId: watchable.imdb_id } });
+//         console.log(item);
+//         if (item) {            
+//             updateWatchableFromCache(watchable, item);
+//             return;
+//         }
+//     }
+    
+//     let item = await req.models.WatchmodeCache.findOne({ where: { title: watchable.title, tmdbType: watchable.media_type } });
+//     console.log(item);
+//     if (item) {
+//         updateWatchableFromCache(watchable, item);
+//         return;
+//     }
+// }
+
 async function createWatchable(req, traktListId, watchable) {
     const props = {
         title: getTitle(watchable),
@@ -193,13 +230,25 @@ async function createWatchable(req, traktListId, watchable) {
         // justwatch_id: watchable.justwatch_id,
         image: watchable.image,
         media_type: watchable.type,
+        imdb_id: watchable[watchable.type].ids?.imdb,
+        tmdb_id: watchable[watchable.type].ids?.tmdb,
         urls: [],
     };
+    // await updateFromWatchmodeCache(req, props);
+    // TODO: lookup watchmode_id
     addUrls(req, props, watchable.provider_id, watchable.deeplink_web, 'web');
     return await req.models.Watchable.create(props, { include: [{ model: req.models.WatchableUrl, as: 'urls' }] });
 }
 
 async function updateWatchable(req, traktItem, watchable) {
+    watchable.media_type = traktItem.type;
+    watchable.imdb_id = traktItem[traktItem.type].ids?.imdb;
+    watchable.tmdb_id = traktItem[traktItem.type].ids?.tmdb;
+    //await updateFromWatchmodeCache(req, watchable);
+    await watchable.save();
+    // console.log(watchable);
+    // TODO: lookup watchmode_id
+
     const props = {
         urls: [],
     };
@@ -274,7 +323,7 @@ function addUrls(req, watchable, provider_id, urls, serviceType) {
 
 function api(clientId, passport, settingsPromise) {
     settingsPromise.then((settings) => {
-        providerFactory.init(settings);
+        receiverFactory.init(settings);
     });
 
     const apiRouter = new express.Router();
@@ -410,7 +459,7 @@ function api(clientId, passport, settingsPromise) {
             }
             const uri = watchableUrl.url;
 
-            const provider = providerFactory.getProvider(serviceType);
+            const provider = receiverFactory.getReceiver(serviceType);
             console.log(`Playing ${uri} with ${serviceType}`)
             if (await provider.play(uri)) {
                 await watchable.save();
@@ -441,7 +490,7 @@ function api(clientId, passport, settingsPromise) {
             settings.googletv_port = newSettings.googletv_port;
         }
         await settings.save();
-        await providerFactory.update(settings);
+        await receiverFactory.update(settings);
         res.json(settings);
     });
 
@@ -451,7 +500,7 @@ function api(clientId, passport, settingsPromise) {
             res.status(500).json({ error: "player has not been configured" });
             return;
         }
-        await providerFactory.update(settings);
+        await receiverFactory.update(settings);
         res.json({});
     });
 
@@ -461,9 +510,10 @@ function api(clientId, passport, settingsPromise) {
                 where: { id: req.params.id },
                 include: [{ model: req.models.WatchableUrl, as: 'urls' }],
             });
-            // const providers = await getJustWatchProviders(watchable);
             watchable.providers = [];
-            res.json({ watchable, providers: [] });
+            // const providers = await sourceApi.getProviders(watchable);
+            const providers = [];
+            res.json({ watchable, providers: providers });
         } catch (e) {
             console.error(e);
             res.json(500, { error: e });
@@ -568,7 +618,7 @@ function api(clientId, passport, settingsPromise) {
         const button = req.params['button'];
         const serviceType = req.params['service_type'];
 
-        const provider = providerFactory.getProvider(serviceType);
+        const provider = receiverFactory.getReceiver(serviceType);
         await provider.pushButton(button);
         res.status(200).json("ok");
     });

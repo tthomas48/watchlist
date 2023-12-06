@@ -84,7 +84,6 @@ passport.use(new TraktStrategy({
 
 const settingsPromise = db.Settings.findOne();
 
-
 app.use(express.static('./frontend/build/'));
 app.use("/api", api(clientId, passport, settingsPromise));
 app.get('/*', (req, res) => {
