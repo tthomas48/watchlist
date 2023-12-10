@@ -13,7 +13,7 @@ import SortPicker from './SortPicker';
 import { Typography, Toolbar, Container, AppBar, IconButton, Menu, MenuItem, Paper } from '@mui/material';
 import Grid from '@mui/material/Unstable_Grid2';
 import MenuIcon from '@mui/icons-material/Menu';
-import { useLocalStorage } from "./hooks/useLocalStorage";
+import useLocalStorage from "./hooks/useLocalStorage";
 
 
 const listStorageKey = "watchlist.trakt_list";
