@@ -1,4 +1,3 @@
-'use strict';
 const { Watchable } = require('../models');
 
 /** @type {import('sequelize-cli').Migration} */
@@ -6,15 +5,15 @@ module.exports = {
   async up(queryInterface, Sequelize) {
     await queryInterface.addColumn('Watchables', 'sortable_title', { type: Sequelize.TEXT });
     // get all the watchables and resave them
-    const tasks = [];
     const watchables = await Watchable.findAll();
-    for (let watchable of watchables) {
-      tasks.push(watchable.save());
+    const tasks = [];
+    for (let i = 0; i < watchables.length; i += 1) {
+      tasks.push(watchables[i].save());
     }
-    await Promise.all(tasks);  
+    await Promise.all(tasks);
   },
 
-  async down(queryInterface, Sequelize) {
+  async down(queryInterface) {
     await queryInterface.removeColumn('Watchables', 'sortable_title');
-  }
+  },
 };

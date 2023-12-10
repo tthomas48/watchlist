@@ -1,17 +1,17 @@
 /** @type {import('sequelize-cli').Migration} */
 module.exports = {
   async up(queryInterface, Sequelize) {
-    await queryInterface.createTable('Settings', {
+    await queryInterface.createTable('Providers', {
       id: {
         allowNull: false,
         autoIncrement: true,
         primaryKey: true,
         type: Sequelize.INTEGER,
       },
-      googletv_host: {
+      name: {
         type: Sequelize.STRING,
       },
-      googletv_port: {
+      url: {
         type: Sequelize.STRING,
       },
       createdAt: {
@@ -25,6 +25,6 @@ module.exports = {
     });
   },
   async down(queryInterface) {
-    await queryInterface.dropTable('Settings');
+    await queryInterface.dropTable('Providers');
   },
 };

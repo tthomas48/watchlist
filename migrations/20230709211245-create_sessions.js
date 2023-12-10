@@ -1,34 +1,31 @@
-'use strict';
-
 /** @type {import('sequelize-cli').Migration} */
 module.exports = {
-  async up (queryInterface, Sequelize) {
-    //`sid` VARCHAR(36) PRIMARY KEY, `expires` DATETIME, `data` TEXT, `createdAt` DATETIME NOT NULL, `updatedAt` DATETIME NOT NULL
+  async up(queryInterface, Sequelize) {
     await queryInterface.createTable('Sessions', {
       sid: {
         allowNull: false,
         autoIncrement: false,
         primaryKey: true,
-        type: Sequelize.STRING(36)
+        type: Sequelize.STRING(36),
       },
       expires: {
-        type: Sequelize.DATE
+        type: Sequelize.DATE,
       },
       data: {
-        type: Sequelize.TEXT
+        type: Sequelize.TEXT,
       },
       createdAt: {
         type: Sequelize.DATE,
-        allowNull: false
+        allowNull: false,
       },
       updatedAt: {
         type: Sequelize.DATE,
-        allowNull: false
-      }
+        allowNull: false,
+      },
     });
   },
 
-  async down (queryInterface, Sequelize) {
+  async down(queryInterface) {
     await queryInterface.dropTable('Users');
   },
 };
