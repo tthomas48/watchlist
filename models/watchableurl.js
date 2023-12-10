@@ -1,7 +1,7 @@
-'use strict';
 const {
-  Model
+  Model,
 } = require('sequelize');
+
 module.exports = (sequelize, DataTypes) => {
   class WatchableUrl extends Model {
     /**
@@ -11,7 +11,7 @@ module.exports = (sequelize, DataTypes) => {
      */
     static associate(models) {
       // define association here
-      models.WatchableUrl.belongsTo(models.Watchable, {foreignKey: 'watchable_id'});
+      models.WatchableUrl.belongsTo(models.Watchable, { foreignKey: 'watchable_id' });
     }
   }
   WatchableUrl.init({
@@ -22,6 +22,6 @@ module.exports = (sequelize, DataTypes) => {
   }, {
     sequelize,
     modelName: 'WatchableUrl',
-  });  
+  });
   return WatchableUrl;
 };

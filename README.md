@@ -29,7 +29,7 @@ The data will be saved to watchlistData.json
 - Navigate to http://localhost:3000/ 
 
 ## Generate models
-- npx sequelize-cli model:generate --name User --attributes firstName:string,lastName:string,email:string --models-path=models
+- npx sequelize-cli model:generate --name User --attributes firstName:string,lastName:string,email:string --models-path=models --migrations-path=migrations
 
 ## Generate migration
 - npx sequelize-cli migration:create --migrations-path=migrations/ --name my_migration_name
@@ -45,7 +45,7 @@ The data will be saved to watchlistData.json
 ## Running docker image
 - mkdir -p /usr/share/watchlist/data/
 - cp .env.example /usr/share/watchlist/.env/ # and edit with your values
-- docker run --name=watchlist --voluments=/user/share/watchlist/data/:/usr/src/watchlist/data/ --network-host --restart=unless-stopped --env-file=/usr/share/watchlist/.env --detach=true gcr.io/watchlist-396421/watchlist:latest
+- docker run --name=watchlist --volume=/user/share/watchlist/data/:/usr/src/watchlist/data/ --network=host --restart=unless-stopped --env-file=/usr/share/watchlist/.env --detach=true gcr.io/watchlist-396421/watchlist:latest
 
 ## Initial setup
 TODO: Maybe the reconnect feature fixes this?
@@ -68,3 +68,9 @@ For AMC: Go view the show and get the URL. Put that in the android TV intent fie
 https://www.amcplus.com/shows/dark-winds--1053387
 
 For Hulu: Just use the web URL as well
+
+
+Title Map:
+https://api.watchmode.com/datasets/title_id_map.csv
+
+Maybe we can do the refresh on restart

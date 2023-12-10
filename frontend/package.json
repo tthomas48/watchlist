@@ -24,18 +24,19 @@
     "web-vitals": "^3.2.2"
   },
   "scripts": {
-    "start": "react-scripts start",
-    "build": "react-scripts build",
-    "test": "react-scripts test",
-    "eject": "react-scripts eject",
+    "start": "DISABLE_ESLINT_PLUGIN=true react-scripts start",
+    "build": "DISABLE_ESLINT_PLUGIN=true react-scripts build",
+    "test": "DISABLE_ESLINT_PLUGIN=true react-scripts test",
+    "eject": "DISABLE_ESLINT_PLUGIN=true react-scripts eject",
     "watch": "npm-watch",
-    "lint": "npx eslint src/**/*.js  --resolve-plugins-relative-to ."
+    "lint": "npx eslint src/**/*.js --resolve-plugins-relative-to ."
   },
   "eslintConfig": {
     "extends": [
       "react-app",
       "react-app/jest"
-    ]
+    ],
+    "resolvePluginsRelativeTo": "."
   },
   "browserslist": {
     "production": [

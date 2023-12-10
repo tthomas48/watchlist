@@ -33,7 +33,7 @@ function Providers() {
 
         const handleClick = () => {
             const id = randomId();
-            setRows((oldRows) => [...oldRows, { id, name: '', searchUrl: '', isNew: true }]);
+            setRows((oldRows) => [...oldRows, { id, name: '', url: '', isNew: true }]);
             setRowModesModel((oldModel) => ({
                 ...oldModel,
                 [id]: { mode: GridRowModes.Edit, fieldToFocus: 'name' },
@@ -134,7 +134,7 @@ function Providers() {
     const columns = [
         { field: 'name', headerName: 'Name', width: 180, editable: true },
         {
-            field: 'searchUrl',
+            field: 'url',
             headerName: 'Search URL',
             type: 'string',
             width: 360,

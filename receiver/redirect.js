@@ -1,16 +1,20 @@
+/* eslint-disable class-methods-use-this, no-unused-vars */
 class Redirect {
-    async init(settings) {
+  async init(settings) {
+    // NOOP;
+  }
 
-    }
-    async disconnect() {
+  async disconnect() {
+    // NOOP;
+  }
 
-    }
-    async play(uri) {
-        // NOOP - happens on the frontend
-        return true;
-    }
-    async pushButton(button) {
-        // NOOP;
-    }
+  async play(uri) {
+    // NOOP - happens on the frontend
+    return true;
+  }
+
+  async pushButton(button) {
+    // NOOP;
+  }
 }
 module.exports = new Redirect();

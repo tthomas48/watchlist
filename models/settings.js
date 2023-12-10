@@ -1,7 +1,7 @@
-'use strict';
 const {
-  Model
+  Model,
 } = require('sequelize');
+
 module.exports = (sequelize, DataTypes) => {
   class Settings extends Model {
     /**
@@ -15,7 +15,7 @@ module.exports = (sequelize, DataTypes) => {
   }
   Settings.init({
     googletv_host: DataTypes.STRING,
-    googletv_port: DataTypes.STRING
+    googletv_port: DataTypes.STRING,
   }, {
     sequelize,
     modelName: 'Settings',
