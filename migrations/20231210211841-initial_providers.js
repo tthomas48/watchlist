@@ -4,13 +4,13 @@ module.exports = {
     await queryInterface.bulkInsert('providers', [
       {
         name: 'AMC+',
-        url: 'https://www.amcplus.com/search?search=',
+        url: 'https://www.amcplus.com/search?search=%s',
         createdAt: new Date(),
         updatedAt: new Date(),
       },
       {
         name: 'Netflix',
-        url: 'https://www.netflix.com/search?q=',
+        url: 'https://www.netflix.com/search?q=%s',
         createdAt: new Date(),
         updatedAt: new Date(),
       },
@@ -22,19 +22,19 @@ module.exports = {
       },
       {
         name: 'PBS',
-        url: 'https://www.pbs.org/search/?q=',
+        url: 'https://www.pbs.org/search/?q=%s',
         createdAt: new Date(),
         updatedAt: new Date(),
       },
       {
         name: 'Amazon',
-        url: 'https://www.amazon.com/s?k=',
+        url: 'https://www.amazon.com/s?k=%s',
         createdAt: new Date(),
         updatedAt: new Date(),
       },
       {
         name: 'Max',
-        url: 'https://play.max.com/search/result?q=',
+        url: 'https://play.max.com/search/result?q=%s',
         createdAt: new Date(),
         updatedAt: new Date(),
       },
@@ -63,11 +63,11 @@ module.exports = {
     await queryInterface.bulkDelete('providers', [
       {
         name: 'AMC+',
-        url: 'https://www.amcplus.com/search?search=',
+        url: 'https://www.amcplus.com/search?search=%s',
       },
       {
         name: 'Netflix',
-        url: 'https://www.netflix.com/search?q=',
+        url: 'https://www.netflix.com/search?q=%s',
       },
       {
         name: 'Peacock',
@@ -75,15 +75,15 @@ module.exports = {
       },
       {
         name: 'PBS',
-        url: 'https://www.pbs.org/search/?q=',
+        url: 'https://www.pbs.org/search/?q=%s',
       },
       {
         name: 'Amazon',
-        url: 'https://www.amazon.com/s?k=',
+        url: 'https://www.amazon.com/s?k=%s',
       },
       {
         name: 'Max',
-        url: 'https://play.max.com/search/result?q=',
+        url: 'https://play.max.com/search/result?q=%s',
       },
       {
         name: 'Disney+',

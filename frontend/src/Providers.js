@@ -1,10 +1,9 @@
 import React from 'react';
+import { useNavigate } from 'react-router-dom';
 import {
     useQuery,
-    useQueryClient,
-    useMutation,
 } from '@tanstack/react-query';
-import { Box, Button } from '@mui/material';
+import { Box, Button, Stack } from '@mui/material';
 import AddIcon from '@mui/icons-material/Add';
 import SaveIcon from '@mui/icons-material/Save';
 import CancelIcon from '@mui/icons-material/Cancel';
@@ -26,6 +25,7 @@ import { getProviders, updateProvider, createProvider, deleteProvider } from './
 
 
 function Providers() {
+    const navigate = useNavigate();
     const [rows, setRows] = React.useState([]);
     const [rowModesModel, setRowModesModel] = React.useState({});
 
@@ -99,25 +99,14 @@ function Providers() {
     };
 
     const processRowUpdate = async (newRow) => {
-        console.log(newRow);
-        // I'm assuming to determine if we should delete we need to see if it's in the rows?
-        // const exists = rows.find((row) => row.id === newRow.id ? row : null);
-        // if (!exists) {
-        //     console.log("delete row");
-        //     await deleteProvider(newRow);
-        //     return;
-        // }
-
         let updatedRow = { ...newRow, isNew: false };
         if (newRow.isNew) {
             updatedRow = await createProvider(updatedRow);
         } else {
             updatedRow = await updateProvider(updatedRow.id, updatedRow);
         }
-        console.log(updatedRow);
         // we have to use the auto-generated row rather than the row from the server
         refetch();
-        // setRows(rows.map((row) => (row.id === newRow.id ? updatedRow : row)));
         return updatedRow;
     };
 
@@ -187,7 +176,12 @@ function Providers() {
             },
         },
     ];
-    return (<Box
+    return (
+    <Stack direction="column"
+        justifyContent="center"
+        alignItems="center"
+        spacing={1}>
+        <Box
         sx={{
             height: 500,
             width: '100%',
@@ -216,6 +210,15 @@ function Providers() {
                 toolbar: { setRowModesModel },
             }}
         />
-    </Box>);
+        </Box>
+        <Stack
+                        direction="row"
+                        justifyContent="center"
+                        alignItems="center"
+                        spacing={1}
+                        >
+            <Button variant="outlined" onClick={() => navigate('/')}>Return</Button>
+        </Stack>
+    </Stack>);
 }
 export default Providers;
