@@ -10,7 +10,8 @@ import SettingsButton from './SettingsButton';
 import ShowHiddenButton from './ShowHiddenButton';
 import ReconnectButton from './ReconnectButton';
 import SortPicker from './SortPicker';
-import { Typography, Toolbar, Container, AppBar, IconButton, Menu, MenuItem, Paper } from '@mui/material';
+import AddItem from './AddItem';
+import { Typography, Toolbar, Container, AppBar, IconButton, Menu, MenuItem, Paper, Stack } from '@mui/material';
 import Grid from '@mui/material/Unstable_Grid2';
 import MenuIcon from '@mui/icons-material/Menu';
 import useLocalStorage from "./hooks/useLocalStorage";
@@ -36,8 +37,8 @@ function App() {
   const [showHidden, setShowHidden] = useLocalStorage(hiddenStorageKey, false);
 
   // 80px margin is space for remote control
-  return (    
-    <Container sx={{marginBottom: '80px'}}>
+  return (
+    <Container sx={{ marginBottom: '80px' }}>
       <AppBar position="static">
         <Container maxWidth="xl">
           <Toolbar disableGutters>
@@ -49,43 +50,49 @@ function App() {
                 <ListPicker list={list} setList={setList}></ListPicker>
               </Grid>
               <Grid xs={5} md={3}>
-              <PlayerPicker setPlayer={setPlayer} player={player}></PlayerPicker>
+                <PlayerPicker setPlayer={setPlayer} player={player}></PlayerPicker>
               </Grid>
               <Grid xs={1} md={1} container>
                 <IconButton
-                      id="basic-button"
-                      aria-controls={open ? 'basic-menu' : undefined}
-                      aria-haspopup="true"
-                      aria-expanded={open ? 'true' : undefined}
-                      onClick={handleClick}
+                  id="basic-button"
+                  aria-controls={open ? 'basic-menu' : undefined}
+                  aria-haspopup="true"
+                  aria-expanded={open ? 'true' : undefined}
+                  onClick={handleClick}
                 >
                   <MenuIcon />
                 </IconButton>
                 <Menu
-                      id="basic-menu"
-                      anchorEl={anchorEl}
-                      open={open}
-                      onClose={handleClose}
-                      MenuListProps={{
-                          'aria-labelledby': 'basic-button',
-                      }}
+                  id="basic-menu"
+                  anchorEl={anchorEl}
+                  open={open}
+                  onClose={handleClose}
+                  MenuListProps={{
+                    'aria-labelledby': 'basic-button',
+                  }}
                 >
-                  <MenuItem onClick={handleClose}><RefreshButton list={list}></RefreshButton></MenuItem>                  
+                  <MenuItem onClick={handleClose}><RefreshButton list={list}></RefreshButton></MenuItem>
                   <MenuItem onClick={handleClose}><ShowHiddenButton showHidden={showHidden} setShowHidden={setShowHidden}></ShowHiddenButton></MenuItem>
                   <MenuItem onClick={handleClose}><ReconnectButton player={player}></ReconnectButton></MenuItem>
                   <MenuItem onClick={handleClose}><ProvidersButton></ProvidersButton></MenuItem>
                   <MenuItem onClick={handleClose}><SettingsButton></SettingsButton></MenuItem>
-                  
+
                 </Menu>
               </Grid>
-            </Grid>                  
+            </Grid>
           </Toolbar>
         </Container>
       </AppBar>
-      <Paper elevation={0} variant="outlined" square sx={{padding: '8px'}}>
+      <Paper elevation={0} variant="outlined" square sx={{ padding: '8px' }}>
         <Grid container spacing={2} className="SortBar">
-          <Grid xs={5} md={3}>
-            <SortPicker sort={sort} setSort={setSort} />
+          <Grid xs={5}>
+              <SortPicker sort={sort} setSort={setSort} />
+          </Grid>
+          <Grid xs={5}>
+
+          </Grid>
+          <Grid xs={1}>
+            <AddItem />
           </Grid>
         </Grid>
         <Grid container spacing={2} className="App">
@@ -94,7 +101,7 @@ function App() {
           </Grid>
         </Grid>
       </Paper>
-    </Container >      
+    </Container >
   );
 }
 

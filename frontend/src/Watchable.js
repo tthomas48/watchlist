@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { useQuery, useMutation, useQueryClient  } from '@tanstack/react-query';
 import { useForm } from 'react-hook-form';
 import { useParams, useNavigate } from 'react-router-dom';
-import { Typography, Paper, Button, TextField, Stack, FormControl, IconButton, InputLabel, NativeSelect } from '@mui/material';
+import { Typography, Paper, Button, TextField, Stack, FormControl, FormHelperText, IconButton, InputLabel, NativeSelect } from '@mui/material';
 import {getWatchable, saveWatchable, getProviders} from './api';
 import SearchIcon from '@mui/icons-material/Search';
 
@@ -51,11 +51,10 @@ function Watchable() {
             setProvider(providers[0].url);
         }
         const url = provider.replace("%s", encodeURIComponent(data.watchable.title));
-        window.open(url, "_blank", "noreferrer");
+        window.open(url, "_watchlist", "noreferrer");
     };
 
     if (isLoading || providerQuery.isLoading) {
-        // TODO: should probably move watchlistRes.isLoading into the actual select element
         return (<h5>Loading...</h5>);
     }
     data.watchable.urls.forEach((url) => {
@@ -83,8 +82,8 @@ function Watchable() {
                     </Typography>
                     <Stack
                         direction="row"
-                        justifyContent="flex-end"
-                        alignItems="center"
+                        justifyContent="center"
+                        alignItems="flex-start"
                         spacing={1}
                         >
                         <FormControl>
@@ -97,10 +96,14 @@ function Watchable() {
                                     return (<option value={String(item.url)}>{item.name}</option>);
                                 })}
                             </NativeSelect>
+                            <FormHelperText sx={{overflow: 'hidden', maxWidth: '126px'}}>
+                                The search icon will open a new tab to find the URL for this item. 
+                                Copy the link, swipe backwards, and paste the url into the field below.
+                            </FormHelperText>
                         </FormControl>
                         <IconButton aria-label="search" onClick={doSearch}>
                                 <SearchIcon />
-                        </IconButton>                        
+                        </IconButton>
                     </Stack>
                     <TextField {...register("web_url")} label="Web URL" variant="outlined" sx={{
                         color: 'text.paper',

@@ -40,45 +40,49 @@ async function getTraktWatchlist(clientId, user, traktListUserId, traktListId) {
 
 async function refresh(clientId, req, traktListUserId, traktListId, existingWatchables) {
   await singleflight.Do(traktListId, async () => {
-    debug('in refresh');
-    const tasks = [];
-    const traktItems = await getTraktWatchlist(clientId, req.user, traktListUserId, traktListId);
-    debug(traktItems[0].show.ids);
+    try {
+      debug('in refresh');
+      const tasks = [];
+      const traktItems = await getTraktWatchlist(clientId, req.user, traktListUserId, traktListId);
+      debug(traktItems[0][traktItems[0]['type']].ids);
 
-    // 2. find all that no longer exist in watchables
-    const existingTraktIds = traktItems.map((traktItem) => getTraktId(traktItem));
-    const existingWatchableTraktIds = existingWatchables.map((watchable) => watchable.trakt_id);
-    const deletedItems = existingWatchables.filter(
-      (watchable) => !existingTraktIds.includes(watchable.trakt_id),
-    );
-    const updateItems = traktItems.filter(
-      (traktItem) => existingWatchableTraktIds.includes(getTraktId(traktItem)),
-    );
-    const newItems = traktItems.filter(
-      (traktItem) => !existingWatchableTraktIds.includes(getTraktId(traktItem)),
-    );
-
-    // 3. delete them
-    deletedItems.forEach((deletedItem) => {
-      tasks.push(deletedItem.destroy());
-    });
-    // 4. find all that exist in watchables
-    // const justWatchTasks = [];
-    // justWatchTasks.push(addJustWatchData(updateItems));
-    // justWatchTasks.push(addJustWatchData(newItems));
-    // await Promise.all(justWatchTasks);
-
-    updateItems.forEach((traktItem) => {
-      const existingWatchable = existingWatchables.find(
-        (ew) => getTraktId(traktItem) === ew.trakt_id,
+      // 2. find all that no longer exist in watchables
+      const existingTraktIds = traktItems.map((traktItem) => getTraktId(traktItem));
+      const existingWatchableTraktIds = existingWatchables.map((watchable) => watchable.trakt_id);
+      const deletedItems = existingWatchables.filter(
+        (watchable) => !existingTraktIds.includes(watchable.trakt_id),
       );
-      tasks.push(updateWatchable(req, traktItem, existingWatchable));
-    });
+      const updateItems = traktItems.filter(
+        (traktItem) => existingWatchableTraktIds.includes(getTraktId(traktItem)),
+      );
+      const newItems = traktItems.filter(
+        (traktItem) => !existingWatchableTraktIds.includes(getTraktId(traktItem)),
+      );
 
-    newItems.forEach((traktItem) => {
-      tasks.push(createWatchable(req, traktListId, traktItem));
-    });
-    await Promise.all(tasks);
+      // 3. delete them
+      deletedItems.forEach((deletedItem) => {
+        tasks.push(deletedItem.destroy());
+      });
+      // 4. find all that exist in watchables
+      // const justWatchTasks = [];
+      // justWatchTasks.push(addJustWatchData(updateItems));
+      // justWatchTasks.push(addJustWatchData(newItems));
+      // await Promise.all(justWatchTasks);
+
+      updateItems.forEach((traktItem) => {
+        const existingWatchable = existingWatchables.find(
+          (ew) => getTraktId(traktItem) === ew.trakt_id,
+        );
+        tasks.push(updateWatchable(req, traktItem, existingWatchable));
+      });
+
+      newItems.forEach((traktItem) => {
+        tasks.push(createWatchable(req, traktListId, traktItem));
+      });
+      await Promise.all(tasks);
+    } catch (e) {
+      debug(e);
+    }
   });
 }
 
@@ -94,8 +98,8 @@ async function createWatchable(req, traktListId, watchable) {
     tmdb_id: watchable[watchable.type].ids?.tmdb,
     urls: [],
   };
-    // await updateFromWatchmodeCache(req, props);
-    // TODO: lookup watchmode_id
+  // await updateFromWatchmodeCache(req, props);
+  // TODO: lookup watchmode_id
   addUrls(req, props, watchable.provider_id, watchable.deeplink_web, 'web');
   return await req.models.Watchable.create(props, { include: [{ model: req.models.WatchableUrl, as: 'urls' }] });
 }
@@ -292,7 +296,7 @@ function api(clientId, passport, settingsPromise) {
       }, new Date(0));
       // if the most recent_update is more than a day ago then we should call refresh
       if (mostRecentUpdate < new Date(Date.now() - 1000 * 60 * 60 * 24)) {
-        debugg(`Refreshing because ${mostRecentUpdate} is more than a day ago`);
+        debug(`Refreshing because ${mostRecentUpdate} is more than a day ago`);
         await refresh(clientId, req, traktListUserId, traktListId, existingWatchables);
       }
       existingWatchables = await req.models.Watchable.findAll(findAllOptions);
