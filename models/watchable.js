@@ -1,3 +1,4 @@
+const debug = require('debug')('watchlist:models:watchable');
 const {
   Model,
 } = require('sequelize');
@@ -12,9 +13,11 @@ module.exports = (sequelize, DataTypes) => {
     static associate(models) {
       // define association here
       models.Watchable.hasMany(models.WatchableUrl, { as: 'urls', foreignKey: 'watchable_id', onDelete: 'CASCADE' });
-      for (const assoc of Object.keys(models.Watchable.associations)) {
-        for (const accessor of Object.keys(models.Watchable.associations[assoc].accessors)) {
-          console.log(`${models.Watchable.name}.${models.Watchable.associations[assoc].accessors[accessor]}()`);
+      const assocs = Object.keys(models.Watchable.associations);
+      for (let i = 0; i < assocs.length; i += 1) {
+        const assoc = assocs[i];
+        for (let j = 0; j < assocs.length; j += 1) {
+          debug(`${models.Watchable.name}.${models.Watchable.associations[assoc].accessors[assocs[j]]}()`);
         }
       }
     }
@@ -36,10 +39,10 @@ module.exports = (sequelize, DataTypes) => {
     sequelize,
     modelName: 'Watchable',
   });
-  Watchable.beforeCreate(async (user, options) => {
+  Watchable.beforeCreate(async (user) => {
     user.sortable_title = user.title.toLowerCase().replace(/^(the|a|an) /, '');
   });
-  Watchable.beforeUpdate(async (user, options) => {
+  Watchable.beforeUpdate(async (user) => {
     user.sortable_title = user.title.toLowerCase().replace(/^(the|a|an) /, '');
   });
   return Watchable;

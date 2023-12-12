@@ -5,7 +5,6 @@ const { PassThrough } = require('stream');
 const express = require('express');
 const axios = require('axios');
 const singleflight = require('node-singleflight');
-// const JustWatch = require('justwatch-api');
 const Trakt = require('trakt.tv');
 const TraktImages = require('trakt.tv-images');
 const receiverFactory = require('../receiver/factory');
@@ -38,51 +37,20 @@ async function getTraktWatchlist(clientId, user, traktListUserId, traktListId) {
   }
 }
 
-async function refresh(clientId, req, traktListUserId, traktListId, existingWatchables) {
-  await singleflight.Do(traktListId, async () => {
-    try {
-      debug('in refresh');
-      const tasks = [];
-      const traktItems = await getTraktWatchlist(clientId, req.user, traktListUserId, traktListId);
-      debug(traktItems[0][traktItems[0]['type']].ids);
-
-      // 2. find all that no longer exist in watchables
-      const existingTraktIds = traktItems.map((traktItem) => getTraktId(traktItem));
-      const existingWatchableTraktIds = existingWatchables.map((watchable) => watchable.trakt_id);
-      const deletedItems = existingWatchables.filter(
-        (watchable) => !existingTraktIds.includes(watchable.trakt_id),
-      );
-      const updateItems = traktItems.filter(
-        (traktItem) => existingWatchableTraktIds.includes(getTraktId(traktItem)),
-      );
-      const newItems = traktItems.filter(
-        (traktItem) => !existingWatchableTraktIds.includes(getTraktId(traktItem)),
-      );
-
-      // 3. delete them
-      deletedItems.forEach((deletedItem) => {
-        tasks.push(deletedItem.destroy());
-      });
-      // 4. find all that exist in watchables
-      // const justWatchTasks = [];
-      // justWatchTasks.push(addJustWatchData(updateItems));
-      // justWatchTasks.push(addJustWatchData(newItems));
-      // await Promise.all(justWatchTasks);
-
-      updateItems.forEach((traktItem) => {
-        const existingWatchable = existingWatchables.find(
-          (ew) => getTraktId(traktItem) === ew.trakt_id,
-        );
-        tasks.push(updateWatchable(req, traktItem, existingWatchable));
-      });
-
-      newItems.forEach((traktItem) => {
-        tasks.push(createWatchable(req, traktListId, traktItem));
-      });
-      await Promise.all(tasks);
-    } catch (e) {
-      debug(e);
+function addUrls(req, watchable, providerId, urls, serviceType) {
+  if (!urls) {
+    return;
+  }
+  urls.forEach((link) => {
+    if (!link) {
+      return;
     }
+    watchable.urls.push({
+      url: link,
+      service_type: serviceType,
+      custom: false,
+      provider_id: providerId,
+    });
   });
 }
 
@@ -98,20 +66,15 @@ async function createWatchable(req, traktListId, watchable) {
     tmdb_id: watchable[watchable.type].ids?.tmdb,
     urls: [],
   };
-  // await updateFromWatchmodeCache(req, props);
-  // TODO: lookup watchmode_id
   addUrls(req, props, watchable.provider_id, watchable.deeplink_web, 'web');
-  return await req.models.Watchable.create(props, { include: [{ model: req.models.WatchableUrl, as: 'urls' }] });
+  return req.models.Watchable.create(props, { include: [{ model: req.models.WatchableUrl, as: 'urls' }] });
 }
 
 async function updateWatchable(req, traktItem, watchable) {
   watchable.media_type = traktItem.type;
   watchable.imdb_id = traktItem[traktItem.type].ids?.imdb;
   watchable.tmdb_id = traktItem[traktItem.type].ids?.tmdb;
-  // await updateFromWatchmodeCache(req, watchable);
   await watchable.save();
-  // console.log(watchable);
-  // TODO: lookup watchmode_id
 
   const props = {
     urls: [],
@@ -120,7 +83,7 @@ async function updateWatchable(req, traktItem, watchable) {
   const foundUrl = [];
   const urls = await watchable.getUrls();
   urls.forEach((url) => {
-    if (url.provider_id == -1) {
+    if (url.provider_id === -1) {
       isCustom = true;
       return;
     }
@@ -148,10 +111,53 @@ async function updateWatchable(req, traktItem, watchable) {
     tasks.push(req.models.WatchableUrl.create(watchableUrl));
   });
 
-  foundUrl.forEach((found, key) => {
+  foundUrl.forEach((found) => {
     tasks.push(watchable.removeUrl(found));
   });
-  return await Promise.all(tasks);
+  return Promise.all(tasks);
+}
+
+async function refresh(clientId, req, traktListUserId, traktListId, existingWatchables) {
+  await singleflight.Do(traktListId, async () => {
+    try {
+      debug('in refresh');
+      const tasks = [];
+      const traktItems = await getTraktWatchlist(clientId, req.user, traktListUserId, traktListId);
+      debug(traktItems[0][traktItems[0].type].ids);
+
+      // 2. find all that no longer exist in watchables
+      const existingTraktIds = traktItems.map((traktItem) => getTraktId(traktItem));
+      const existingWatchableTraktIds = existingWatchables.map((watchable) => watchable.trakt_id);
+      const deletedItems = existingWatchables.filter(
+        (watchable) => !existingTraktIds.includes(watchable.trakt_id),
+      );
+      const updateItems = traktItems.filter(
+        (traktItem) => existingWatchableTraktIds.includes(getTraktId(traktItem)),
+      );
+      const newItems = traktItems.filter(
+        (traktItem) => !existingWatchableTraktIds.includes(getTraktId(traktItem)),
+      );
+
+      // 3. delete them
+      deletedItems.forEach((deletedItem) => {
+        tasks.push(deletedItem.destroy());
+      });
+
+      updateItems.forEach((traktItem) => {
+        const existingWatchable = existingWatchables.find(
+          (ew) => getTraktId(traktItem) === ew.trakt_id,
+        );
+        tasks.push(updateWatchable(req, traktItem, existingWatchable));
+      });
+
+      newItems.forEach((traktItem) => {
+        tasks.push(createWatchable(req, traktListId, traktItem));
+      });
+      await Promise.all(tasks);
+    } catch (e) {
+      debug(e);
+    }
+  });
 }
 
 const requireLogin = (req, res, next) => {
@@ -162,25 +168,6 @@ const requireLogin = (req, res, next) => {
   res.status(401).send('Unauthorized');
   next('Unauthorized');
 };
-
-function addUrls(req, watchable, provider_id, urls, serviceType) {
-  let i = 0;
-  if (!urls) {
-    return;
-  }
-  urls.forEach((link) => {
-    if (!link) {
-      return;
-    }
-    watchable.urls.push({
-      url: link,
-      service_type: serviceType,
-      custom: false,
-      provider_id,
-    });
-    i++;
-  });
-}
 
 function api(clientId, passport, settingsPromise) {
   settingsPromise.then((settings) => {
@@ -197,7 +184,7 @@ function api(clientId, passport, settingsPromise) {
   apiRouter.get(
     '/auth/trakt',
     passport.authenticate('trakt'),
-    (req, res) => {
+    () => {
       // The request will be redirected to Trakt for authentication, so this
       // function will not be called.
     },
@@ -222,15 +209,19 @@ function api(clientId, passport, settingsPromise) {
   });
 
   // FIXME: should this be a POST since it does something?
-  apiRouter.get('/refresh/:trakt_list_user_id/:trakt_list_id/', requireLogin, async (req, res, next) => {
+  apiRouter.get('/refresh/:trakt_list_user_id/:trakt_list_id/', requireLogin, async (req, res) => {
     try {
       debug('refresh api');
       const traktListId = req.params.trakt_list_id;
       const traktListUserId = req.params.trakt_list_user_id;
-      existingWatchables = await req.models.Watchable.findAll({ where: { trakt_list_id: traktListId } });
+      let existingWatchables = await req.models.Watchable.findAll(
+        { where: { trakt_list_id: traktListId } },
+      );
       refresh(clientId, req, traktListUserId, traktListId, existingWatchables);
 
-      existingWatchables = await req.models.Watchable.findAll({ where: { trakt_list_id: traktListId } });
+      existingWatchables = await req.models.Watchable.findAll(
+        { where: { trakt_list_id: traktListId } },
+      );
       res.json(existingWatchables);
     } catch (e) {
       debug(e);
@@ -238,7 +229,7 @@ function api(clientId, passport, settingsPromise) {
     }
   });
 
-  apiRouter.get('/lists', requireLogin, async (req, res, next) => {
+  apiRouter.get('/lists', requireLogin, async (req, res) => {
     const { user } = req;
     const response = await axios.get(`https://api.trakt.tv/users/${user.trakt_id}/lists/`, {
       headers: {
@@ -320,7 +311,7 @@ function api(clientId, passport, settingsPromise) {
       const uris = urls.filter((url) => url.service_type === watchableUrlType);
       let watchableUrl = uris.find((url) => url.selected === true);
       if (!watchableUrl) {
-        watchableUrl = uris[0];
+        [watchableUrl] = uris;
       }
       const uri = watchableUrl.url;
 
@@ -493,7 +484,7 @@ function api(clientId, passport, settingsPromise) {
         if (!fs.existsSync(imagePath)) {
           fs.mkdirSync(imagePath, { recursive: true });
         }
-        combined = PassThrough();
+        const combined = PassThrough();
         combined.pipe(fs.createWriteStream(fullPath));
         combined.pipe(res);
         await input.pipe(combined);
@@ -520,8 +511,6 @@ function api(clientId, passport, settingsPromise) {
       // hmm, so we need to store the type?
       sres = await trakt.search.id({ id_type: 'trakt', id: req.params.trakt_id, type: req.params.media_type });
       if (sres.length === 0) {
-        // TODO: find a way to cache this with an empty image
-        // res.json(404, { err: `could not find trakt item ${req.params.media_type} ${req.params.trakt_id}` });
         await writeFile(fs.createReadStream(defaultImagePath));
         return;
       }
@@ -530,8 +519,6 @@ function api(clientId, passport, settingsPromise) {
 
       const images = await trakt.images.get(ids);
       if (!images.poster) {
-        // TODO: find a way to cache this with an empty image
-        // res.json(404, { err: `could not find poster ${req.params.media_type} ${req.params.trakt_id}` });
         await writeFile(fs.createReadStream(defaultImagePath));
         return;
       }
@@ -542,7 +529,7 @@ function api(clientId, passport, settingsPromise) {
       });
       await writeFile(response.data);
     } catch (e) {
-      log(sres, e);
+      debug(sres, e);
     }
   });
 

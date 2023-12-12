@@ -1,6 +1,5 @@
 const debug = require('debug')('watchlist:receiver:adb');
 const ADB = require('@devicefarmer/adbkit');
-const { urlencoded } = require('body-parser');
 
 class Adb {
   async init(settings) {
@@ -29,6 +28,7 @@ class Adb {
 
     const cmd = 'am start -a android.intent.action.MAIN -c android.intent.category.HOME';
     const result = await device.shell(cmd);
+    debug(result);
   }
 
   async play(uri, attempt = 0) {
@@ -37,43 +37,24 @@ class Adb {
       debug(`Playing ${uri}`);
       const data = this.getData(uri);
       debug(`Returned ${data}`);
-      // const extras = [{key: 'source', value: 30}];
-      // const cmd = 'am start -a android.intent.action.VIEW -d https://www.netflix.com/title/70264888 -f 0x10808000 -e source 30 com.netflix.ninja/.MainActivity';
-      // const cmd = 'am start -a android.intent.action.VIEW -d https://www.netflix.com/title/70264888 -f 0x10808000 -e source 30 com.netflix.mediaclient.ui.launch.UIWebViewActivity';
-      // am start -a android.intent.action.VIEW -d https://www.hulu.com/watch/c6ebcc8a-ed80-4bc9-9d31-31b0f0bf9798
-      // am start -a android.intent.action.VIEW -d https://tv.apple.com/us/show/the-afterparty/umc.cmc.5wg8cnigwrkfzbdruaufzb6b0
-      // https://www.netflix.com/browse?jbv=80986854
-      // am start -a android.intent.action.VIEW -d https://www.netflix.com/title/80986854
       const device = this.client.getDevice(this.remoteID);
       const action = 'android.intent.action.VIEW';
-      // var options = {
-      //     action: 'android.intent.action.VIEW',
-      //     // category: 'android.intent.category.LEANBACK_LAUNCHER',
-      //     data,
-      //     wait: true,
-      //     flags: '0x10808000',
-      //     //extras,
-      //     //component,
-      // };
       const component = this.getComponent(uri);
-      // if (component != null) {
-      //    options.component = component;
-      // }
-      // console.log(options);
-      // let result = await device.startActivity(options);
+      // I used to use device.startActivity, but couldn't make it work consistenly
       const cmd = `am start -a ${action} -d ${data} -f 0x10808000 -e source 30 ${component}`;
       debug(`Cmd: ${cmd}`);
       const result = await device.shell(cmd);
       return result;
     } catch (e) {
       debug(e);
-      if (attempt == 0 && String(e).includes('not found')) {
+      if (attempt === 0 && String(e).includes('not found')) {
         return this.play(uri, 1);
       }
+      throw e;
     }
   }
 
-  getData(uri) {
+  static getData(uri) {
     if (uri.includes('www.amcplus.com')) {
       return uri.replace(/.*-([0-9]+)/, '$1');
     }
@@ -91,26 +72,23 @@ class Adb {
       // return `"netflix://title/${id}"`;
     }
     if (uri.includes('https://www.peacocktv.com/watch/asset/tv/')) {
-      const id = uri.replace(/https\:\/\/www.peacocktv.com\/watch\/asset\/tv\/[^\/]+\/([^\/]+)/, '$1');
+      const id = uri.replace(/https:\/\/www.peacocktv.com\/watch\/asset\/tv\/[^/]+\/([^/]+)/, '$1');
       const json = { providerSeriesId: id, type: 'SERIES', action: 'PDP' };
       return `https://www.peacocktv.com/deeplink?deeplinkData%3D${encodeURIComponent(JSON.stringify(json))}`;
     }
     if (uri.includes('https://www.peacocktv.com/watch/asset/movies/')) {
-      const id = uri.replace(/https\:\/\/www.peacocktv.com\/watch\/asset\/movies\/[^\/]+\/([^\/]+)/, '$1');
+      const id = uri.replace(/https:\/\/www.peacocktv.com\/watch\/asset\/movies\/[^/]+\/([^/]+)/, '$1');
       const json = { pvid: id, type: 'PROGRAMME', action: 'PDP' };
       return `https://www.peacocktv.com/deeplink?deeplinkData%3D${encodeURIComponent(JSON.stringify(json))}`;
     }
     if (uri.includes('www.amazon.com/')) {
       // https://watch.amazon.com/detail?asin=B0BYWHZ2FR
-      return uri.replace(/https\:\/\/www.amazon.com\/gp\/video\/detail\/(.*?)\/.*/, 'https://watch.amazon.com/detail?asin=$1');
+      return uri.replace(/https:\/\/www.amazon.com\/gp\/video\/detail\/(.*?)\/.*/, 'https://watch.amazon.com/detail?asin=$1');
     }
     return uri;
   }
 
-  //
-  // Hulu - I want the series URL - https://www.hulu.com/series/c6ebcc8a-ed80-4bc9-9d31-31b0f0bf9798 or https://www.hulu.com/movie/34fdd2c6-dd92-4440-ae64-4c820e476978
-  // Disney - https://www.disneyplus.com/series/never-say-never-with-jeff-jenkins/6Qsx2pH8tIly
-  getComponent(uri) {
+  static getComponent(uri) {
     if (String(uri).length === 0) {
       return null;
     }
@@ -178,13 +156,13 @@ class Adb {
         keyEvent = 'BACK';
         break;
       default:
-        console.log(`unknown button ${button}`);
+        debug(`unknown button ${button}`);
     }
     if (keyEvent === '') {
       return;
     }
 
-    console.log(`pushing button ${keyEvent}`);
+    debug(`pushing button ${keyEvent}`);
     const device = this.client.getDevice(this.remoteID);
     await device.shell(`input keyevent ${keyEvent}`);
   }

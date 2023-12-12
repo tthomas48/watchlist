@@ -1,3 +1,5 @@
+/* eslint no-underscore-dangle: 0 */
+const debug = require('debug')('watchlist');
 const express = require('express');
 const cors = require('cors');
 const bodyParser = require('body-parser');
@@ -93,5 +95,5 @@ app.get('/*', (req, res) => {
 });
 
 app.listen(port, bindHost, () => {
-  console.log(`API listening at http://${bindHost}:${port}`);
+  debug(`API listening at http://${bindHost}:${port}`);
 });
