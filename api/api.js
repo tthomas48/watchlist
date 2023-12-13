@@ -8,34 +8,8 @@ const singleflight = require('node-singleflight');
 const Trakt = require('trakt.tv');
 const TraktImages = require('trakt.tv-images');
 const receiverFactory = require('../receiver/factory');
-
-function getTitle(item) {
-  const { type } = item;
-  return item[type].title;
-}
-
-function getTraktId(item) {
-  const { type } = item;
-  return String(item[type].ids.trakt);
-}
-
-async function getTraktWatchlist(clientId, user, traktListUserId, traktListId) {
-  try {
-    const response = await axios.get(`https://api.trakt.tv/users/${traktListUserId}/lists/${traktListId}/items/`, {
-      headers: {
-        'Content-Type': 'application/json',
-        'trakt-api-version': '2',
-        'trakt-api-key': clientId,
-        Authorization: `Bearer ${user.access_token}`,
-      },
-    });
-    return response.data;
-  } catch (e) {
-    // FIXME: Handle this error better
-    debug(e);
-    return [];
-  }
-}
+const trakt = require('./trakt');
+const { getTitle, getTraktId } = require('./helpers');
 
 function addUrls(req, watchable, providerId, urls, serviceType) {
   if (!urls) {
@@ -59,7 +33,6 @@ async function createWatchable(req, traktListId, watchable) {
     title: getTitle(watchable),
     trakt_id: getTraktId(watchable),
     trakt_list_id: traktListId,
-    // justwatch_id: watchable.justwatch_id,
     image: watchable.image,
     media_type: watchable.type,
     imdb_id: watchable[watchable.type].ids?.imdb,
@@ -122,7 +95,7 @@ async function refresh(clientId, req, traktListUserId, traktListId, existingWatc
     try {
       debug('in refresh');
       const tasks = [];
-      const traktItems = await getTraktWatchlist(clientId, req.user, traktListUserId, traktListId);
+      const traktItems = await trakt.getWatchlist(clientId, req.user, traktListUserId, traktListId);
       debug(traktItems[0][traktItems[0].type].ids);
 
       // 2. find all that no longer exist in watchables
@@ -178,7 +151,6 @@ function api(clientId, passport, settingsPromise) {
 
   apiRouter.get('/login', (req, res) => {
     res.redirect('/api/auth/trakt');
-    // res.redirect(`https://trakt.tv/oauth/authorize?response_type=code&client_id=${clientId}&redirect_uri=${redirectUri}`);
   });
 
   apiRouter.get(

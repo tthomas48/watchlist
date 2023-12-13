@@ -1,14 +1,14 @@
-import AmazonPrime from './amazonprime';
-import AMCPlus from './amcplus';
-import AppleTV from './appletv';
-import BritBox from './britbox';
-import DisneyPlus from './disneyplus';
-import Hulu from './hulu';
-import Max from './max';
-import Netflix from './netflix';
-import PBS from './pbs';
-import PeacockTV from './peacocktv';
-import Starz from './starz';
+const AmazonPrime =require('./amazonprime');
+const AMCPlus=require('./amcplus');
+const AppleTV=require('./appletv');
+const BritBox=require('./britbox');
+const DisneyPlus=require('./disneyplus');
+const Hulu=require('./hulu');
+const Max=require('./max');
+const Netflix=require('./netflix');
+const PBS=require('./pbs');
+const PeacockTV=require('./peacocktv');
+const Starz=require('./starz');
 
 class ProviderFactory {
   constructor(providers) {
@@ -33,7 +33,7 @@ class ProviderFactory {
   }
 }
 
-export default new ProviderFactory([
+module.exports = new ProviderFactory([
   new AmazonPrime(),
   new AMCPlus(),
   new AppleTV(),

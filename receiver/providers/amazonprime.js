@@ -5,7 +5,6 @@ class AmazonPrime {
 
   static getData(uri) {
     if (uri.includes('www.amazon.com/')) {
-      // https://watch.amazon.com/detail?asin=B0BYWHZ2FR
       return uri.replace(/https:\/\/www.amazon.com\/gp\/video\/detail\/(.*?)\/.*/, 'https://watch.amazon.com/detail?asin=$1');
     }
     return uri;
@@ -15,4 +14,4 @@ class AmazonPrime {
     return 'com.amazon.amazonvideo.livingroom/com.amazon.ignition.IgnitionActivity';
   }
 }
-export default AmazonPrime;
+module.exports = AmazonPrime;

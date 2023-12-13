@@ -11,4 +11,4 @@ class Max {
     return 'com.wbd.stream/com.wbd.beam.BeamActivity';
   }
 }
-export default Max;
+module.exports = Max;

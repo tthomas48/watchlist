@@ -12,4 +12,4 @@ class PBS {
     return 'com.pbs.video/.ui.main.activities.StartupActivity';
   }
 }
-export default PBS;
+module.exports = PBS;

@@ -12,4 +12,4 @@ class Starz {
     return 'com.bydeluxe.d3.android.program.starz/com.starz.amznfiretv.SplashActivity';
   }
 }
-export default Starz;
+module.exports = Starz;

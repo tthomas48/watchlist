@@ -20,4 +20,4 @@ class Netflix {
     return 'com.netflix.ninja/.MainActivity';
   }
 }
-export default Netflix;
+module.exports = Netflix;

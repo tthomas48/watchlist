@@ -11,4 +11,4 @@ class DisneyPlus {
     return 'com.disney.disneyplus/com.bamtechmedia.dominguez.main.MainActivity';
   }
 }
-export default DisneyPlus;
+module.exports = DisneyPlus;

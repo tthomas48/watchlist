@@ -6,7 +6,8 @@
   "scripts": {
     "build-ui": "cd frontend && npm run build",
     "start": "npx sequelize-cli db:migrate && node index.js",
-    "lint": "npx eslint migrations/**/*.js api/**/*.js models/**/*.js receiver/**/*.js index.js"
+    "lint": "npx eslint migrations/**/*.js api/**/*.js models/**/*.js receiver/**/*.js index.js",
+    "test": "jest"
   },
   "dependencies": {
     "@devicefarmer/adbkit": "^3.2.5",
@@ -20,6 +21,7 @@
     "dotenv": "^16.3.1",
     "express": "^4.18.2",
     "express-session": "^1.17.3",
+    "jest": "^29.7.0",
     "justwatch-api": "^1.0.7",
     "node-singleflight": "^0.1.2",
     "passport": "^0.6.0",
@@ -31,6 +33,7 @@
     "trakt.tv-images": "^5.2.0"
   },
   "devDependencies": {
+    "@babel/preset-env": "^7.23.6",
     "eslint": "^8.55.0",
     "eslint-config-airbnb-base": "^15.0.0",
     "eslint-plugin-import": "^2.29.0"

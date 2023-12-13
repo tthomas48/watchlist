@@ -21,4 +21,4 @@ class PeacockTV {
     return 'com.peacocktv.peacockandroid/com.peacock.peacocktv.GoogleMainActivity';
   }
 }
-export default PeacockTV;
+module.exports = PeacockTV;

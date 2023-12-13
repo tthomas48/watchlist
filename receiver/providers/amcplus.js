@@ -11,4 +11,4 @@ class AMCPlus {
     return 'com.amcplus.amcandroidtv/com.amcplus.tv.MainActivity';
   }
 }
-export default AMCPlus;
+module.exports = AMCPlus;

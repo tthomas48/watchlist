@@ -12,4 +12,4 @@ class BritBox {
     return 'com.britbox.tv/axis.androidtv.sdk.app.MainActivity';
   }
 }
-export default BritBox;
+module.exports = BritBox;

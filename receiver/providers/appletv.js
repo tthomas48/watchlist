@@ -11,4 +11,4 @@ class AppleTV {
     return 'com.apple.atve.androidtv.appletv/.MainActivity';
   }
 }
-export default AppleTV;
+module.exports = AppleTV;

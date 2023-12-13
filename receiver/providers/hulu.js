@@ -11,4 +11,4 @@ class Hulu {
     return 'com.hulu.livingroomplus/.WKFactivity';
   }
 }
-export default Hulu;
+module.exports = Hulu;
