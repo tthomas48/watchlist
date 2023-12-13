@@ -5,7 +5,7 @@ class AmazonPrime {
 
   static getData(uri) {
     if (uri.includes('www.amazon.com/')) {
-      return uri.replace(/https:\/\/www.amazon.com\/gp\/video\/detail\/(.*?)\/.*/, 'https://watch.amazon.com/detail?asin=$1');
+      return uri.replace(/https:\/\/www.amazon.com\/gp\/video\/detail\/([^/?]+).*/, 'https://watch.amazon.com/detail?asin=$1');
     }
     return uri;
   }
