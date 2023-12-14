@@ -5,29 +5,16 @@ const cors = require('cors');
 const bodyParser = require('body-parser');
 const session = require('express-session');
 const SequelizeStore = require('connect-session-sequelize')(session.Store);
-const passport = require('passport');
-const TraktStrategy = require('passport-trakt').Strategy;
 const dotenv = require('dotenv');
+const TraktOauthProvider = require('./api/auth/trakt_oauth_provider');
+const receiverFactory = require('./receiver/factory');
 
 dotenv.config();
 const db = require('./models');
 const api = require('./api/api');
 
-const clientId = process.env.TRAKT_CLIENT_ID;
-const clientSecret = process.env.TRAKT_CLIENT_SECRET;
-const oauthHost = process.env.OAUTH_HOST; // This needs to match your Trakt app settings
-
 const port = process.env.PORT;
 const bindHost = process.env.BIND_HOST;
-
-passport.serializeUser((user, next) => {
-  next(null, user.trakt_id);
-});
-passport.deserializeUser((req, traktUserId, next) => {
-  req.models.User.findOne({ where: { trakt_id: traktUserId } }).then((user) => {
-    next(null, user);
-  }).catch((err) => next(err));
-});
 
 const app = express();
 app.use(cors());
@@ -58,38 +45,15 @@ app.use((req, res, next) => {
   }
   next();
 });
-app.use(passport.initialize());
-app.use(passport.session());
-passport.use(new TraktStrategy(
-  {
-    clientID: clientId,
-    clientSecret,
-    callbackURL: `${oauthHost}/api/auth/trakt/callback`,
-  },
-  (async (accessToken, refreshToken, params, profile, done) => {
-    let user = await db.User.findOne({ where: { trakt_id: profile.id } });
-    if (!user) {
-      user = await db.User.create({
-        trakt_id: profile.id,
-        name: profile._json.name,
-        username: profile.username,
-        private: profile._json.private,
-        vip: profile._json.vip,
-        vip_ep: profile._json.vip_ep,
-        access_token: accessToken,
-        refresh_token: refreshToken,
-      });
-    } else {
-      user = await user.update({ access_token: accessToken, refresh_token: refreshToken });
-    }
-    return done(null, user);
-  }),
-));
+TraktOauthProvider.configure(app, db);
 
 const settingsPromise = db.Settings.findOne();
+settingsPromise.then((settings) => {
+  receiverFactory.init(settings);
+});
 
-app.use(express.static('./frontend/build/'));
-app.use('/api', api(clientId, passport, settingsPromise));
+app.use(express.static('./build/'));
+app.use('/api', api(TraktOauthProvider, receiverFactory));
 app.get('/*', (req, res) => {
   res.sendFile(`${__dirname}/frontend/build/index.html`);
 });

@@ -7,7 +7,6 @@ const axios = require('axios');
 const singleflight = require('node-singleflight');
 const Trakt = require('trakt.tv');
 const TraktImages = require('trakt.tv-images');
-const receiverFactory = require('../receiver/factory');
 const trakt = require('./trakt');
 const { getTitle, getTraktId } = require('./helpers');
 
@@ -142,38 +141,9 @@ const requireLogin = (req, res, next) => {
   next('Unauthorized');
 };
 
-function api(clientId, passport, settingsPromise) {
-  settingsPromise.then((settings) => {
-    receiverFactory.init(settings);
-  });
-
+function api(authProvider, receiverFactory) {
   const apiRouter = new express.Router();
-
-  apiRouter.get('/login', (req, res) => {
-    res.redirect('/api/auth/trakt');
-  });
-
-  apiRouter.get(
-    '/auth/trakt',
-    passport.authenticate('trakt'),
-    () => {
-      // The request will be redirected to Trakt for authentication, so this
-      // function will not be called.
-    },
-  );
-
-  apiRouter.get(
-    '/auth/trakt/callback',
-    passport.authenticate('trakt', { failureRedirect: '/api/login' }),
-    (req, res) => {
-      if (req.session.returnTo) {
-        res.redirect(req.session.returnTo);
-        return;
-      }
-      // go somewhere bogus
-      res.redirect('/');
-    },
-  );
+  authProvider.addRoutes(apiRouter);
 
   apiRouter.get('/logout', (req, res) => {
     req.logout();
@@ -189,7 +159,7 @@ function api(clientId, passport, settingsPromise) {
       let existingWatchables = await req.models.Watchable.findAll(
         { where: { trakt_list_id: traktListId } },
       );
-      refresh(clientId, req, traktListUserId, traktListId, existingWatchables);
+      refresh(authProvider.getClientId(), req, traktListUserId, traktListId, existingWatchables);
 
       existingWatchables = await req.models.Watchable.findAll(
         { where: { trakt_list_id: traktListId } },
@@ -207,7 +177,7 @@ function api(clientId, passport, settingsPromise) {
       headers: {
         'Content-Type': 'application/json',
         'trakt-api-version': '2',
-        'trakt-api-key': clientId,
+        'trakt-api-key': authProvider.getClientId(),
         Authorization: `Bearer ${user.access_token}`,
       },
     });
@@ -215,7 +185,7 @@ function api(clientId, passport, settingsPromise) {
       headers: {
         'Content-Type': 'application/json',
         'trakt-api-version': '2',
-        'trakt-api-key': clientId,
+        'trakt-api-key': authProvider.getClientId(),
         Authorization: `Bearer ${user.access_token}`,
       },
     });
@@ -260,7 +230,7 @@ function api(clientId, passport, settingsPromise) {
       // if the most recent_update is more than a day ago then we should call refresh
       if (mostRecentUpdate < new Date(Date.now() - 1000 * 60 * 60 * 24)) {
         debug(`Refreshing because ${mostRecentUpdate} is more than a day ago`);
-        await refresh(clientId, req, traktListUserId, traktListId, existingWatchables);
+        await refresh(authProvider.getClientId(), req, traktListUserId, traktListId, existingWatchables);
       }
       existingWatchables = await req.models.Watchable.findAll(findAllOptions);
       res.json(existingWatchables);
@@ -463,7 +433,7 @@ function api(clientId, passport, settingsPromise) {
       };
 
       const trakt = new Trakt({
-        client_id: clientId,
+        client_id: authProvider.getClientId(),
         plugins: {
           images: TraktImages,
         },

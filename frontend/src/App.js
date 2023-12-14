@@ -44,7 +44,7 @@ function App() {
           <Toolbar disableGutters>
             <Grid container spacing={2} xs={12}>
               <Grid xs={12} md={5}>
-                <Typography variant="h6" noWrap>What To Watch</Typography>
+                <Typography variant="h6" noWrap>Watchlist</Typography>
               </Grid>
               <Grid xs={6} md={3}>
                 <ListPicker list={list} setList={setList}></ListPicker>
@@ -84,14 +84,11 @@ function App() {
         </Container>
       </AppBar>
       <Paper elevation={0} variant="outlined" square sx={{ padding: '8px' }}>
-        <Grid container spacing={2} className="SortBar">
+        <Grid container direction="row" justifyContent="space-between" alignItems="flex-end" className="SortBar" spacing={2}>
           <Grid xs={5}>
               <SortPicker sort={sort} setSort={setSort} />
           </Grid>
-          <Grid xs={5}>
-
-          </Grid>
-          <Grid xs={1}>
+          <Grid xs={3}>
             <AddItem />
           </Grid>
         </Grid>
