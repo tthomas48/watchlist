@@ -1,6 +1,4 @@
 TODO:
-Add the ability to view the trakt.tv page to see where something is playing.
-Add the ability to delete local.
 Maybe add a bookmarklet that can add a show if you go to it on a website.
 Add the ability to mark as completely watched, and check for new episodes
 MUI has ratings - we could add that feature

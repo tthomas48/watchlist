@@ -3,6 +3,7 @@ import { CardHeader, Card, CardMedia, CardActions, Button, Menu, MenuItem } from
 import MenuIcon from '@mui/icons-material/Menu';
 import PlayButton from './PlayButton';
 import EditButton from './EditButton';
+import ViewOnTraktButton from './ViewOnTraktButton';
 import HideButton from './HideButton';
 import CommentButton from './CommentButton';
 
@@ -48,6 +49,7 @@ function WatchlistItem({ item, player, saveWatchable }) {
                 }}
             >
                 <MenuItem onClick={handleClose}><EditButton id={item.id}></EditButton></MenuItem>
+                <MenuItem onClick={handleClose}><ViewOnTraktButton disabled={item.local} traktId={item.trakt_id} mediaType={item.media_type}></ViewOnTraktButton></MenuItem>
                 <MenuItem onClick={handleClose}><HideButton item={item} saveWatchable={saveWatchable}></HideButton></MenuItem>
             </Menu>
         </CardActions>
