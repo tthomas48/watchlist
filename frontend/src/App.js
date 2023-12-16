@@ -89,7 +89,7 @@ function App() {
               <SortPicker sort={sort} setSort={setSort} />
           </Grid>
           <Grid xs={3}>
-            <AddItem />
+            <AddItem list={list} />
           </Grid>
         </Grid>
         <Grid container spacing={2} className="App">

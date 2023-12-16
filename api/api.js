@@ -101,7 +101,7 @@ async function refresh(clientId, req, traktListUserId, traktListId, existingWatc
       const existingTraktIds = traktItems.map((traktItem) => getTraktId(traktItem));
       const existingWatchableTraktIds = existingWatchables.map((watchable) => watchable.trakt_id);
       const deletedItems = existingWatchables.filter(
-        (watchable) => !existingTraktIds.includes(watchable.trakt_id),
+        (watchable) => !existingTraktIds.includes(watchable.trakt_id) && !watchable.local,
       );
       const updateItems = traktItems.filter(
         (traktItem) => existingWatchableTraktIds.includes(getTraktId(traktItem)),
@@ -302,6 +302,14 @@ function api(authProvider, receiverFactory) {
     res.json({});
   });
 
+  apiRouter.put('/watchables/', requireLogin, async (req, res) => {
+    const watchablesCreate = req.body;
+    const watchable = req.models.Watchable.build(watchablesCreate);    
+    await watchable.save();
+    res.json(watchable);
+  });
+
+
   apiRouter.get('/watchables/:id', requireLogin, async (req, res) => {
     try {
       const watchable = await req.models.Watchable.findOne({
@@ -316,6 +324,22 @@ function api(authProvider, receiverFactory) {
       debug(e);
       res.json(500, { error: e });
     }
+  });
+
+  apiRouter.delete('/watchables/:id', requireLogin, async (req, res) => {
+    const watchable = await req.models.Watchable.findOne({
+      where: { id: req.params.id },
+    });
+    if (!watchable) {
+      res.status(404).json({ error: 'not found' });
+      return;
+    }
+    if (!watchable.local) {
+      res.status(400).json({ error: 'only local watchables can be deleted' });
+      return;
+    }
+    await watchable.destroy();
+    res.status(204).send();
   });
 
   apiRouter.post('/watchables/:id', requireLogin, async (req, res) => {
@@ -408,6 +432,63 @@ function api(authProvider, receiverFactory) {
     const provider = receiverFactory.getReceiver(serviceType);
     await provider.pushButton(button);
     res.status(200).json('ok');
+  });
+
+  apiRouter.get('/img-local/:watchable_id', requireLogin, async (req, res) => {
+    let sres;
+    try {
+      const defaultImagePath = path.join(__dirname, '../images/movie.jpg');
+      const imagePath = path.join(__dirname, '../data/img/local/');
+      const fileName = `${req.params.watchable_id}.jpg`;
+      const fullPath = path.join(imagePath, fileName);
+      if (fs.existsSync(fullPath)) {
+        await fs.createReadStream(fullPath).pipe(res);
+        return;
+      }
+
+      const writeFile = async (input) => {
+        if (!fs.existsSync(imagePath)) {
+          fs.mkdirSync(imagePath, { recursive: true });
+        }
+        const combined = PassThrough();
+        combined.pipe(fs.createWriteStream(fullPath));
+        combined.pipe(res);
+        await input.pipe(combined);
+      };
+
+      await writeFile(fs.createReadStream(defaultImagePath));
+    } catch (e) {
+      debug(sres, e);
+    }
+  });
+
+  apiRouter.post('/img-local/:watchable_id', requireLogin, async (req, res) => {
+    try {
+      const { imageUrl } = req.body;
+      const imagePath = path.join(__dirname, '../data/img/local/');
+      const fileName = `${req.params.watchable_id}.jpg`;
+      const fullPath = path.join(imagePath, fileName);
+
+      const writeFile = async (input) => {
+        if (!fs.existsSync(imagePath)) {
+          fs.mkdirSync(imagePath, { recursive: true });
+        }
+        const combined = PassThrough();
+        combined.pipe(fs.createWriteStream(fullPath));
+        // combined.pipe(res);
+        await input.pipe(combined);
+      };
+
+      const response = await axios({
+        method: 'get',
+        url: imageUrl,
+        responseType: 'stream',
+      });
+      await writeFile(response.data);
+      res.json({});
+    } catch (e) {
+      debug(e);
+    }
   });
 
   apiRouter.get('/img/:media_type/:trakt_id', requireLogin, async (req, res) => {

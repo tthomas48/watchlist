@@ -35,6 +35,7 @@ module.exports = (sequelize, DataTypes) => {
     last_played: DataTypes.DATE,
     comment: DataTypes.TEXT,
     hidden: DataTypes.BOOLEAN,
+    local: DataTypes.BOOLEAN,
   }, {
     sequelize,
     modelName: 'Watchable',

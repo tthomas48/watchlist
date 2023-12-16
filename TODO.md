@@ -1,7 +1,6 @@
 TODO:
-Do I need trak.tv?
 Add the ability to view the trakt.tv page to see where something is playing.
-Abb the ability to put in an image URL and have the system download it to its cache.
+Add the ability to delete local.
 Maybe add a bookmarklet that can add a show if you go to it on a website.
 Add the ability to mark as completely watched, and check for new episodes
 MUI has ratings - we could add that feature
