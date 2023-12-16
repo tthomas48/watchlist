@@ -134,7 +134,7 @@ function Watchable() {
                                 color: 'text.paper',
                                 overflow: 'hidden',
                                 maxWidth: '162px'
-                            }} defaultValue={web_url} InputLabelProps={{ shrink: true }} />
+                            }} InputLabelProps={{ shrink: true }} />
                         </FormControl>
                         <IconButton aria-label="download" onClick={() => doDownload(data.watchable)}>
                             <DownloadIcon />
