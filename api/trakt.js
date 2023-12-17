@@ -1,3 +1,6 @@
+const debug = require('debug')('watchlist:api:trakt');
+const axios = require('axios');
+
 async function getWatchlist(clientId, user, traktListUserId, traktListId) {
   try {
     const response = await axios.get(`https://api.trakt.tv/users/${traktListUserId}/lists/${traktListId}/items/`, {
