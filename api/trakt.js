@@ -1,4 +1,4 @@
-async function gettWatchlist(clientId, user, traktListUserId, traktListId) {
+async function getWatchlist(clientId, user, traktListUserId, traktListId) {
   try {
     const response = await axios.get(`https://api.trakt.tv/users/${traktListUserId}/lists/${traktListId}/items/`, {
       headers: {
@@ -17,5 +17,5 @@ async function gettWatchlist(clientId, user, traktListUserId, traktListId) {
 }
 
 module.exports = {
-  gettWatchlist,
+  getWatchlist,
 };
