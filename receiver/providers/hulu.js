@@ -1,13 +1,13 @@
 class Hulu {
-  static provides(uri) {
+  provides(uri) {
     return uri.includes('package=com.hulu.livingroomplus') || uri.includes('www.hulu.com');
   }
 
-  static getData(uri) {
+  getData(uri) {
     return uri;
   }
 
-  static getComponent(/* uri */) {
+  getComponent(/* uri */) {
     return 'com.hulu.livingroomplus/.WKFactivity';
   }
 }

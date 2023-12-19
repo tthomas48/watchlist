@@ -1,9 +1,9 @@
 class PeacockTV {
-  static provides(uri) {
+  provides(uri) {
     return uri.includes('www.peacocktv.com');
   }
 
-  static getData(uri) {
+  getData(uri) {
     if (uri.includes('https://www.peacocktv.com/watch/asset/tv/')) {
       const id = uri.replace(/https:\/\/www.peacocktv.com\/watch\/asset\/tv\/[^/]+\/([^/]+)/, '$1');
       const json = { providerSeriesId: id, type: 'SERIES', action: 'PDP' };
@@ -17,7 +17,7 @@ class PeacockTV {
     return uri;
   }
 
-  static getComponent(/* uri */) {
+  getComponent(/* uri */) {
     return 'com.peacocktv.peacockandroid/com.peacock.peacocktv.GoogleMainActivity';
   }
 }

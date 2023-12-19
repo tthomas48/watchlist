@@ -1,9 +1,9 @@
 class Netflix {
-  static provides(uri) {
+  provides(uri) {
     return uri.includes('www.netflix.com/');
   }
 
-  static getData(uri) {
+  getData(uri) {
     let id = '';
     if (uri.match(/.*\/title\/([0-9]+)/)) {
       // id = uri.replace(/.*\/title\/([0-9]+)/, "$1");
@@ -16,7 +16,7 @@ class Netflix {
     return uri;
   }
 
-  static getComponent(/* uri */) {
+  getComponent(/* uri */) {
     return 'com.netflix.ninja/.MainActivity';
   }
 }

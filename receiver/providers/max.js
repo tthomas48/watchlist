@@ -1,13 +1,13 @@
 class Max {
-  static provides(uri) {
+  provides(uri) {
     return uri.includes('play.max.com');
   }
 
-  static getData(uri) {
+  getData(uri) {
     return uri;
   }
 
-  static getComponent(/* uri */) {
+  getComponent(/* uri */) {
     return 'com.wbd.stream/com.wbd.beam.BeamActivity';
   }
 }

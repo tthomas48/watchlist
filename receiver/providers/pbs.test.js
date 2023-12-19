@@ -4,5 +4,5 @@ const PBS = require('./pbs');
 test('PBS transforms url', () => {
   const uri = 'https://www.pbs.org/wgbh/roadshow/';
   const expected = 'https://www.pbs.org/wgbh/roadshow/';
-  expect(PBS.getData(uri)).toBe(expected);
+  expect(new PBS().getData(uri)).toBe(expected);
 });

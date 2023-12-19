@@ -1,14 +1,14 @@
 class Starz {
-  static provides(uri) {
+  provides(uri) {
     // this probably no longer works
     return uri.includes('starz');
   }
 
-  static getData(uri) {
+  getData(uri) {
     return uri;
   }
 
-  static getComponent(/* uri */) {
+  getComponent(/* uri */) {
     return 'com.bydeluxe.d3.android.program.starz/com.starz.amznfiretv.SplashActivity';
   }
 }
