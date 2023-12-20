@@ -1,3 +1,4 @@
+const debug = require('debug')('watchlist:receiver:factory');
 const adb = require('./adb');
 const redirect = require('./redirect');
 
@@ -21,8 +22,12 @@ class ReceiverFactory {
     const tasks = [];
     Object.keys(this.receivers).forEach((key) => {
       tasks.push(async () => {
-        await this.receivers[key].disconnect();
-        await this.receivers[key].init(settings);
+        try {
+          await this.receivers[key].disconnect();
+          await this.receivers[key].init(settings);
+        } catch (e) {
+          debug(e);
+        }
       });
     });
     return Promise.all(tasks);

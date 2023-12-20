@@ -8,9 +8,6 @@ test('getTitle should return correct value', () => {
   expect(getTitle({ type: 'show', show: { title: null } })).toBe(null);
   expect(getTitle({ type: 'show', show: { title: 'my title' } })).toBe('my title');
   expect(getTitle({ type: 'movie', show: { title: 'my title' } })).toBe(null);
-  // expect(getTitle({type: 'show', 'show': {ids: null}})).toBe(null);
-  // expect(getTitle({type: 'show', 'show': {ids: 'not an array'}})).toBe(null);
-  // expect(getTitle({type: 'show', 'show': {ids: p[]}})).toBe(null);
 });
 test('getTraktId should return correct value', () => {
   expect(getTraktId({})).toBe(null);

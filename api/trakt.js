@@ -11,7 +11,11 @@ async function getWatchlist(clientId, user, traktListUserId, traktListId) {
         Authorization: `Bearer ${user.access_token}`,
       },
     });
-    return response.data;
+    if (response.status === 200) {
+      return response.data;
+    }
+    debug(response);
+    return [];
   } catch (e) {
     // FIXME: Handle this error better
     debug(e);
