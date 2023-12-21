@@ -1,5 +1,4 @@
 TODO:
-Figure out how to bubble up errors.
 Maybe add a bookmarklet that can add a show if you go to it on a website.
 Add the ability to mark as completely watched, and check for new episodes
 MUI has ratings - we could add that feature

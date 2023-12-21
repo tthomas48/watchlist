@@ -26,6 +26,13 @@ class Api {
         open: true,
       });
       throw new Error(`[${res.status}]: ${json.message}`);
+    } else if (json != null && json.message) {
+      this.messageContext.sendMessage({
+        message: json.message,
+        status: res.status,
+        severity: 'success',
+        open: true,
+      });
     }
     return json;
   }

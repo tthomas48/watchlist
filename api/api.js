@@ -266,12 +266,11 @@ function api(authProvider, receiverFactory) {
       debug(`Playing ${uri} with ${serviceType}`);
       if (await receiver.play(uri)) {
         await watchable.save();
-        res.json({ uri });
+        res.json({ uri, message: `Playing ${watchable.title} with ${serviceType}` });
         return;
       }
       throw new Error('unable to play');
     } catch (err) {
-      debug(err);
       const msg = JSON.stringify(err, Object.getOwnPropertyNames(err));
       debug(msg);
       res.status(500).send(msg);

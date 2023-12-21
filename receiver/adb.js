@@ -41,7 +41,9 @@ class Adb {
       const cmd = ProviderFactory.getCommand(uri);
       debug(`Cmd: ${cmd}`);
       const result = await device.shell(cmd);
-      return result;
+      const output = await ADB.Adb.util.readAll(result);
+      debug(output.toString().trim());
+      return output;
     } catch (e) {
       debug(e);
       if (attempt === 0 && String(e).includes('not found')) {
