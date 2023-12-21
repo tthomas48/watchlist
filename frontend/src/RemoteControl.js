@@ -1,4 +1,4 @@
-import { useState, Fragment } from 'react';
+import { useState, Fragment, useContext } from 'react';
 import { Fab, Drawer, Stack, Box } from '@mui/material';
 import Grid from '@mui/material/Unstable_Grid2';
 import ArrowCircleUpIcon from '@mui/icons-material/ArrowCircleUp';
@@ -9,9 +9,13 @@ import ArrowBackIcon from '@mui/icons-material/ArrowBack';
 import SettingsRemoteIcon from '@mui/icons-material/SettingsRemote';
 import AdjustIcon from '@mui/icons-material/Adjust';
 import HomeIcon from '@mui/icons-material/Home';
-import { pushButton } from './api';
+import MessageContext from './context/MessageContext.js';
+import Api from './service/api.js'
 
 function RemoteControl({ player }) {
+    const messageContext = useContext(MessageContext);
+    const api = new Api(messageContext);
+
     const anchor = "remoteOpen";
     const [state, setState] = useState({ remoteOpen: false });
     const toggleDrawer = (anchor, open) => (event) => {
@@ -24,7 +28,7 @@ function RemoteControl({ player }) {
     };
 
     const pushButtonAction = async (button) => {
-        await pushButton(player, button);
+        await api.pushButton(player, button);
     };
 
     if (player !== "googletv") {

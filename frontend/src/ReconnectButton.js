@@ -1,14 +1,19 @@
+import { useContext } from 'react';
 import Button from '@mui/material/Button';
 import SettingsInputComponentIcon from '@mui/icons-material/SettingsInputComponent';
-import {reconnect} from './api';
+import MessageContext from './context/MessageContext';
+import Api from './service/api';
 
 function ReconnectButton({ player }) {
+    const messageContext = useContext(MessageContext);
+    const api = new Api(messageContext);
+
     if (player !== "googletv") {
         return;
     }
 
     return (
-        <Button aria-label="reconnect adb" volot="secondary" onClick={() => reconnect()} startIcon={<SettingsInputComponentIcon />}>
+        <Button aria-label="reconnect adb" volot="secondary" onClick={() => api.reconnect()} startIcon={<SettingsInputComponentIcon />}>
              Reconnect
         </Button>
     );

@@ -1,4 +1,5 @@
-import {useNavigate} from 'react-router-dom';
+import { useContext } from 'react';
+import { useNavigate } from 'react-router-dom';
 import {
     useQuery,
     useQueryClient,
@@ -6,29 +7,34 @@ import {
 } from '@tanstack/react-query';
 import { useForm } from 'react-hook-form';
 import { Typography, Paper, Button, TextField, Stack } from '@mui/material';
-import { getSettings, saveSettings } from './api';
+import { MessageContext } from './context/MessageContext.js';
+import Api from './service/api.js'
 import './Settings.css';
 
 function Settings() {
+    const messageContext = useContext(MessageContext);
+    const api = new Api(messageContext);
+
     const navigate = useNavigate();
     const queryClient = useQueryClient();
 
-    let { data, isLoading } = useQuery({ 
-        queryKey: ['settings'], 
-        queryFn: getSettings,
+    let { data, isLoading } = useQuery({
+        queryKey: ['settings'],
+        queryFn: async () => await api.getSettings(),
         staleTime: Infinity, // do not refresh data
     })
 
     const { mutate } = useMutation({
-        mutationFn: (newSettings) => {
-            if (saveSettings(newSettings)) {
+        mutationFn: async (newSettings) => {
+            const res = await api.saveSettings(newSettings)
+            if (res) {
                 queryClient.invalidateQueries({ queryKey: ['settings'] });
                 navigate('/');
                 return true;
             }
             return false;
         },
-      });
+    });
     const { register, handleSubmit } = useForm();
 
     if (isLoading) {
@@ -45,7 +51,7 @@ function Settings() {
                     justifyContent="center"
                     alignItems="center"
                     spacing={2}
-                    >
+                >
                     <Typography variant="h6" sx={{
                         color: 'text.paper',
                     }}>
@@ -62,7 +68,7 @@ function Settings() {
                         justifyContent="center"
                         alignItems="center"
                         spacing={1}
-                        >
+                    >
                         <Button variant="outlined" type="submit">Save</Button>
                         <Button variant="outlined" onClick={() => navigate('/')}>Cancel</Button>
                     </Stack>

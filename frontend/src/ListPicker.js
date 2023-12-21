@@ -1,11 +1,15 @@
+import { useContext } from 'react';
 import { useQuery } from '@tanstack/react-query'
 import FormControl from '@mui/material/FormControl';
 import InputLabel from '@mui/material/InputLabel';
 import { NativeSelect } from '@mui/material';
-import { getLists } from './api';
+import { MessageContext } from './context/MessageContext.js';
+import Api from './service/api';
 
 function ListPicker({list, setList }) {
-    const query = useQuery({ queryKey: ['lists'], queryFn: getLists })
+    const messageContext = useContext(MessageContext);
+    const api = new Api(messageContext);  
+    const query = useQuery({ queryKey: ['lists'], queryFn: async () => await api.getLists() })
     if (query.isLoading) {
         return (
             <FormControl fullWidth>

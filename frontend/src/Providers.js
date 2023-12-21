@@ -19,12 +19,12 @@ import {
 import {
     randomId,
 } from '@mui/x-data-grid-generator';
-import { getProviders, updateProvider, createProvider, deleteProvider } from './api';
-
-
-
+import { MessageContext } from './context/MessageContext.js';
+import Api from './service/api.js'
 
 function Providers() {
+    const messageContext = React.useContext(MessageContext);
+    const api = new Api(messageContext);
     const navigate = useNavigate();
     const [rows, setRows] = React.useState([]);
     const [rowModesModel, setRowModesModel] = React.useState({});
@@ -52,12 +52,12 @@ function Providers() {
 
     let { data, isLoading, refetch } = useQuery({
         queryKey: ['providers'],
-        queryFn: getProviders,
+        queryFn: async () => api.getProviders,
         staleTime: Infinity, // do not refresh data
     });
     React.useEffect(() => {
         setRows(data || []);
-      }, [data, setRows]);
+    }, [data, setRows]);
     console.log(data);
     // const [rows, setRows] = React.useState([]);
     if (isLoading) {
@@ -81,7 +81,7 @@ function Providers() {
 
     const handleDeleteClick = (id) => async () => {
         console.log("Delete");
-        await deleteProvider(id);
+        await api.deleteProvider(id);
         refetch();
         // setRows(rows.filter((row) => row.id !== id));
     };
@@ -101,9 +101,9 @@ function Providers() {
     const processRowUpdate = async (newRow) => {
         let updatedRow = { ...newRow, isNew: false };
         if (newRow.isNew) {
-            updatedRow = await createProvider(updatedRow);
+            updatedRow = await api.createProvider(updatedRow);
         } else {
-            updatedRow = await updateProvider(updatedRow.id, updatedRow);
+            updatedRow = await api.updateProvider(updatedRow.id, updatedRow);
         }
         // we have to use the auto-generated row rather than the row from the server
         refetch();
@@ -177,48 +177,48 @@ function Providers() {
         },
     ];
     return (
-    <Stack direction="column"
-        justifyContent="center"
-        alignItems="center"
-        spacing={1}>
-        <Box
-        sx={{
-            height: 500,
-            width: '100%',
-            '& .actions': {
-                color: 'text.secondary',
-            },
-            '& .textPrimary': {
-                color: 'text.primary',
-            },
-        }}
-    >
-        <DataGrid
-            autoPageSize
-            rows={rows}
-            columns={columns}
-            editMode="row"
-            rowModesModel={rowModesModel}
-            onRowModesModelChange={handleRowModesModelChange}
-            onRowEditStop={handleRowEditStop}
-            processRowUpdate={processRowUpdate}
-            processRowUpdateError={processRowUpdateError}
-            slots={{
-                toolbar: EditToolbar,
-            }}
-            slotProps={{
-                toolbar: { setRowModesModel },
-            }}
-        />
-        </Box>
-        <Stack
-                        direction="row"
-                        justifyContent="center"
-                        alignItems="center"
-                        spacing={1}
-                        >
-            <Button variant="outlined" onClick={() => navigate('/')}>Return</Button>
-        </Stack>
-    </Stack>);
+        <Stack direction="column"
+            justifyContent="center"
+            alignItems="center"
+            spacing={1}>
+            <Box
+                sx={{
+                    height: 500,
+                    width: '100%',
+                    '& .actions': {
+                        color: 'text.secondary',
+                    },
+                    '& .textPrimary': {
+                        color: 'text.primary',
+                    },
+                }}
+            >
+                <DataGrid
+                    autoPageSize
+                    rows={rows}
+                    columns={columns}
+                    editMode="row"
+                    rowModesModel={rowModesModel}
+                    onRowModesModelChange={handleRowModesModelChange}
+                    onRowEditStop={handleRowEditStop}
+                    processRowUpdate={processRowUpdate}
+                    processRowUpdateError={processRowUpdateError}
+                    slots={{
+                        toolbar: EditToolbar,
+                    }}
+                    slotProps={{
+                        toolbar: { setRowModesModel },
+                    }}
+                />
+            </Box>
+            <Stack
+                direction="row"
+                justifyContent="center"
+                alignItems="center"
+                spacing={1}
+            >
+                <Button variant="outlined" onClick={() => navigate('/')}>Return</Button>
+            </Stack>
+        </Stack>);
 }
 export default Providers;

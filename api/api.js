@@ -219,20 +219,23 @@ function api(authProvider, receiverFactory) {
         where: { trakt_list_id: traktListId },
         order,
       };
-      let existingWatchables = await req.models.Watchable.findAll(findAllOptions);
+      const existingWatchables = await req.models.Watchable.findAll(findAllOptions);
+      // FIXME: this needs a better way of tracking refreshes
       // get the most recent updated_at from existingWatchables
-      const mostRecentUpdate = existingWatchables.reduce((acc, watchable) => {
-        if (watchable.updatedAt > acc) {
-          return watchable.updatedAt;
-        }
-        return acc;
-      }, new Date(0));
+      // const mostRecentUpdate = existingWatchables.reduce((acc, watchable) => {
+      //   if (watchable.updatedAt > acc) {
+      //     return watchable.updatedAt;
+      //   }
+      //   return acc;
+      // }, new Date(0));
+      //
       // if the most recent_update is more than a day ago then we should call refresh
-      if (mostRecentUpdate < new Date(Date.now() - 1000 * 60 * 60 * 24)) {
-        debug(`Refreshing because ${mostRecentUpdate} is more than a day ago`);
-        await refresh(authProvider.getClientId(), req, traktListUserId, traktListId, existingWatchables);
-      }
-      existingWatchables = await req.models.Watchable.findAll(findAllOptions);
+      // if (mostRecentUpdate < new Date(Date.now() - 1000 * 60 * 60 * 24)) {
+      //   debug(`Refreshing because ${mostRecentUpdate} is more than a day ago`);
+      //   await refresh(authProvider.getClientId(), req, 
+      // traktListUserId, traktListId, existingWatchables);
+      // }
+      // existingWatchables = await req.models.Watchable.findAll(findAllOptions);
       res.json(existingWatchables);
     } catch (e) {
       debug(e);
@@ -255,19 +258,23 @@ function api(authProvider, receiverFactory) {
       if (!watchableUrl) {
         [watchableUrl] = uris;
       }
+      if (!watchableUrl || !watchableUrl.url) {
+        throw new Error(`no url specified for ${watchable.title}`);
+      }
       const uri = watchableUrl.url;
-
-      const provider = receiverFactory.getReceiver(serviceType);
+      const receiver = receiverFactory.getReceiver(serviceType);
       debug(`Playing ${uri} with ${serviceType}`);
-      if (await provider.play(uri)) {
+      if (await receiver.play(uri)) {
         await watchable.save();
         res.json({ uri });
         return;
       }
       throw new Error('unable to play');
-    } catch (e) {
-      debug(e);
-      res.status(500).json(e);
+    } catch (err) {
+      debug(err);
+      const msg = JSON.stringify(err, Object.getOwnPropertyNames(err));
+      debug(msg);
+      res.status(500).send(msg);
     }
   });
   apiRouter.get('/settings', requireLogin, async (req, res) => {
@@ -294,11 +301,11 @@ function api(authProvider, receiverFactory) {
 
   apiRouter.post('/reconnect', requireLogin, async (req, res) => {
     const settings = await req.models.Settings.findOne();
-    if (!settings) {
+    if (settings) {
       res.status(500).json({ error: 'player has not been configured' });
       return;
     }
-    await receiverFactory.update(settings);
+    const promises = await receiverFactory.update(settings);
     res.json({});
   });
 

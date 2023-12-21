@@ -1,6 +1,8 @@
+import { useContext } from 'react';
 import { useQuery, useQueryClient, useMutation } from '@tanstack/react-query';
 import { useOutletContext } from "react-router-dom";
-import { getWatchlist, saveWatchable } from './api';
+import { MessageContext } from './context/MessageContext.js';
+import Api from './service/api.js'
 import { Box } from '@mui/material';
 import Grid from '@mui/material/Unstable_Grid2';
 import WatchlistItem from './WatchlistItem';
@@ -12,28 +14,30 @@ function showItem(item, player, saveWatchableMutation, showHidden) {
     }
     return (
         <Grid xs={6} md={3}>
-            <WatchlistItem item={item} player={player} saveWatchable={saveWatchableMutation.mutate}/>
+            <WatchlistItem item={item} player={player} saveWatchable={saveWatchableMutation.mutate} />
         </Grid>
     );
 }
 
 function Watchlist() {
+    const messageContext = useContext(MessageContext);
+    const api = new Api(messageContext);
     // Queries
     const queryClient = useQueryClient()
     const [list, player, showHidden, sort] = useOutletContext();
-    const { data, isLoading, isError, error } = useQuery({ queryKey: ['watchlist', list, sort], queryFn: () => getWatchlist(list, sort) });
+    const { data, isLoading, isError, error } = useQuery({ queryKey: ['watchlist', list, sort], queryFn: async () => await api.getWatchlist(list, sort) });
     const saveWatchableMutation = useMutation({
         mutationFn: async (watchable) => {
             try {
-                const updated = await saveWatchable(watchable.id, watchable);
+                const updated = await api.saveWatchable(watchable.id, watchable);
                 queryClient.setQueryData(['watchlist', { id: watchable.id }], updated)
                 return true;
-            } catch(e) {
+            } catch (e) {
                 console.error(e);
             }
             return false;
         },
-      });
+    });
 
     return (
         <div>

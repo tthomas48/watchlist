@@ -1,13 +1,17 @@
-import { useState } from 'react';
+import { useState, useContext } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useForm } from 'react-hook-form';
 import { useParams, useNavigate } from 'react-router-dom';
 import { Typography, Paper, Button, TextField, Stack, FormControl, FormHelperText, IconButton, InputLabel, NativeSelect } from '@mui/material';
-import { getWatchable, saveWatchable, getProviders, updateImage, deleteWatchable } from './api';
+import { MessageContext } from './context/MessageContext.js';
+import Api from './service/api.js'
 import SearchIcon from '@mui/icons-material/Search';
 import DownloadIcon from '@mui/icons-material/Download';
 
 function Watchable() {
+    const messageContext = useContext(MessageContext);
+    const api = new Api(messageContext);
+
     let { id } = useParams();
     const [provider, setProvider] = useState('');
     const navigate = useNavigate();
@@ -19,7 +23,7 @@ function Watchable() {
     const { mutate } = useMutation({
         mutationFn: async (watchable) => {
             try {
-                await saveWatchable(id, watchable);
+                await api.saveWatchable(id, watchable);
                 queryClient.invalidateQueries({ queryKey: ['watchable', id] });
                 navigate('/');
                 return true;
@@ -32,13 +36,13 @@ function Watchable() {
 
     let { data, isLoading } = useQuery({
         queryKey: ['watchable', id],
-        queryFn: () => getWatchable(id),
+        queryFn: async () => await api.getWatchable(id),
         staleTime: Infinity, // do not refresh data
     });
 
     const providerQuery = useQuery({
         queryKey: ['providers'],
-        queryFn: getProviders,
+        queryFn: async () => await api.getProviders(),
         staleTime: Infinity,
     });
 
@@ -57,12 +61,12 @@ function Watchable() {
 
     const doDownload = async (item) => {
         const values = getValues();
-        await updateImage(item.id, values.image_url);        
+        await api.updateImage(item.id, values.image_url);
         queryClient.invalidateQueries({ queryKey: ['watchable', id] });
     };
 
     const doDelete = async (item) => {
-        await deleteWatchable(item.id);
+        await api.deleteWatchable(item.id);
         queryClient.invalidateQueries({ queryKey: ['watchlist'] });
         queryClient.invalidateQueries({ queryKey: ['watchable', id] });
         navigate('/');
@@ -77,6 +81,7 @@ function Watchable() {
             web_url = url.url;
         }
     });
+    console.log(providerQuery.data);
 
     return (
         <Paper variant="outlined" sx={{
