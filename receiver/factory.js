@@ -18,17 +18,20 @@ class ReceiverFactory {
     return Promise.all(tasks);
   }
 
+  async updateReceiver(settings, key) {
+    try {
+      debug(`Running update for ${key}`);
+      await this.receivers[key].disconnect();
+      await this.receivers[key].init(settings);
+    } catch (e) {
+      debug(e);
+    }
+  }
+
   async update(settings) {
     const tasks = [];
     Object.keys(this.receivers).forEach((key) => {
-      tasks.push(async () => {
-        try {
-          await this.receivers[key].disconnect();
-          await this.receivers[key].init(settings);
-        } catch (e) {
-          debug(e);
-        }
-      });
+      tasks.push(this.updateReceiver(settings, key));
     });
     return Promise.all(tasks);
   }

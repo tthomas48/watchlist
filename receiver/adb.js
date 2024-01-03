@@ -8,11 +8,13 @@ class Adb {
       if (!settings || !settings.googletv_host || !settings.googletv_port) {
         return;
       }
+      debug(`Initializing adb with device at ${settings.googletv_host}:${settings.googletv_port}`);
       this.client = ADB.Adb.createClient();
       this.host = settings.googletv_host;
       this.port = settings.googletv_port;
 
       this.remoteID = await this.client.connect(this.host, this.port);
+      debug(`Remote id ${this.remoteID}`);
     } catch (e) {
       debug(e);
     }
@@ -22,9 +24,17 @@ class Adb {
     if (this.host && this.port) {
       await this.client.disconnect(this.host, this.port);
     }
+    this.remoteID = null;
+  }
+
+  verifyConnected() {
+    if (!this.remoteID) {
+      throw new Error('Not connected');
+    }
   }
 
   async goHome() {
+    this.verifyConnected();
     const device = this.client.getDevice(this.remoteID);
 
     const cmd = 'am start -a android.intent.action.MAIN -c android.intent.category.HOME';
@@ -34,6 +44,7 @@ class Adb {
 
   async play(uri, attempt = 0) {
     try {
+      this.verifyConnected();
       await this.goHome();
       debug(`Playing ${uri}`);
       const device = this.client.getDevice(this.remoteID);
@@ -85,6 +96,7 @@ class Adb {
     }
 
     debug(`pushing button ${keyEvent}`);
+    this.verifyConnected();
     const device = this.client.getDevice(this.remoteID);
     await device.shell(`input keyevent ${keyEvent}`);
   }

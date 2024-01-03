@@ -293,18 +293,18 @@ function api(authProvider, receiverFactory) {
       settings.googletv_host = newSettings.googletv_host;
       settings.googletv_port = newSettings.googletv_port;
     }
-    await settings.save();
-    await receiverFactory.update(settings);
-    res.json(settings);
+    const saved = await settings.save();
+    await receiverFactory.update(saved);
+    res.json(saved);
   });
 
   apiRouter.post('/reconnect', requireLogin, async (req, res) => {
     const settings = await req.models.Settings.findOne();
-    if (settings) {
+    if (!settings) {
       res.status(500).json({ error: 'player has not been configured' });
       return;
     }
-    const promises = await receiverFactory.update(settings);
+    await receiverFactory.update(settings);
     res.json({});
   });
 
