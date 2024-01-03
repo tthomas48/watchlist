@@ -1,17 +1,24 @@
 /* eslint no-underscore-dangle: 0 */
+const dotenv = require('dotenv');
+dotenv.config();
+
 const debug = require('debug')('watchlist');
 const express = require('express');
 const cors = require('cors');
 const bodyParser = require('body-parser');
 const session = require('express-session');
 const SequelizeStore = require('connect-session-sequelize')(session.Store);
-const dotenv = require('dotenv');
 const TraktOauthProvider = require('./api/auth/trakt_oauth_provider');
 const receiverFactory = require('./receiver/factory');
 
-dotenv.config();
 const db = require('./models');
 const api = require('./api/api');
+
+let watch = null;
+if(process.env.WATCH === 'true') {
+  watch = require('./watch');
+  watch.watch();
+}
 
 const port = process.env.PORT;
 const bindHost = process.env.BIND_HOST;

@@ -20,11 +20,9 @@ Would love assistance in adding more integrations (FireTV, others?) and writing 
 ## Run
 - $ npm run start
 
-### Run Frontend (optional)
-- $ cd frontend 
-- $ npm i
-- $ cp .env.example .env
-- $ npm run start 
+### Develop
+Runs a watch on the frontend src.
+- $ npm run start-dev
 - Navigate to http://localhost:3000/ 
 
 ## Generate models
@@ -36,13 +34,8 @@ Would love assistance in adding more integrations (FireTV, others?) and writing 
 ## Running migrations
 - npx sequelize-cli db:migrate
 
-## Pushing up docker image
-- gcloud auth configure-docker
-- docker build -t us-docker.pkg.dev/watchlist-396421/gcr.io/watchlist:latest .
-- docker push us-docker.pkg.dev/watchlist-396421/gcr.io/watchlist:latest
-
 ## Running docker image
 - mkdir -p /usr/share/watchlist/data/
 - cp .env.example /usr/share/watchlist/.env/ # and edit with your values
-- docker run --name=watchlist --volume=/user/share/watchlist/data/:/usr/src/watchlist/data/ --network=host --restart=unless-stopped --env-file=/usr/share/watchlist/.env --detach=true gcr.io/watchlist-396421/watchlist:latest
+- docker run --name=watchlist --volume=/user/share/watchlist/data/:/usr/src/watchlist/data/ --network=host --restart=unless-stopped --env-file=/usr/share/watchlist/.env --detach=true ghcr.io/tthomas48/watchlist:latest
 

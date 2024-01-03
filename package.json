@@ -6,10 +6,10 @@
   "scripts": {
     "build-ui": "DISABLE_ESLINT_PLUGIN=true react-app-rewired build",
     "start": "npx sequelize-cli db:migrate && node index.js",
+    "start-dev": "TUNNEL=true WATCH=true npm run start",
     "lint": "npx eslint migrations/**/*.js api/**/*.js models/**/*.js receiver/**/*.js index.js",
     "test": "jest",
-    "react-test": "react-app-rewired test",
-    "watch": "npm-watch"
+    "react-test": "react-app-rewired test"
   },
   "dependencies": {
     "@babel/plugin-proposal-private-property-in-object": "^7.21.11",
@@ -38,8 +38,8 @@
     "express": "^4.18.2",
     "express-session": "^1.17.3",
     "jest": "^29.7.0",
-    "justwatch-api": "^1.0.7",
     "node-singleflight": "^0.1.2",
+    "npm-watch": "^0.11.0",
     "passport": "^0.6.0",
     "passport-trakt": "^1.0.4",
     "promise-streams": "^2.1.1",
@@ -64,8 +64,7 @@
     "eslint-plugin-import": "^2.29.1",
     "eslint-plugin-jsx-a11y": "^6.8.0",
     "eslint-plugin-react": "^7.33.2",
-    "eslint-plugin-react-hooks": "^4.6.0",
-    "npm-watch": "^0.11.0"
+    "eslint-plugin-react-hooks": "^4.6.0"
   },
   "watch": {
     "build-ui": "frontend/src/"
