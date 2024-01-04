@@ -11,46 +11,43 @@ When using GoogleTV as a player there is a full remote control for selecting Pro
 
 Would love assistance in adding more integrations (FireTV, others?) and writing tests and documentation.
 
-## Install
-- $ npm i
-- $ cp .env.example .env
-- Add the Trakt secrets (found at https://trakt.tv/oauth/applications) to the .env file
-- For art you will need to get API keys for one or all of FanArt, TVDB, and/or TMDB and add them to your .env file
+## Running docker image
+- $ mkdir -p /usr/share/watchlist/data/
+- $ cp .env.example /usr/share/watchlist/.env/ # and edit with your values
+- # Add the Trakt secrets (found at https://trakt.tv/oauth/applications) to the .env file
+- # For art you will need to get API keys for one or all of FanArt, TVDB, and/or TMDB and add them to your .env file
+- $ docker run --name=watchlist --volume=/usr/share/watchlist/data/:/usr/src/watchlist/data/ --network=host --restart=unless-stopped --env-file=/usr/share/watchlist/.env --detach=true ghcr.io/tthomas48/watchlist:latest
 
-## Run
-- $ npm run start
 
-### Develop
+## Develop
+
+### Account setup
 - Setup an ngrok account, this allows a tunnel to your development machine:
   https://ngrok.com
   In the setup instructions click on 'Static Domain' to get your free static domain
 - Put your auth token in your .env file as NGROK_AUTHTOKEN
 - Put your staic domain in your .env file as NGROK_DOMAIN
-- Setup an oauth app on Trakt.tv
+- Create a Trakt.tv account and setup an oauth app on Trakt.tv
   https://trakt.tv/oauth/applications
 - Under Redirect URI add (put in the actual text there is no variable expansion supported):
   [NGROK_DOMAIN]/api/auth/trakt/callback
 - Under CORS add:
   [NGROK_DOMAIN]
 
-Runs a watch on the frontend src.
+### Install Code
+- $ npm i
+- $ cp .env.example .env
+- # Add the Trakt secrets (found at https://trakt.tv/oauth/applications) to the .env file
+- # For art you will need to get API keys for one or all of FanArt, TVDB, and/or TMDB and add them to your .env file
 - $ npm run start-dev
-- Navigate to http://localhost:3000/ 
 
-## Generate models
+## Database Tasks
+
+### Generate models
 - npx sequelize-cli model:generate --name User --attributes firstName:string,lastName:string,email:string --models-path=models --migrations-path=migrations
 
-## Generate migration
+### Generate migration
 - npx sequelize-cli migration:create --migrations-path=migrations/ --name my_migration_name
 
-## Running migrations
+### Running migrations
 - npx sequelize-cli db:migrate
-
-## Running docker image
-- mkdir -p /usr/share/watchlist/data/
-- cp .env.example /usr/share/watchlist/.env/ # and edit with your values
-- docker run --name=watchlist --volume=/usr/share/watchlist/data/:/usr/src/watchlist/data/ --network=host --restart=unless-stopped --env-file=/usr/share/watchlist/.env --detach=true ghcr.io/tthomas48/watchlist:latest
-
-
-
-// so I could potentially just proxy all calls to 
