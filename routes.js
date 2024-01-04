@@ -3,6 +3,7 @@ const dotenv = require('dotenv');
 dotenv.config();
 
 const debug = require('debug')('watchlist:routes');
+const path = require('path');
 const express = require('express');
 const cors = require('cors');
 const bodyParser = require('body-parser');
@@ -55,7 +56,7 @@ class Api {
     });
 
     app.use('/api', api(TraktOauthProvider, receiverFactory));
-    
+
     if (process.env.REACT_DEV_SERVER === 'true') {
       // setup a proxy in express for everything to this:
       // change port here to be an available port
@@ -68,23 +69,20 @@ class Api {
         require('react-app-rewired/scripts/start');
       })();
     }
-    
-
-
-
 
     // app.listen(port, bindHost, () => {
     //   debug(`API listening at http://${bindHost}:${port}`);
     // });
   }
+
   listen(app) {
-    app.use(express.static('./build/'));
+    app.use(express.static(path.resolve(`${__dirname}/build/`)));
     app.get('/*', (req, res) => {
-      res.sendFile(`${__dirname}/frontend/build/index.html`);
-    });    
+      res.sendFile(path.resolve(`${__dirname}/build/index.html`));
+    });
     app.listen(this.port, this.bindHost, () => {
       debug(`API listening at http://${this.bindHost}:${this.port}`);
-    });    
+    });
   }
 }
 module.exports = new Api();
