@@ -49,7 +49,7 @@ Runs a watch on the frontend src.
 ## Running docker image
 - mkdir -p /usr/share/watchlist/data/
 - cp .env.example /usr/share/watchlist/.env/ # and edit with your values
-- docker run --name=watchlist --volume=/user/share/watchlist/data/:/usr/src/watchlist/data/ --network=host --restart=unless-stopped --env-file=/usr/share/watchlist/.env --detach=true ghcr.io/tthomas48/watchlist:latest
+- docker run --name=watchlist --volume=/usr/share/watchlist/data/:/usr/src/watchlist/data/ --network=host --restart=unless-stopped --env-file=/usr/share/watchlist/.env --detach=true ghcr.io/tthomas48/watchlist:latest
 
 
 
