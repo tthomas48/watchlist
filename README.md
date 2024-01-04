@@ -21,6 +21,18 @@ Would love assistance in adding more integrations (FireTV, others?) and writing 
 - $ npm run start
 
 ### Develop
+- Setup an ngrok account, this allows a tunnel to your development machine:
+  https://ngrok.com
+  In the setup instructions click on 'Static Domain' to get your free static domain
+- Put your auth token in your .env file as NGROK_AUTHTOKEN
+- Put your staic domain in your .env file as NGROK_DOMAIN
+- Setup an oauth app on Trakt.tv
+  https://trakt.tv/oauth/applications
+- Under Redirect URI add (put in the actual text there is no variable expansion supported):
+  [NGROK_DOMAIN]/api/auth/trakt/callback
+- Under CORS add:
+  [NGROK_DOMAIN]
+
 Runs a watch on the frontend src.
 - $ npm run start-dev
 - Navigate to http://localhost:3000/ 
@@ -39,3 +51,6 @@ Runs a watch on the frontend src.
 - cp .env.example /usr/share/watchlist/.env/ # and edit with your values
 - docker run --name=watchlist --volume=/user/share/watchlist/data/:/usr/src/watchlist/data/ --network=host --restart=unless-stopped --env-file=/usr/share/watchlist/.env --detach=true ghcr.io/tthomas48/watchlist:latest
 
+
+
+// so I could potentially just proxy all calls to 

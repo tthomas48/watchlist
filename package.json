@@ -6,7 +6,7 @@
   "scripts": {
     "build-ui": "DISABLE_ESLINT_PLUGIN=true react-app-rewired build",
     "start": "npx sequelize-cli db:migrate && node index.js",
-    "start-dev": "TUNNEL=true WATCH=true npm run start",
+    "start-dev": "BROWSER=none DISABLE_ESLINT_PLUGIN=true REACT_DEV_SERVER=true TUNNEL=true WATCH=true npm run start",
     "lint": "npx eslint migrations/**/*.js api/**/*.js models/**/*.js receiver/**/*.js index.js",
     "test": "jest",
     "react-test": "react-app-rewired test"
@@ -57,6 +57,7 @@
     "web-vitals": "^3.2.2"
   },
   "devDependencies": {
+    "@ngrok/ngrok": "^0.9.1",
     "dotenv-cli": "^7.3.0",
     "eslint": "^8.56.0",
     "eslint-config-airbnb": "^19.0.4",
@@ -67,7 +68,12 @@
     "eslint-plugin-react-hooks": "^4.6.0"
   },
   "watch": {
-    "build-ui": "frontend/src/"
+    "build-ui": {
+      "silent": true,
+      "patterns": [
+        "frontend/src/"
+      ]
+    }
   },
   "eslintConfig": {
     "extends": [
