@@ -11,7 +11,6 @@ function WatchlistItem({ item, player, saveWatchable }) {
     const [anchorEl, setAnchorEl] = useState(null);
     const open = Boolean(anchorEl);
     const missingUrlWarning = (item) => {
-        console.log(item);
         if (!item.urls) {
             return (<CardContent><Alert severity="warning">No url has been specified.</Alert></CardContent>);
         }

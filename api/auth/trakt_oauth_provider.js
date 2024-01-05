@@ -2,10 +2,6 @@ const passport = require('passport');
 const TraktStrategy = require('passport-trakt').Strategy;
 
 class TraktOauthProvider {
-  constructor() {
-
-  }
-
   getClientId() {
     return this.clientId;
   }
