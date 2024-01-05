@@ -26,7 +26,7 @@ function WatchlistItem({ item, player, saveWatchable }) {
             overflow: 'hidden',
         }}></CardHeader>
 
-        <CardMedia component="img" image={item.local ? `/api/img-local/${item.id}` : `/api/img/${item.media_type}/${item.trakt_id}`} alt={item.title}/>
+        <CardMedia component="img" image={`/api/img/${item.id}`} alt={item.title}/>
         <CardActions disableSpacing>
             <PlayButton player={player} id={item.id}></PlayButton>
             <CommentButton item={item} saveWatchable={saveWatchable}></CommentButton>

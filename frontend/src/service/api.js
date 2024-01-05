@@ -145,7 +145,7 @@ class Api {
   }
 
   async updateImage(id, imageUrl) {
-    const res = await fetch(`/api/img-local/${id}/`, {
+    const res = await fetch(`/api/img/${id}/`, {
       method: 'POST',
       withCredentials: true,
       headers: {

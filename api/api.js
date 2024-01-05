@@ -232,7 +232,7 @@ function api(authProvider, receiverFactory) {
       // if the most recent_update is more than a day ago then we should call refresh
       // if (mostRecentUpdate < new Date(Date.now() - 1000 * 60 * 60 * 24)) {
       //   debug(`Refreshing because ${mostRecentUpdate} is more than a day ago`);
-      //   await refresh(authProvider.getClientId(), req, 
+      //   await refresh(authProvider.getClientId(), req,
       // traktListUserId, traktListId, existingWatchables);
       // }
       // existingWatchables = await req.models.Watchable.findAll(findAllOptions);
@@ -310,11 +310,10 @@ function api(authProvider, receiverFactory) {
 
   apiRouter.put('/watchables/', requireLogin, async (req, res) => {
     const watchablesCreate = req.body;
-    const watchable = req.models.Watchable.build(watchablesCreate);    
+    const watchable = req.models.Watchable.build(watchablesCreate);
     await watchable.save();
     res.json(watchable);
   });
-
 
   apiRouter.get('/watchables/:id', requireLogin, async (req, res) => {
     try {
@@ -440,7 +439,7 @@ function api(authProvider, receiverFactory) {
     res.status(200).json('ok');
   });
 
-  apiRouter.get('/img-local/:watchable_id', requireLogin, async (req, res) => {
+  apiRouter.get('/img/:watchable_id', requireLogin, async (req, res) => {
     let sres;
     try {
       const defaultImagePath = path.join(__dirname, '../images/movie.jpg');
@@ -451,6 +450,7 @@ function api(authProvider, receiverFactory) {
         await fs.createReadStream(fullPath).pipe(res);
         return;
       }
+      // try to download the trakt image
 
       const writeFile = async (input) => {
         if (!fs.existsSync(imagePath)) {
@@ -462,27 +462,79 @@ function api(authProvider, receiverFactory) {
         await input.pipe(combined);
       };
 
+      const watchable = await req.models.Watchable.findOne({
+        where: { id: req.params.watchable_id },
+      });
+      debug(watchable);
+      if (watchable.trakt_id) {
+        const traktClient = new Trakt({
+          client_id: authProvider.getClientId(),
+          plugins: {
+            images: TraktImages,
+          },
+          options: {
+            images: {
+              tmdbApiKey: process.env.IMG_TMDB_APIKEY,
+              tvdbApiKey: process.env.IMG_TVDB_APIKEY,
+              fanartApiKey: process.env.IMG_FANART_APIKEY,
+              smallerImages: true, // reduce image size, save bandwidth. defaults to false.
+              cached: true, // requires trakt.tv-cached
+            },
+          },
+        }, true);
+
+        const { user } = req;
+        await traktClient.import_token(user.access_token);
+        // hmm, so we need to store the type?
+        sres = await traktClient.search.id({ id_type: 'trakt', id: watchable.trakt_id, type: watchable.media_type });
+        if (sres.length > 0) {
+          for (let i = 0; i < sres.length; i += 1) {
+            debug(sres[i]);
+            const { ids } = sres[i][watchable.media_type];
+            ids.type = watchable.media_type;
+
+            const images = await traktClient.images.get(ids);
+            debug(images);
+            if (images.poster) {
+              const response = await axios({
+                method: 'get',
+                url: images.poster,
+                responseType: 'stream',
+              });
+              await writeFile(response.data);
+              return;
+            }
+          }
+        }
+      }
+
+      // save the default image path
       await writeFile(fs.createReadStream(defaultImagePath));
     } catch (e) {
       debug(sres, e);
     }
   });
 
-  apiRouter.post('/img-local/:watchable_id', requireLogin, async (req, res) => {
+  apiRouter.post('/img/:watchable_id', requireLogin, async (req, res) => {
     try {
       const { imageUrl } = req.body;
       const imagePath = path.join(__dirname, '../data/img/local/');
       const fileName = `${req.params.watchable_id}.jpg`;
       const fullPath = path.join(imagePath, fileName);
+      debug(`Downloading ${imageUrl} to ${fullPath}`);
 
       const writeFile = async (input) => {
-        if (!fs.existsSync(imagePath)) {
-          fs.mkdirSync(imagePath, { recursive: true });
+        try {
+          if (!fs.existsSync(imagePath)) {
+            fs.mkdirSync(imagePath, { recursive: true });
+          }
+          const combined = PassThrough();
+          combined.pipe(fs.createWriteStream(fullPath));
+          // combined.pipe(res);
+          await input.pipe(combined);
+        } catch (e) {
+          debug(e);
         }
-        const combined = PassThrough();
-        combined.pipe(fs.createWriteStream(fullPath));
-        // combined.pipe(res);
-        await input.pipe(combined);
       };
 
       const response = await axios({
@@ -497,70 +549,70 @@ function api(authProvider, receiverFactory) {
     }
   });
 
-  apiRouter.get('/img/:media_type/:trakt_id', requireLogin, async (req, res) => {
-    let sres;
-    try {
-      const defaultImagePath = path.join(__dirname, '../images/movie.jpg');
-      const imagePath = path.join(__dirname, `../data/img/${req.params.media_type}/`);
-      const fileName = `${req.params.trakt_id}.jpg`;
-      const fullPath = path.join(imagePath, fileName);
-      if (fs.existsSync(fullPath)) {
-        await fs.createReadStream(fullPath).pipe(res);
-        return;
-      }
+  // apiRouter.get('/img/:media_type/:trakt_id', requireLogin, async (req, res) => {
+  //   let sres;
+  //   try {
+  //     const defaultImagePath = path.join(__dirname, '../images/movie.jpg');
+  //     const imagePath = path.join(__dirname, `../data/img/${req.params.media_type}/`);
+  //     const fileName = `${req.params.trakt_id}.jpg`;
+  //     const fullPath = path.join(imagePath, fileName);
+  //     if (fs.existsSync(fullPath)) {
+  //       await fs.createReadStream(fullPath).pipe(res);
+  //       return;
+  //     }
 
-      const writeFile = async (input) => {
-        if (!fs.existsSync(imagePath)) {
-          fs.mkdirSync(imagePath, { recursive: true });
-        }
-        const combined = PassThrough();
-        combined.pipe(fs.createWriteStream(fullPath));
-        combined.pipe(res);
-        await input.pipe(combined);
-      };
+  //     const writeFile = async (input) => {
+  //       if (!fs.existsSync(imagePath)) {
+  //         fs.mkdirSync(imagePath, { recursive: true });
+  //       }
+  //       const combined = PassThrough();
+  //       combined.pipe(fs.createWriteStream(fullPath));
+  //       combined.pipe(res);
+  //       await input.pipe(combined);
+  //     };
 
-      const trakt = new Trakt({
-        client_id: authProvider.getClientId(),
-        plugins: {
-          images: TraktImages,
-        },
-        options: {
-          images: {
-            tmdbApiKey: process.env.IMG_TMDB_APIKEY,
-            tvdbApiKey: process.env.IMG_TVDB_APIKEY,
-            fanartApiKey: process.env.IMG_FANART_APIKEY,
-            smallerImages: true, // reduce image size, save bandwidth. defaults to false.
-            cached: true, // requires trakt.tv-cached
-          },
-        },
-      }, true);
+  //     const trakt = new Trakt({
+  //       client_id: authProvider.getClientId(),
+  //       plugins: {
+  //         images: TraktImages,
+  //       },
+  //       options: {
+  //         images: {
+  //           tmdbApiKey: process.env.IMG_TMDB_APIKEY,
+  //           tvdbApiKey: process.env.IMG_TVDB_APIKEY,
+  //           fanartApiKey: process.env.IMG_FANART_APIKEY,
+  //           smallerImages: true, // reduce image size, save bandwidth. defaults to false.
+  //           cached: true, // requires trakt.tv-cached
+  //         },
+  //       },
+  //     }, true);
 
-      const { user } = req;
-      await trakt.import_token(user.access_token);
-      // hmm, so we need to store the type?
-      sres = await trakt.search.id({ id_type: 'trakt', id: req.params.trakt_id, type: req.params.media_type });
-      if (sres.length === 0) {
-        await writeFile(fs.createReadStream(defaultImagePath));
-        return;
-      }
-      const { ids } = sres[0][req.params.media_type];
-      ids.type = req.params.media_type;
+  //     const { user } = req;
+  //     await trakt.import_token(user.access_token);
+  //     // hmm, so we need to store the type?
+  //     sres = await trakt.search.id({ id_type: 'trakt', id: req.params.trakt_id, type: req.params.media_type });
+  //     if (sres.length === 0) {
+  //       await writeFile(fs.createReadStream(defaultImagePath));
+  //       return;
+  //     }
+  //     const { ids } = sres[0][req.params.media_type];
+  //     ids.type = req.params.media_type;
 
-      const images = await trakt.images.get(ids);
-      if (!images.poster) {
-        await writeFile(fs.createReadStream(defaultImagePath));
-        return;
-      }
-      const response = await axios({
-        method: 'get',
-        url: images.poster,
-        responseType: 'stream',
-      });
-      await writeFile(response.data);
-    } catch (e) {
-      debug(sres, e);
-    }
-  });
+  //     const images = await trakt.images.get(ids);
+  //     if (!images.poster) {
+  //       await writeFile(fs.createReadStream(defaultImagePath));
+  //       return;
+  //     }
+  //     const response = await axios({
+  //       method: 'get',
+  //       url: images.poster,
+  //       responseType: 'stream',
+  //     });
+  //     await writeFile(response.data);
+  //   } catch (e) {
+  //     debug(sres, e);
+  //   }
+  // });
 
   return apiRouter;
 }
