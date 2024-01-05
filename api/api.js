@@ -217,6 +217,7 @@ function api(authProvider, receiverFactory) {
 
       const findAllOptions = {
         where: { trakt_list_id: traktListId },
+        include: ['urls'],
         order,
       };
       const existingWatchables = await req.models.Watchable.findAll(findAllOptions);

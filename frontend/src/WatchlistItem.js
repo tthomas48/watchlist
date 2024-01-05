@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { CardHeader, Card, CardMedia, CardActions, Button, Menu, MenuItem } from '@mui/material';
+import { Alert, CardHeader, Card, CardContent, CardMedia, CardActions, Button, Menu, MenuItem } from '@mui/material';
 import MenuIcon from '@mui/icons-material/Menu';
 import PlayButton from './PlayButton';
 import EditButton from './EditButton';
@@ -10,6 +10,23 @@ import CommentButton from './CommentButton';
 function WatchlistItem({ item, player, saveWatchable }) {
     const [anchorEl, setAnchorEl] = useState(null);
     const open = Boolean(anchorEl);
+    const missingUrlWarning = (item) => {
+        console.log(item);
+        if (!item.urls) {
+            return (<CardContent><Alert severity="warning">No url has been specified.</Alert></CardContent>);
+        }
+        let web_url = '';
+        item.urls.forEach((url) => {
+            // provider_id = url.provider_id;
+            if (url.service_type === 'web') {
+                web_url = url.url;
+            }
+        });
+        if (web_url) {
+            return;
+        }
+        return (<CardContent><Alert severity="warning">No url has been specified.</Alert></CardContent>);
+    };
     const handleClick = (event) => {
         setAnchorEl(event.currentTarget);
     };
@@ -27,6 +44,7 @@ function WatchlistItem({ item, player, saveWatchable }) {
         }}></CardHeader>
 
         <CardMedia component="img" image={`/api/img/${item.id}`} alt={item.title}/>
+        {missingUrlWarning(item)}
         <CardActions disableSpacing>
             <PlayButton player={player} id={item.id}></PlayButton>
             <CommentButton item={item} saveWatchable={saveWatchable}></CommentButton>
