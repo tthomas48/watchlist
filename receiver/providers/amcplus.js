@@ -1,3 +1,4 @@
+/* eslint-disable class-methods-use-this */
 class AMCPlus {
   provides(uri) {
     return uri.includes('www.amcplus.com');

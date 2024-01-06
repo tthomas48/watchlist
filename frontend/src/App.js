@@ -1,7 +1,12 @@
 import { useState } from 'react';
 import {
   Outlet,
-} from "react-router-dom";
+} from 'react-router-dom';
+import {
+  Typography, Toolbar, Container, AppBar, IconButton, Menu, MenuItem, Paper,
+} from '@mui/material';
+import Grid from '@mui/material/Unstable_Grid2';
+import MenuIcon from '@mui/icons-material/Menu';
 import ListPicker from './ListPicker';
 import PlayerPicker from './PlayerPicker';
 import RefreshButton from './RefreshButton';
@@ -11,17 +16,13 @@ import ShowHiddenButton from './ShowHiddenButton';
 import ReconnectButton from './ReconnectButton';
 import SortPicker from './SortPicker';
 import AddItem from './AddItem';
-import { Typography, Toolbar, Container, AppBar, IconButton, Menu, MenuItem, Paper } from '@mui/material';
-import Grid from '@mui/material/Unstable_Grid2';
-import MenuIcon from '@mui/icons-material/Menu';
-import useLocalStorage from "./hooks/useLocalStorage";
+import useLocalStorage from './hooks/useLocalStorage';
 import MessageContextWrapper from './context/MessageContext';
 
-
-const listStorageKey = "watchlist.trakt_list";
-const localStorageKey = "watchlist.player";
-const hiddenStorageKey = "watchlist.hidden";
-const sortStorageKey = "watchlist.sort";
+const listStorageKey = 'watchlist.trakt_list';
+const localStorageKey = 'watchlist.player';
+const hiddenStorageKey = 'watchlist.hidden';
+const sortStorageKey = 'watchlist.sort';
 function App() {
   const [anchorEl, setAnchorEl] = useState(null);
   const open = Boolean(anchorEl);
@@ -32,9 +33,9 @@ function App() {
     setAnchorEl(null);
   };
 
-  const [list, setList] = useLocalStorage(listStorageKey, "");
-  const [player, setPlayer] = useLocalStorage(localStorageKey, "");
-  const [sort, setSort] = useLocalStorage(sortStorageKey, "");
+  const [list, setList] = useLocalStorage(listStorageKey, '');
+  const [player, setPlayer] = useLocalStorage(localStorageKey, '');
+  const [sort, setSort] = useLocalStorage(sortStorageKey, '');
   const [showHidden, setShowHidden] = useLocalStorage(hiddenStorageKey, false);
 
   // 80px margin is space for remote control
@@ -73,12 +74,22 @@ function App() {
                       'aria-labelledby': 'basic-button',
                     }}
                   >
-                    <MenuItem onClick={handleClose}><RefreshButton list={list}></RefreshButton></MenuItem>
-                    <MenuItem onClick={handleClose}><ShowHiddenButton showHidden={showHidden} setShowHidden={setShowHidden}></ShowHiddenButton></MenuItem>
-                    <MenuItem onClick={handleClose}><ReconnectButton player={player}></ReconnectButton></MenuItem>
-                    <MenuItem onClick={handleClose}><ProvidersButton></ProvidersButton></MenuItem>
-                    <MenuItem onClick={handleClose}><SettingsButton></SettingsButton></MenuItem>
-
+                    <MenuItem onClick={handleClose}>
+                      <RefreshButton list={list}></RefreshButton>
+                    </MenuItem>
+                    <MenuItem onClick={handleClose}>
+                      <ShowHiddenButton showHidden={showHidden}
+                        setShowHidden={setShowHidden}></ShowHiddenButton>
+                    </MenuItem>
+                    <MenuItem onClick={handleClose}>
+                      <ReconnectButton player={player}></ReconnectButton>
+                    </MenuItem>
+                    <MenuItem onClick={handleClose}>
+                      <ProvidersButton></ProvidersButton>
+                    </MenuItem>
+                    <MenuItem onClick={handleClose}>
+                      <SettingsButton></SettingsButton>
+                    </MenuItem>
                   </Menu>
                 </Grid>
               </Grid>

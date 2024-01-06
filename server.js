@@ -13,9 +13,9 @@ const TraktOauthProvider = require('./api/auth/trakt_oauth_provider');
 const receiverFactory = require('./receiver/factory');
 
 const db = require('./models');
-const api = require('./api/api');
+const Api = require('./api/api');
 
-class Api {
+class Server {
   init(app) {
     this.port = process.env.PORT;
     this.bindHost = process.env.BIND_HOST;
@@ -48,31 +48,25 @@ class Api {
       }
       next();
     });
-    TraktOauthProvider.configure(app, db);
+    const oauthProvider = new TraktOauthProvider();
+    oauthProvider.configure(app, db);
 
     const settingsPromise = db.Settings.findOne();
     settingsPromise.then((settings) => {
       receiverFactory.init(settings);
     });
 
-    app.use('/api', api(TraktOauthProvider, receiverFactory));
+    const api = new Api(oauthProvider, receiverFactory);
+    const apiRouter = new express.Router();
+    app.use('/api', api.addRoutes(apiRouter));
 
     if (process.env.REACT_DEV_SERVER === 'true') {
-      // setup a proxy in express for everything to this:
-      // change port here to be an available port
-      // wire up the proxy, and this will ensure that we start the dev server
-
-      // I want to startup the react dev server from react-app-rewired
-      // set the react port somewhere in here.
-      // this.port = 9981;
+      // this starts the server through react-scripts
+      // src/setupProxy.js adds all the routes to the dev server
       (async () => {
         require('react-app-rewired/scripts/start');
       })();
     }
-
-    // app.listen(port, bindHost, () => {
-    //   debug(`API listening at http://${bindHost}:${port}`);
-    // });
   }
 
   listen(app) {
@@ -85,4 +79,4 @@ class Api {
     });
   }
 }
-module.exports = new Api();
+module.exports = Server;

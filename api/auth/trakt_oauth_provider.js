@@ -31,13 +31,15 @@ class TraktOauthProvider {
       (async (accessToken, refreshToken, params, profile, done) => {
         let user = await db.User.findOne({ where: { trakt_id: profile.id } });
         if (!user) {
+          // eslint-disable-next-line no-underscore-dangle
+          const json = profile._json;
           user = await db.User.create({
             trakt_id: profile.id,
-            name: profile._json.name,
+            name: json.name,
             username: profile.username,
-            private: profile._json.private,
-            vip: profile._json.vip,
-            vip_ep: profile._json.vip_ep,
+            private: json.private,
+            vip: json.vip,
+            vip_ep: json.vip_ep,
             access_token: accessToken,
             refresh_token: refreshToken,
           });
@@ -49,10 +51,22 @@ class TraktOauthProvider {
     ));
   }
 
+  redirect(req, res) {
+    res.redirect('/api/auth/trakt');
+  }
+
+  // eslint-disable-next-line class-methods-use-this
+  callback(req, res) {
+    if (req.session.returnTo) {
+      res.redirect(req.session.returnTo);
+      return;
+    }
+    // go somewhere bogus
+    res.redirect('/');
+  }
+
   addRoutes(apiRouter) {
-    apiRouter.get('/login', (req, res) => {
-      res.redirect('/api/auth/trakt');
-    });
+    apiRouter.get('/login', this.redirect);
 
     apiRouter.get(
       '/auth/trakt',
@@ -66,15 +80,8 @@ class TraktOauthProvider {
     apiRouter.get(
       '/auth/trakt/callback',
       passport.authenticate('trakt', { failureRedirect: '/api/login' }),
-      (req, res) => {
-        if (req.session.returnTo) {
-          res.redirect(req.session.returnTo);
-          return;
-        }
-        // go somewhere bogus
-        res.redirect('/');
-      },
+      this.callback,
     );
   }
 }
-module.exports = new TraktOauthProvider();
+module.exports = TraktOauthProvider;

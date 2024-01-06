@@ -1,3 +1,4 @@
+/* eslint-disable class-methods-use-this */
 class Netflix {
   provides(uri) {
     return uri.includes('www.netflix.com/');

@@ -1,3 +1,4 @@
+/* eslint-disable class-methods-use-this */
 class Max {
   provides(uri) {
     return uri.includes('play.max.com');

@@ -19,7 +19,6 @@ function RemoteControl({ player }) {
     const anchor = "remoteOpen";
     const [state, setState] = useState({ remoteOpen: false });
     const toggleDrawer = (anchor, open) => (event) => {
-        console.log("toggleDrawer", anchor, open);
         if (event.type === 'keydown' && (event.key === 'Tab' || event.key === 'Shift')) {
             return;
         }

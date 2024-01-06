@@ -1,6 +1,6 @@
-const express = require('express');
-const api = require('./routes');
 const debug = require('debug')('watchlist:proxy');
+const express = require('express');
+const Server = require('./server');
 
 // so it's host and port
 if (process.env.REACT_DEV_SERVER === 'true') {
@@ -13,6 +13,7 @@ if (process.env.REACT_DEV_SERVER === 'true') {
   (async () => {
     let remoteUrl = `http://${process.env.HOST}:${process.env.PORT}`;
     if (process.env.TUNNEL === 'true') {
+      // eslint-disable-next-line import/no-extraneous-dependencies, global-require
       const ngrok = require('@ngrok/ngrok');
       const listener = await ngrok.forward({
         addr: process.env.PORT,
@@ -24,11 +25,13 @@ if (process.env.REACT_DEV_SERVER === 'true') {
       remoteUrl = listener.url();
       process.env.PUBLIC_URL = remoteUrl;
     }
+    // eslint-disable-next-line global-require
     require('react-app-rewired/scripts/start');
     debug(`Your app will be hosted at ${remoteUrl}`);
   })();
 } else {
   const app = express();
-  api.init(app);
-  api.listen(app);
+  const server = new Server();
+  server.init(app);
+  server.listen(app);
 }

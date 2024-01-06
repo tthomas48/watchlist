@@ -1,11 +1,13 @@
 import { useState, useContext } from 'react';
 import { styled, alpha } from '@mui/material/styles';
-import { Button, Menu, MenuItem, Dialog, DialogTitle, DialogContent, TextField, DialogActions } from '@mui/material';
+import {
+  Button, Menu, MenuItem, Dialog, DialogTitle, DialogContent, TextField, DialogActions,
+} from '@mui/material';
 import AddCircleIcon from '@mui/icons-material/AddCircle';
 import KeyboardArrowDownIcon from '@mui/icons-material/KeyboardArrowDown';
 import { useQueryClient, useMutation } from '@tanstack/react-query';
 import { useForm } from 'react-hook-form';
-import MessageContext from './context/MessageContext.js';
+import { MessageContext } from './context/MessageContext';
 import Api from './service/api';
 
 const StyledMenu = styled((props) => (
@@ -49,29 +51,26 @@ const StyledMenu = styled((props) => (
   },
 }));
 
-
 const AddItem = ({ list }) => {
   const messageContext = useContext(MessageContext);
   const api = new Api(messageContext);
-  const queryClient = useQueryClient()
-  const { register, getValues } = useForm()
+  const queryClient = useQueryClient();
+  const { register, getValues } = useForm();
   const [anchorEl, setAnchorEl] = useState(null);
   const [dialogOpen, setDialogOpen] = useState(false);
   const open = Boolean(anchorEl);
 
+  const handleClose = () => {
+    setAnchorEl(null);
+  };
   const addAction = async () => {
     handleClose();
     const url = 'https://trakt.tv/search';
-    window.open(url, "_watchlist", "noreferrer");
+    window.open(url, '_watchlist', 'noreferrer');
   };
   const handleClick = (event) => {
     setAnchorEl(event.currentTarget);
   };
-  const handleClose = () => {
-    setAnchorEl(null);
-  };
-
-
 
   const handleDialogOpen = () => {
     setDialogOpen(true);
@@ -80,7 +79,6 @@ const AddItem = ({ list }) => {
   const handleDialogClose = () => {
     setDialogOpen(false);
   };
-
 
   const createMutation = useMutation({
     mutationFn: async () => {
@@ -96,7 +94,6 @@ const AddItem = ({ list }) => {
       handleClose();
     },
   });
-
 
   const dialog = (<Dialog open={dialogOpen} onClose={handleDialogClose}>
     <DialogTitle>Add Watchable</DialogTitle>

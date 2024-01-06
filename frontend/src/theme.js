@@ -1,6 +1,6 @@
 import { ThemeOptions } from '@mui/material/styles';
 
-export const themeOptions: ThemeOptions = {
+const themeOptions: ThemeOptions = {
   palette: {
     primary: {
       main: '#e5b0a4',
@@ -27,3 +27,4 @@ export const themeOptions: ThemeOptions = {
     },
   },
 };
+export { themeOptions };

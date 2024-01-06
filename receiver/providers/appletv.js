@@ -1,3 +1,4 @@
+/* eslint-disable class-methods-use-this */
 class AppleTV {
   provides(uri) {
     return uri.includes('tv.apple.com');

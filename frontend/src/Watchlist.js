@@ -14,7 +14,7 @@ function showItem(item, player, saveWatchableMutation, showHidden) {
     }
     return (
         <Grid xs={6} md={3}>
-            <WatchlistItem item={item} player={player} saveWatchable={saveWatchableMutation.mutate} />
+            <WatchlistItem key={item.id} item={item} player={player} saveWatchable={saveWatchableMutation.mutate} />
         </Grid>
     );
 }
@@ -33,7 +33,11 @@ function Watchlist() {
                 queryClient.setQueryData(['watchlist', { id: watchable.id }], updated)
                 return true;
             } catch (e) {
-                console.error(e);
+                this.messageContext.sendMessage({
+                    message: e,
+                    severity: 'error',
+                    open: true,
+                  });
             }
             return false;
         },

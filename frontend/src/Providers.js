@@ -58,7 +58,6 @@ function Providers() {
     React.useEffect(() => {
         setRows(data || []);
     }, [data, setRows]);
-    console.log(data);
     // const [rows, setRows] = React.useState([]);
     if (isLoading) {
         return (<h5>Loading...</h5>);
@@ -80,7 +79,6 @@ function Providers() {
     };
 
     const handleDeleteClick = (id) => async () => {
-        console.log("Delete");
         await api.deleteProvider(id);
         refetch();
         // setRows(rows.filter((row) => row.id !== id));
@@ -111,8 +109,11 @@ function Providers() {
     };
 
     const processRowUpdateError = (err) => {
-        // FIXME: need more robust error handling
-        console.error(err);
+        messageContext.sendMessage({
+            message: err,
+            severity: 'error',
+            open: true,
+          });
     };
 
 

@@ -28,7 +28,11 @@ function Watchable() {
                 navigate('/');
                 return true;
             } catch (e) {
-                console.error(e);
+                this.messageContext.sendMessage({
+                    message: e.message,
+                    severity: 'error',
+                    open: true,
+                  });                
             }
             return false;
         },
@@ -81,7 +85,6 @@ function Watchable() {
             web_url = url.url;
         }
     });
-    console.log(providerQuery.data);
 
     return (
         <Paper variant="outlined" sx={{

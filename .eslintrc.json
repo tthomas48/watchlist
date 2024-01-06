@@ -1,8 +1,9 @@
 {
-    "env": {
+"env": {
         "browser": true,
         "commonjs": true,
-        "es2021": true
+        "es2021": true,
+        "jest": true
     },
     "extends": "airbnb-base",
     "parserOptions": {
@@ -14,6 +15,7 @@
             {
                 "props": false
             }
-        ]
+        ],
+        "class-methods-use-this": "off"
     }
 }

@@ -1,3 +1,4 @@
+/* eslint-disable class-methods-use-this */
 class PBS {
   provides(uri) {
     // this probably no longer works

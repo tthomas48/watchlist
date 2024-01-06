@@ -6,8 +6,8 @@
   "scripts": {
     "build-ui": "DISABLE_ESLINT_PLUGIN=true react-app-rewired build",
     "start": "npx sequelize-cli db:migrate && node index.js",
-    "start-dev": "BROWSER=none DISABLE_ESLINT_PLUGIN=true REACT_DEV_SERVER=true TUNNEL=true WATCH=true npm run start",
-    "lint": "npx eslint migrations/**/*.js api/**/*.js models/**/*.js receiver/**/*.js index.js",
+    "start-dev": "BROWSER=none REACT_DEV_SERVER=true TUNNEL=true WATCH=true npm run start",
+    "lint": "npx eslint migrations/**/*.js api/**/*.js models/**/*.js receiver/**/*.js index.js frontend/src/**/*.js",
     "test": "jest",
     "react-test": "react-app-rewired test"
   },
@@ -23,6 +23,7 @@
     "@mui/material-next": "^6.0.0-alpha.113",
     "@mui/x-data-grid": "^6.18.5",
     "@mui/x-data-grid-generator": "^6.18.5",
+    "@ngrok/ngrok": "^0.9.1",
     "@tanstack/react-query": "^4.29.25",
     "@testing-library/jest-dom": "^5.16.5",
     "@testing-library/react": "^13.4.0",
@@ -57,7 +58,6 @@
     "web-vitals": "^3.2.2"
   },
   "devDependencies": {
-    "@ngrok/ngrok": "^0.9.1",
     "dotenv-cli": "^7.3.0",
     "eslint": "^8.56.0",
     "eslint-config-airbnb": "^19.0.4",

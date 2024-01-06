@@ -1,3 +1,4 @@
+/* eslint-disable class-methods-use-this */
 class DisneyPlus {
   provides(uri) {
     return uri.includes('www.disneyplus.com');

@@ -1,14 +1,14 @@
-const AmazonPrime =require('./amazonprime');
-const AMCPlus=require('./amcplus');
-const AppleTV=require('./appletv');
-const BritBox=require('./britbox');
-const DisneyPlus=require('./disneyplus');
-const Hulu=require('./hulu');
-const Max=require('./max');
-const Netflix=require('./netflix');
-const PBS=require('./pbs');
-const PeacockTV=require('./peacocktv');
-const Starz=require('./starz');
+const AmazonPrime = require('./amazonprime');
+const AMCPlus = require('./amcplus');
+const AppleTV = require('./appletv');
+const BritBox = require('./britbox');
+const DisneyPlus = require('./disneyplus');
+const Hulu = require('./hulu');
+const Max = require('./max');
+const Netflix = require('./netflix');
+const PBS = require('./pbs');
+const PeacockTV = require('./peacocktv');
+const Starz = require('./starz');
 
 class ProviderFactory {
   constructor(providers) {
@@ -16,7 +16,7 @@ class ProviderFactory {
   }
 
   getCommand(uri) {
-    for (let i = 0; i < this.providers.length; i++) {
+    for (let i = 0; i < this.providers.length; i += 1) {
       const provider = this.providers[i];
       if (provider.provides(uri)) {
         const data = provider.getData(uri);

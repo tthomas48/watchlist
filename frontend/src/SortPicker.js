@@ -12,7 +12,7 @@ function SortPicker({ sort, setSort }) {
             <InputLabel variant="standard" htmlFor="uncontrolled-native" shrink>
                 Sort
             </InputLabel>
-            <NativeSelect value={sort} onChange={(e) => setSort(e.target.value)} notched>
+            <NativeSelect value={sort} onChange={(e) => setSort(e.target.value)}>
                 {options.map(item => {
                     return (<option key={item.value} value={item.value}>{item.label}</option>);
                 })}

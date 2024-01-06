@@ -1,3 +1,4 @@
+/* eslint-disable class-methods-use-this */
 class AmazonPrime {
   provides(uri) {
     return uri.includes('intent://watch.amazon.com') || uri.includes('amazon.com');

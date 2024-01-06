@@ -1,3 +1,4 @@
+/* eslint-disable class-methods-use-this */
 class PeacockTV {
   provides(uri) {
     return uri.includes('www.peacocktv.com');
