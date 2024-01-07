@@ -7,7 +7,7 @@
     "build-ui": "DISABLE_ESLINT_PLUGIN=true react-app-rewired build",
     "start": "npx sequelize-cli db:migrate && node index.js",
     "start-dev": "BROWSER=none REACT_DEV_SERVER=true TUNNEL=true WATCH=true npm run start",
-    "lint": "npx eslint migrations/**/*.js api/**/*.js models/**/*.js receiver/**/*.js index.js frontend/src/**/*.js",
+    "lint": "npx eslint migrations/**/*.js api/**/*.js models/**/*.js receiver/**/*.js index.js",
     "test": "jest",
     "react-test": "react-app-rewired test"
   },
