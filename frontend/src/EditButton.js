@@ -3,16 +3,14 @@ import Button from '@mui/material/Button';
 import Edit from '@mui/icons-material/Edit';
 
 function EditButton({ id }) {
-    const navigate = useNavigate();
+  const navigate = useNavigate();
 
-    const editAction = async () => {
-        return navigate(`/watchable/${id}`);
-    };
+  const editAction = async () => navigate(`/watchable/${id}`);
 
-    return (
-        <Button onClick={editAction} startIcon={<Edit />}>
-            Edit
-        </Button>
-    );
+  return (
+    <Button onClick={editAction} startIcon={<Edit />}>
+      Edit
+    </Button>
+  );
 }
 export default EditButton;

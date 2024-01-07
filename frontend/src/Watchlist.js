@@ -13,8 +13,8 @@ function showItem(item, player, saveWatchableMutation, showHidden) {
     return (null);
   }
   return (
-    <Grid xs={6} md={3}>
-      <WatchlistItem key={item.title} item={item} player={player}
+    <Grid xs={6} md={3} key={`${item.id}.wrapper`}>
+      <WatchlistItem key={item.id} item={item} player={player}
         saveWatchable={saveWatchableMutation.mutate} />
     </Grid>
   );
