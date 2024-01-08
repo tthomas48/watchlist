@@ -99,10 +99,9 @@ class Api {
   static async refresh(clientId, req, traktListUserId, traktListId, existingWatchables) {
     await singleflight.Do(traktListId, async () => {
       try {
-        debug('in refresh');
+        debug('performing refresh');
         const tasks = [];
         const traktItems = await trakt.getWatchlist(clientId, req.user, traktListUserId, traktListId);
-        debug(traktItems[0][traktItems[0].type].ids);
 
         // 2. find all that no longer exist in watchables
         const existingTraktIds = traktItems.map((traktItem) => getTraktId(traktItem));
@@ -139,15 +138,6 @@ class Api {
     });
   }
 
-  static requireLogin = (req, res, next) => {
-    if (req.user) {
-      next();
-      return;
-    }
-    res.status(401).send('Unauthorized');
-    next('Unauthorized');
-  };
-
   addRoutes(apiRouter) {
     this.authProvider.addRoutes(apiRouter);
 
@@ -157,7 +147,7 @@ class Api {
     });
 
     // FIXME: should this be a POST since it does something?
-    apiRouter.get('/refresh/:trakt_list_user_id/:trakt_list_id/', Api.requireLogin, async (req, res) => {
+    apiRouter.get('/refresh/:trakt_list_user_id/:trakt_list_id/', this.authProvider.requireLogin, async (req, res) => {
       try {
         debug('refresh api');
         const traktListId = req.params.trakt_list_id;
@@ -181,7 +171,7 @@ class Api {
       }
     });
 
-    apiRouter.get('/lists', Api.requireLogin, async (req, res) => {
+    apiRouter.get('/lists', this.authProvider.requireLogin, async (req, res) => {
       const { user } = req;
       const response = await axios.get(`https://api.trakt.tv/users/${user.trakt_id}/lists/`, {
         headers: {
@@ -203,7 +193,7 @@ class Api {
       res.json(result);
     });
 
-    apiRouter.get('/watchlist/:trakt_list_user_id/:trakt_list_id/', Api.requireLogin, async (req, res) => {
+    apiRouter.get('/watchlist/:trakt_list_user_id/:trakt_list_id/', this.authProvider.requireLogin, async (req, res) => {
       try {
         const traktListId = req.params.trakt_list_id;
         const traktListUserId = req.params.trakt_list_user_id;
@@ -254,7 +244,7 @@ class Api {
       }
     });
 
-    apiRouter.post('/play/:service_type/:id/', Api.requireLogin, async (req, res) => {
+    apiRouter.post('/play/:service_type/:id/', this.authProvider.requireLogin, async (req, res) => {
       try {
         const { id } = req.params;
         const serviceType = req.params.service_type;
@@ -287,12 +277,12 @@ class Api {
         res.status(500).send(msg);
       }
     });
-    apiRouter.get('/settings', Api.requireLogin, async (req, res) => {
+    apiRouter.get('/settings', this.authProvider.requireLogin, async (req, res) => {
       const settings = await req.models.Settings.findOne();
       res.json(settings);
     });
 
-    apiRouter.post('/settings',Api.requireLogin, async (req, res) => {
+    apiRouter.post('/settings',this.authProvider.requireLogin, async (req, res) => {
       const newSettings = req.body;
       let settings = await req.models.Settings.findOne();
       if (!settings) {
@@ -309,7 +299,7 @@ class Api {
       res.json(saved);
     });
 
-    apiRouter.post('/reconnect', Api.requireLogin, async (req, res) => {
+    apiRouter.post('/reconnect', this.authProvider.requireLogin, async (req, res) => {
       const settings = await req.models.Settings.findOne();
       if (!settings) {
         res.status(500).json({ error: 'player has not been configured' });
@@ -319,14 +309,14 @@ class Api {
       res.json({});
     });
 
-    apiRouter.put('/watchables/', Api.requireLogin, async (req, res) => {
+    apiRouter.put('/watchables/', this.authProvider.requireLogin, async (req, res) => {
       const watchablesCreate = req.body;
       const watchable = req.models.Watchable.build(watchablesCreate);
       await watchable.save();
       res.json(watchable);
     });
 
-    apiRouter.get('/watchables/:id',Api.requireLogin, async (req, res) => {
+    apiRouter.get('/watchables/:id',this.authProvider.requireLogin, async (req, res) => {
       try {
         const watchable = await req.models.Watchable.findOne({
           where: { id: req.params.id },
@@ -342,7 +332,7 @@ class Api {
       }
     });
 
-    apiRouter.delete('/watchables/:id', Api.requireLogin, async (req, res) => {
+    apiRouter.delete('/watchables/:id', this.authProvider.requireLogin, async (req, res) => {
       const watchable = await req.models.Watchable.findOne({
         where: { id: req.params.id },
       });
@@ -358,7 +348,7 @@ class Api {
       res.status(204).send();
     });
 
-    apiRouter.post('/watchables/:id',Api.requireLogin, async (req, res) => {
+    apiRouter.post('/watchables/:id',this.authProvider.requireLogin, async (req, res) => {
       const watchableUpdate = req.body;
       const watchable = await req.models.Watchable.findOne({
         where: { id: req.params.id },
@@ -397,12 +387,12 @@ class Api {
       res.json(watchable);
     });
 
-    apiRouter.get('/providers', Api.requireLogin, async (req, res) => {
+    apiRouter.get('/providers', this.authProvider.requireLogin, async (req, res) => {
       const providers = await req.models.Provider.findAll();
       res.json(providers);
     });
 
-    apiRouter.post('/providers', Api.requireLogin, async (req, res) => {
+    apiRouter.post('/providers', this.authProvider.requireLogin, async (req, res) => {
       const providerCreate = req.body;
       debug(providerCreate);
       const provider = await req.models.Provider.create(
@@ -414,7 +404,7 @@ class Api {
       res.json(provider);
     });
 
-    apiRouter.put('/providers/:id', Api.requireLogin, async (req, res) => {
+    apiRouter.put('/providers/:id', this.authProvider.requireLogin, async (req, res) => {
       const providerUpdate = req.body;
       const provider = await req.models.Provider.findOne({
         where: { id: req.params.id },
@@ -429,7 +419,7 @@ class Api {
       res.json(provider);
     });
 
-    apiRouter.delete('/providers/:id', Api.requireLogin, async (req, res) => {
+    apiRouter.delete('/providers/:id', this.authProvider.requireLogin, async (req, res) => {
       const provider = await req.models.Provider.findOne({
         where: { id: req.params.id },
       });
@@ -441,7 +431,7 @@ class Api {
       res.json({});
     });
 
-    apiRouter.post('/remote/:service_type/:button', Api.requireLogin, async (req, res) => {
+    apiRouter.post('/remote/:service_type/:button', this.authProvider.requireLogin, async (req, res) => {
       const { button } = req.params;
       const serviceType = req.params.service_type;
 
@@ -450,7 +440,7 @@ class Api {
       res.status(200).json('ok');
     });
 
-    apiRouter.get('/img/:watchable_id', Api.requireLogin, async (req, res) => {
+    apiRouter.get('/img/:watchable_id', this.authProvider.requireLogin, async (req, res) => {
       let sres;
       try {
         const defaultImagePath = path.join(__dirname, '../images/movie.jpg');
@@ -526,7 +516,7 @@ class Api {
       }
     });
 
-    apiRouter.post('/img/:watchable_id', Api.requireLogin, async (req, res) => {
+    apiRouter.post('/img/:watchable_id', this.authProvider.requireLogin, async (req, res) => {
       try {
         const { imageUrl } = req.body;
         const imagePath = path.join(__dirname, '../data/img/local/');

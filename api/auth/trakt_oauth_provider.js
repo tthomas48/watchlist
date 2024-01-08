@@ -65,6 +65,15 @@ class TraktOauthProvider {
     res.redirect('/');
   }
 
+  requireLogin(req, res, next) {
+    if (req.user) {
+      next();
+      return;
+    }
+    res.status(401).send('Unauthorized');
+    next('Unauthorized');
+  }
+
   addRoutes(apiRouter) {
     apiRouter.get('/login', this.redirect);
 
