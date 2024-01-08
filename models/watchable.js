@@ -11,15 +11,6 @@ module.exports = (sequelize, DataTypes) => {
      * The `models/index` file will call this method automatically.
      */
     static associate(models) {
-      // define association here
-      models.Watchable.hasMany(models.WatchableUrl, { as: 'urls', foreignKey: 'watchable_id', onDelete: 'CASCADE' });
-      const assocs = Object.keys(models.Watchable.associations);
-      for (let i = 0; i < assocs.length; i += 1) {
-        const assoc = assocs[i];
-        for (let j = 0; j < assocs.length; j += 1) {
-          debug(`${models.Watchable.name}.${models.Watchable.associations[assoc].accessors[assocs[j]]}()`);
-        }
-      }
     }
   }
   Watchable.init({
@@ -36,6 +27,7 @@ module.exports = (sequelize, DataTypes) => {
     comment: DataTypes.TEXT,
     hidden: DataTypes.BOOLEAN,
     local: DataTypes.BOOLEAN,
+    web_url: DataTypes.STRING,
   }, {
     sequelize,
     modelName: 'Watchable',
