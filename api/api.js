@@ -365,7 +365,7 @@ class Api {
       let foundUrl = false;
       watchable.urls.forEach((url) => {
         if (url.service_type === 'web') {
-          url.url = watchableUpdate.web_url || '';
+          url.url = watchableUpdate.webUrl || '';
           url.provider_id = -1;
           url.custom = true;
           tasks.push(url.save());
@@ -375,7 +375,7 @@ class Api {
       if (!foundUrl) {
         tasks.push(req.models.WatchableUrl.create({
           watchable_id: watchable.id,
-          url: watchableUpdate.web_url || '',
+          url: watchableUpdate.webUrl || '',
           service_type: 'web',
           custom: true,
           provider_id: -1,
