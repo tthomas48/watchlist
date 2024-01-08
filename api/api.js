@@ -158,7 +158,6 @@ class Api {
 
         const findAllOptions = {
           where: { trakt_list_id: traktListId },
-          include: ['urls'],
           order,
         };
         const existingWatchables = await req.models.Watchable.findAll(findAllOptions);
@@ -181,7 +180,7 @@ class Api {
         res.json(existingWatchables);
       } catch (e) {
         debug(e);
-        res.json(500, { error: e });
+        res.status(500).json({ error: e });
       }
     });
 
@@ -193,17 +192,11 @@ class Api {
 
         const watchable = await req.models.Watchable.findByPk(id);
         watchable.last_played = new Date();
-        const urls = await watchable.getUrls();
 
-        const uris = urls.filter((url) => url.service_type === watchableUrlType);
-        let watchableUrl = uris.find((url) => url.selected === true);
-        if (!watchableUrl) {
-          [watchableUrl] = uris;
-        }
-        if (!watchableUrl || !watchableUrl.url) {
+        const uri = watchable.web_url;
+        if (!uri) {
           throw new Error(`no url specified for ${watchable.title}`);
         }
-        const uri = watchableUrl.url;
         const receiver = this.receiverFactory.getReceiver(serviceType);
         debug(`Playing ${uri} with ${serviceType}`);
         if (await receiver.play(uri)) {

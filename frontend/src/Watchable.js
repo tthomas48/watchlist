@@ -55,7 +55,6 @@ function Watchable() {
     staleTime: Infinity,
   });
 
-  let { webUrl } = [''];
   const providers = providerQuery.data;
   const doSearch = () => {
     if (!providers) {
@@ -84,12 +83,6 @@ function Watchable() {
   if (isLoading || providerQuery.isLoading) {
     return (<h5>Loading...</h5>);
   }
-  data.watchable.urls.forEach((url) => {
-    // provider_id = url.provider_id;
-    if (url.service_type === 'web') {
-      webUrl = url.url;
-    }
-  });
 
   return (
     <Paper variant="outlined" sx={{
@@ -132,7 +125,7 @@ function Watchable() {
           </Stack>
           <TextField {...register('webUrl')} label="Web URL" variant="outlined" sx={{
             color: 'text.paper',
-          }} defaultValue={webUrl} InputLabelProps={{ shrink: true }} />
+          }} defaultValue={data.watchable.web_url} InputLabelProps={{ shrink: true }} />
 
           <Stack
                 direction="row"
