@@ -2,7 +2,6 @@ const debug = require('debug')('watchlist:api');
 const fs = require('fs');
 const path = require('path');
 const { PassThrough } = require('stream');
-const express = require('express');
 const axios = require('axios');
 const singleflight = require('node-singleflight');
 const Trakt = require('trakt.tv');
@@ -14,6 +13,12 @@ class Api {
   constructor(authProvider, receiverFactory) {
     this.authProvider = authProvider;
     this.receiverFactory = receiverFactory;
+  }
+
+  handleError(res, err) {
+    const msg = JSON.stringify(err, Object.getOwnPropertyNames(err));
+    debug(msg);
+    res.status(500).send(msg);
   }
 
   async createWatchable(models, traktListId, traktItem) {
@@ -37,12 +42,40 @@ class Api {
     return watchable.save();
   }
 
-  static async refresh(clientId, req, traktListUserId, traktListId, existingWatchables) {
+  async getLastRefresh(models) {
+    let refreshStatusModel = await models.RefreshStatus.findOne({});
+    if (!refreshStatusModel) {
+      refreshStatusModel = models.RefreshStatus.build({ lastRefresh: new Date(1970, 1, 1) });
+    }
+    return refreshStatusModel;
+  }
+
+  async lastRefresh(models) {
+    const refreshStatusModel = await this.getLastRefresh(models);
+    return refreshStatusModel.lastRefresh;
+  }
+
+  async touchRefresh(models) {
+    const refreshStatusModel = await this.getLastRefresh(models);
+    refreshStatusModel.lastRefresh = new Date();
+    return refreshStatusModel.save();
+  }
+
+  async refresh(req, traktListUserId, traktListId, existingWatchables) {
+    const clientId = this.authProvider.getClientId();
+    let error = null;
     await singleflight.Do(traktListId, async () => {
       try {
         debug('performing refresh');
+        // do this first so we don't keep refreshing if there's an error
+        await this.touchRefresh(req.models);
         const tasks = [];
-        const traktItems = await trakt.getWatchlist(clientId, req.user, traktListUserId, traktListId);
+        const traktItems = await trakt.getWatchlist(
+          clientId,
+          req.user,
+          traktListUserId,
+          traktListId,
+        );
 
         // 2. find all that no longer exist in watchables
         const existingTraktIds = traktItems.map((traktItem) => getTraktId(traktItem));
@@ -74,9 +107,12 @@ class Api {
         });
         await Promise.all(tasks);
       } catch (e) {
-        debug(e);
+        error = e;
       }
     });
+    if (error) {
+      throw error;
+    }
   }
 
   addRoutes(apiRouter) {
@@ -96,8 +132,9 @@ class Api {
         let existingWatchables = await req.models.Watchable.findAll(
           { where: { trakt_list_id: traktListId } },
         );
-        Api.refresh(this.authProvider.getClientId(),
-          req.traktListUserId,
+        this.refresh(
+          req,
+          traktListUserId,
           traktListId,
           existingWatchables,
         );
@@ -107,8 +144,7 @@ class Api {
         );
         res.json(existingWatchables);
       } catch (e) {
-        debug(e);
-        res.json(500, { error: e });
+        this.handleError(res, e);
       }
     });
 
@@ -161,26 +197,20 @@ class Api {
           order,
         };
         const existingWatchables = await req.models.Watchable.findAll(findAllOptions);
-        // FIXME: this needs a better way of tracking refreshes
-        // get the most recent updated_at from existingWatchables
-        // const mostRecentUpdate = existingWatchables.reduce((acc, watchable) => {
-        //   if (watchable.updatedAt > acc) {
-        //     return watchable.updatedAt;
-        //   }
-        //   return acc;
-        // }, new Date(0));
-        //
+        const mostRecentUpdate = await this.lastRefresh(req.models);
         // if the most recent_update is more than a day ago then we should call refresh
-        // if (mostRecentUpdate < new Date(Date.now() - 1000 * 60 * 60 * 24)) {
-        //   debug(`Refreshing because ${mostRecentUpdate} is more than a day ago`);
-        //   await Api.refresh(authProvider.getClientId(), req,
-        // traktListUserId, traktListId, existingWatchables);
-        // }
-        // existingWatchables = await req.models.Watchable.findAll(findAllOptions);
+        if (mostRecentUpdate < new Date(Date.now() - 1000 * 60 * 60 * 24)) {
+          debug(`Refreshing because ${mostRecentUpdate} is more than a day ago`);
+          this.refresh(
+            req,
+            traktListUserId,
+            traktListId,
+            existingWatchables,
+          );
+        }
         res.json(existingWatchables);
       } catch (e) {
-        debug(e);
-        res.status(500).json({ error: e });
+        this.handleError(res, e);
       }
     });
 
@@ -188,8 +218,6 @@ class Api {
       try {
         const { id } = req.params;
         const serviceType = req.params.service_type;
-        const watchableUrlType = 'web';
-
         const watchable = await req.models.Watchable.findByPk(id);
         watchable.last_played = new Date();
 
@@ -205,10 +233,8 @@ class Api {
           return;
         }
         throw new Error('unable to play');
-      } catch (err) {
-        const msg = JSON.stringify(err, Object.getOwnPropertyNames(err));
-        debug(msg);
-        res.status(500).send(msg);
+      } catch (e) {
+        this.handleError(res, e);
       }
     });
     apiRouter.get('/settings', this.authProvider.requireLogin, async (req, res) => {
@@ -216,7 +242,7 @@ class Api {
       res.json(settings);
     });
 
-    apiRouter.post('/settings',this.authProvider.requireLogin, async (req, res) => {
+    apiRouter.post('/settings', this.authProvider.requireLogin, async (req, res) => {
       const newSettings = req.body;
       let settings = await req.models.Settings.findOne();
       if (!settings) {
@@ -250,7 +276,7 @@ class Api {
       res.json(watchable);
     });
 
-    apiRouter.get('/watchables/:id',this.authProvider.requireLogin, async (req, res) => {
+    apiRouter.get('/watchables/:id', this.authProvider.requireLogin, async (req, res) => {
       try {
         const watchable = await req.models.Watchable.findOne({
           where: { id: req.params.id },
@@ -260,8 +286,7 @@ class Api {
         const providers = [];
         res.json({ watchable, providers });
       } catch (e) {
-        debug(e);
-        res.json(500, { error: e });
+        this.handleError(res, e);
       }
     });
 
@@ -281,7 +306,7 @@ class Api {
       res.status(204).send();
     });
 
-    apiRouter.post('/watchables/:id',this.authProvider.requireLogin, async (req, res) => {
+    apiRouter.post('/watchables/:id', this.authProvider.requireLogin, async (req, res) => {
       const watchableUpdate = req.body;
       const watchable = await req.models.Watchable.findOne({
         where: { id: req.params.id },
@@ -460,7 +485,6 @@ class Api {
         debug(e);
       }
     });
-
 
     return apiRouter;
   }

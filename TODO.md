@@ -1,5 +1,4 @@
 TODO:
-Add a field for keeping track of last refresh. Show that in settings.
 Add the ability to mark an episode as watched. Add a checkbox for "mark all up to this epsiode as watched".
 Add the ability to hide automatically if all the episodes are watched. Do this on refresh.
 Can we then figure out per provider how to add episodes?
