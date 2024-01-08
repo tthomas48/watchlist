@@ -114,13 +114,6 @@ class Api {
     return this.handleResponse(res);
   }
 
-  async getWatchableUrls(id, providerId) {
-    const res = await fetch(`/api/watchables/${id}/urls/${providerId}`, {
-      withCredentials: true,
-    });
-    return this.handleResponse(res);
-  }
-
   async saveWatchable(id, watchable) {
     const res = await fetch(`/api/watchables/${id}/`, {
       method: 'POST',

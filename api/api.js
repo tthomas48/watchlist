@@ -16,25 +16,8 @@ class Api {
     this.receiverFactory = receiverFactory;
   }
 
-  addUrls(watchable, providerId, urls, serviceType) {
-    if (!urls) {
-      return;
-    }
-    urls.forEach((link) => {
-      if (!link) {
-        return;
-      }
-      watchable.urls.push({
-        url: link,
-        service_type: serviceType,
-        custom: false,
-        provider_id: providerId,
-      });
-    });
-  }
-
   async createWatchable(models, traktListId, traktItem) {
-    let ids = getTraktIds(traktItem);
+    const ids = getTraktIds(traktItem);
     const props = {
       title: getTitle(traktItem),
       trakt_id: getTraktId(traktItem),
@@ -43,57 +26,15 @@ class Api {
       media_type: traktItem.type,
       imdb_id: ids?.imdb,
       tmdb_id: ids?.tmdb,
-      urls: [],
     };
-    this.addUrls(props, traktItem.provider_id, traktItem.deeplink_web, 'web');
-    return models.Watchable.create(props, { include: [{ model: models.WatchableUrl, as: 'urls' }] });
+    return models.Watchable.create(props);
   }
 
   async updateWatchable(models, traktItem, watchable) {
     watchable.media_type = traktItem.type;
     watchable.imdb_id = traktItem[traktItem.type].ids?.imdb;
     watchable.tmdb_id = traktItem[traktItem.type].ids?.tmdb;
-    await watchable.save();
-
-    const props = {
-      urls: [],
-    };
-    let isCustom = false;
-    const foundUrl = [];
-    const urls = await watchable.getUrls();
-    urls.forEach((url) => {
-      if (url.provider_id === -1) {
-        isCustom = true;
-        return;
-      }
-      // initialize all of our urls
-      foundUrl[`${url.service_type}.${url.url}`] = url;
-    });
-    if (isCustom) {
-      return Promise.resolve(watchable);
-    }
-
-    this.addUrls(props, traktItem.provider_id, traktItem.deeplink_web, 'web');
-
-    const newUrls = props.urls;
-
-    const toAdd = [];
-    newUrls.forEach((url) => {
-      if (!foundUrl[`${url.service_type}.${url.url}`]) {
-        toAdd.push(url);
-      }
-    });
-
-    const tasks = [];
-    toAdd.forEach((watchableUrl) => {
-      watchableUrl.watchable_id = watchable.id;
-      tasks.push(models.WatchableUrl.create(watchableUrl));
-    });
-
-    foundUrl.forEach((found) => {
-      tasks.push(watchable.removeUrl(found));
-    });
-    return Promise.all(tasks);
+    return watchable.save();
   }
 
   static async refresh(clientId, req, traktListUserId, traktListId, existingWatchables) {
@@ -320,7 +261,6 @@ class Api {
       try {
         const watchable = await req.models.Watchable.findOne({
           where: { id: req.params.id },
-          include: [{ model: req.models.WatchableUrl, as: 'urls' }],
         });
         watchable.providers = [];
         // const providers = await sourceApi.getProviders(watchable);
@@ -352,38 +292,16 @@ class Api {
       const watchableUpdate = req.body;
       const watchable = await req.models.Watchable.findOne({
         where: { id: req.params.id },
-        include: [{ model: req.models.WatchableUrl, as: 'urls' }],
       });
-      const tasks = [];
       if (!watchable) {
         res.status(404).json({ error: 'not found' });
         return;
       }
       watchable.hidden = watchableUpdate.hidden;
       watchable.comment = watchableUpdate.comment;
-
-      let foundUrl = false;
-      watchable.urls.forEach((url) => {
-        if (url.service_type === 'web') {
-          url.url = watchableUpdate.webUrl || '';
-          url.provider_id = -1;
-          url.custom = true;
-          tasks.push(url.save());
-          foundUrl = true;
-        }
-      });
-      if (!foundUrl) {
-        tasks.push(req.models.WatchableUrl.create({
-          watchable_id: watchable.id,
-          url: watchableUpdate.webUrl || '',
-          service_type: 'web',
-          custom: true,
-          provider_id: -1,
-        }));
-      }
+      watchable.web_url = watchableUpdate.webUrl;
 
       await watchable.save();
-      await Promise.all(tasks);
       res.json(watchable);
     });
 
