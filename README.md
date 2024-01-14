@@ -12,11 +12,12 @@ When using GoogleTV as a player there is a full remote control for selecting Pro
 Would love assistance in adding more integrations (FireTV, others?) and writing tests and documentation.
 
 ## Running docker image
+- $ mkdir -p /usr/share/watchlist/android/
 - $ mkdir -p /usr/share/watchlist/data/
 - $ cp .env.example /usr/share/watchlist/.env/ # and edit with your values
 - \# Add the Trakt secrets (found at https://trakt.tv/oauth/applications) to the .env file
 - \# For art you will need to get API keys for one or all of FanArt, TVDB, and/or TMDB and add them to your .env file
-- $ docker run --name=watchlist --volume=/usr/share/watchlist/data/:/usr/src/watchlist/data/ --network=host --restart=unless-stopped --env-file=/usr/share/watchlist/.env --detach=true ghcr.io/tthomas48/watchlist:latest
+- $ docker run --name=watchlist --volume=/usr/share/watchlist/android/:/root/.android/ --volume=/usr/share/watchlist/data/:/usr/src/watchlist/data/ --network=host --restart=unless-stopped --env-file=/usr/share/watchlist/.env --detach=true ghcr.io/tthomas48/watchlist:latest
 
 
 ## Develop
