@@ -27,4 +27,4 @@ const themeOptions: ThemeOptions = {
     },
   },
 };
-export { themeOptions };
+export default themeOptions;

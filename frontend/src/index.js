@@ -3,7 +3,7 @@ import ReactDOM from 'react-dom/client';
 import {
   createBrowserRouter,
   RouterProvider,
-} from "react-router-dom";
+} from 'react-router-dom';
 import {
   QueryClient,
   QueryClientProvider,
@@ -11,7 +11,7 @@ import {
 import StyledEngineProvider from '@mui/material/StyledEngineProvider';
 import CssBaseline from '@mui/material/CssBaseline';
 import { ThemeProvider, createTheme } from '@mui/material/styles';
-import { themeOptions } from './theme';
+import themeOptions from './theme';
 import './index.css';
 import App from './App';
 import Settings from './Settings';
@@ -26,7 +26,7 @@ const queryClient = new QueryClient();
 
 const router = createBrowserRouter([
   {
-    path: "/",
+    path: '/',
     element: <App />,
     children: [
       {
@@ -34,26 +34,25 @@ const router = createBrowserRouter([
         index: true,
       },
       {
-        path: "/settings",
+        path: '/settings',
         element: <Settings />,
       },
       {
-        path: "/providers",
+        path: '/providers',
         element: <Providers />,
-      },      
+      },
       {
-        path: "/watchable/:id",
+        path: '/watchable/:id',
         element: <Watchable />,
-      }      
-    ]
+      },
+    ],
   },
 ]);
-
 
 const root = ReactDOM.createRoot(document.getElementById('root'));
 root.render(
   <React.StrictMode>
-    <QueryClientProvider client={queryClient}>        
+    <QueryClientProvider client={queryClient}>
         <StyledEngineProvider injectFirst>
           <ThemeProvider theme={greenTheme}>
           <CssBaseline />
@@ -61,5 +60,5 @@ root.render(
           </ThemeProvider>
         </StyledEngineProvider>
     </QueryClientProvider>
-  </React.StrictMode>
+  </React.StrictMode>,
 );

@@ -5,11 +5,41 @@ import { useParams, useNavigate } from 'react-router-dom';
 import {
   Typography, Paper, Button, TextField, Stack, FormControl,
   FormHelperText, IconButton, InputLabel, NativeSelect,
+  Tabs, Box, Tab,
 } from '@mui/material';
 import SearchIcon from '@mui/icons-material/Search';
 import DownloadIcon from '@mui/icons-material/Download';
 import { MessageContext } from './context/MessageContext';
 import Api from './service/api';
+
+function a11yProps(index) {
+  return {
+    id: `simple-tab-${index}`,
+    'aria-controls': `simple-tabpanel-${index}`,
+  };
+}
+
+function CustomTabPanel(props) {
+  const {
+    children, value, index, ...other
+  } = props;
+
+  return (
+    <div
+      role="tabpanel"
+      hidden={value !== index}
+      id={`simple-tabpanel-${index}`}
+      aria-labelledby={`simple-tab-${index}`}
+      {...other}
+    >
+      {value === index && (
+        <Box sx={{ p: 3 }}>
+          <Typography>{children}</Typography>
+        </Box>
+      )}
+    </div>
+  );
+}
 
 function Watchable() {
   const messageContext = useContext(MessageContext);
@@ -17,6 +47,7 @@ function Watchable() {
 
   const { id } = useParams();
   const [provider, setProvider] = useState('');
+  const [tabIndex, setTabIndex] = useState(0);
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   const {
@@ -80,6 +111,10 @@ function Watchable() {
     navigate('/');
   };
 
+  const handleTabChange = (event, newValue) => {
+    setTabIndex(newValue);
+  };
+
   if (isLoading || providerQuery.isLoading) {
     return (<h5>Loading...</h5>);
   }
@@ -88,74 +123,86 @@ function Watchable() {
     <Paper variant="outlined" sx={{
       padding: 4,
     }}>
-      <form onSubmit={handleSubmit(mutate)}>
-        <Stack
+      <Typography variant="h6" sx={{
+        color: 'text.paper',
+      }}>
+        Edit {data.watchable.title}
+      </Typography>
+      <Box sx={{ borderBottom: 1, borderColor: 'divider' }}>
+        <Tabs value={tabIndex} onChange={handleTabChange} aria-label="watchable edit tabs">
+          <Tab label="General" {...a11yProps(0)} />
+          <Tab label="Episodes" {...a11yProps(1)} />
+        </Tabs>
+      </Box>
+      <CustomTabPanel value={tabIndex} index={0}>
+        <form onSubmit={handleSubmit(mutate)}>
+          <Stack
             direction="column"
-            justifyContent="center"
-            alignItems="center"
-            spacing={2}
-        >
-          <Typography variant="h6" sx={{
-            color: 'text.paper',
-          }}>
-            Edit {data.watchable.title}
-          </Typography>
-          <Stack
-            direction="row"
-            justifyContent="center"
+            justifyContent="flex-start"
             alignItems="flex-start"
-            spacing={1}
+            spacing={2}
           >
-            <FormControl>
-              <InputLabel variant="standard" htmlFor="uncontrolled-native">
-                Provider
-              </InputLabel>
-              <NativeSelect onChange={(e) => setProvider(e.target.value)}>
-                {providers.map((item) => (<option key={item.url}
-                  value={String(item.url)}>{item.name}</option>))}
-              </NativeSelect>
-              <FormHelperText sx={{ overflow: 'hidden', maxWidth: '126px' }}>
-                The search icon will open a new tab to find the URL for this item.
-                Copy the link, swipe backwards, and paste the url into the field below.
-              </FormHelperText>
-            </FormControl>
-            <IconButton aria-label="search" onClick={doSearch}>
-              <SearchIcon />
-            </IconButton>
-          </Stack>
-          <TextField {...register('webUrl')} label="Web URL" variant="outlined" sx={{
-            color: 'text.paper',
-          }} defaultValue={data.watchable.web_url} InputLabelProps={{ shrink: true }} />
-
-          <Stack
-                direction="row"
-                justifyContent="center"
-                alignItems="flex-start"
-                spacing={1}
+            <Stack
+              direction="row"
+              justifyContent="center"
+              alignItems="flex-start"
+              spacing={1}
             >
-                <FormControl>
-                    <TextField {...register('image_url')} label="Image URL" variant="outlined" sx={{
-                      color: 'text.paper',
-                      overflow: 'hidden',
-                      maxWidth: '162px',
-                    }} InputLabelProps={{ shrink: true }} />
-                </FormControl>
-                <IconButton aria-label="download" onClick={() => doDownload(data.watchable)}>
-                    <DownloadIcon />
-                </IconButton>
+              <FormControl>
+                <InputLabel variant="standard" htmlFor="uncontrolled-native">
+                  Provider
+                </InputLabel>
+                <NativeSelect onChange={(e) => setProvider(e.target.value)}>
+                  {providers.map((item) => (<option key={item.url}
+                    value={String(item.url)}>{item.name}</option>))}
+                </NativeSelect>
+                <FormHelperText sx={{ overflow: 'hidden', maxWidth: '126px' }}>
+                  The search icon will open a new tab to find the URL for this item.
+                  Copy the link, swipe backwards, and paste the url into the field below.
+                </FormHelperText>
+              </FormControl>
+              <IconButton aria-label="search" onClick={doSearch}>
+                <SearchIcon />
+              </IconButton>
+            </Stack>
+            <TextField {...register('webUrl')} label="Web URL" variant="outlined" sx={{
+              color: 'text.paper',
+            }} defaultValue={data.watchable.web_url} InputLabelProps={{ shrink: true }} />
+
+            <Stack
+              direction="row"
+              justifyContent="center"
+              alignItems="flex-start"
+              spacing={1}
+            >
+              <FormControl>
+                <TextField {...register('image_url')} label="Image URL" variant="outlined" sx={{
+                  color: 'text.paper',
+                  overflow: 'hidden',
+                  maxWidth: '162px',
+                }} InputLabelProps={{ shrink: true }} />
+              </FormControl>
+              <IconButton aria-label="download" onClick={() => doDownload(data.watchable)}>
+                <DownloadIcon />
+              </IconButton>
+            </Stack>
+            <Stack
+              direction="row"
+              justifyContent="center"
+              alignItems="center"
+              spacing={1}
+              sx={{ flexGrow: 1 }}
+            >
+              <Button variant="outlined" type="submit">Save</Button>
+              <Button variant="outlined" onClick={() => navigate('/')}>Cancel</Button>
+              <Button variant="outlined" onClick={() => doDelete(data.watchable)} disabled={!data.watchable.local}>Delete</Button>
+            </Stack>
           </Stack>
-          <Stack
-            direction="row"
-            justifyContent="center"
-            alignItems="center"
-            spacing={1}
-          >
-            <Button variant="outlined" type="submit">Save</Button>
-            <Button variant="outlined" onClick={() => navigate('/')}>Cancel</Button>
-            <Button variant="outlined" onClick={() => doDelete(data.watchable)} disabled={!data.watchable.local}>Delete</Button>
-          </Stack>
-        </Stack>
-      </form>
+        </form>
+      </CustomTabPanel>
+      <CustomTabPanel value={tabIndex} index={1}>
+        Episode Button Refresh goes here
+      </CustomTabPanel>
     </Paper>
   );
 }

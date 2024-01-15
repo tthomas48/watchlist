@@ -4,3 +4,7 @@
 input.MuiInputBase-input, option, .MuiNativeSelect-root, select, .MuiDialogTitle-root, textarea, .MuiInputBase-root  {
   color: #333;
 }
+.MuiStack-root, .MuiFormControl-root {
+  width: 100%;
+  flex-grow: 1;
+}

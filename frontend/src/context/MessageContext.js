@@ -4,7 +4,7 @@ import { Alert, Snackbar } from '@mui/material';
 export const MessageContext = React.createContext(undefined);
 
 export default function MessageContextWrapper({ children }) {
-  const emptyMessage = { open: false, message: "", severity: "info" };
+  const emptyMessage = { open: false, message: '', severity: 'info' };
   const [message, setMessage] = React.useState(emptyMessage);
   const sendMessage = (newMessage) => setMessage(newMessage);
 
