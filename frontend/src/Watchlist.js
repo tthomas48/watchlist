@@ -8,14 +8,16 @@ import Api from './service/api';
 import WatchlistItem from './WatchlistItem';
 import RemoteControl from './RemoteControl';
 
-function showItem(item, player, saveWatchableMutation, showHidden) {
+function showItem(item, player, saveWatchableMutation, showHidden, notifications, list) {
   if (!showHidden && item.hidden) {
     return (null);
   }
   return (
     <Grid xs={6} md={3} key={`${item.id}.wrapper`}>
       <WatchlistItem key={item.id} item={item} player={player}
-        saveWatchable={saveWatchableMutation.mutate} />
+        saveWatchable={saveWatchableMutation.mutate}
+        notifications={notifications}
+        list={list} />
     </Grid>
   );
 }
@@ -32,6 +34,12 @@ function Watchlist() {
     queryKey: ['watchlist', list, sort],
     queryFn: async () => api.getWatchlist(list, sort),
   });
+
+  const notificationsRequest = useQuery({
+    queryKey: ['notifications', list],
+    queryFn: async () => api.getNotifications(list),
+  });
+
   const saveWatchableMutation = useMutation({
     mutationFn: async (watchable) => {
       try {
@@ -54,9 +62,17 @@ function Watchlist() {
       <div className="provider-container">
         <div>
           {isLoading && <div>Loading...</div>}
+          {notificationsRequest.isLoading && <div>Loading...</div>}
           {isError && <div>Error: {error.message}</div>}
           <Grid container spacing={2}>
-            {data?.map((item) => showItem(item, player, saveWatchableMutation, showHidden))}
+            {data?.map((item) => showItem(
+              item,
+              player,
+              saveWatchableMutation,
+              showHidden,
+              notificationsRequest.data,
+              list,
+            ))}
           </Grid>
         </div>
       </div>

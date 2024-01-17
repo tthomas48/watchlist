@@ -1,4 +1,3 @@
-const debug = require('debug')('watchlist:models:watchable');
 const {
   Model,
 } = require('sequelize');
@@ -11,6 +10,7 @@ module.exports = (sequelize, DataTypes) => {
      * The `models/index` file will call this method automatically.
      */
     static associate(models) {
+      models.Watchable.hasMany(models.Episode, { as: 'episodes', foreignKey: 'watchable_id', onDelete: 'CASCADE' });
     }
   }
   Watchable.init({

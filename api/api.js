@@ -4,15 +4,14 @@ const path = require('path');
 const { PassThrough } = require('stream');
 const axios = require('axios');
 const singleflight = require('node-singleflight');
-const Trakt = require('trakt.tv');
-const TraktImages = require('trakt.tv-images');
-const trakt = require('./trakt');
+const TraktClient = require('./traktclient');
 const { getTitle, getTraktId, getTraktIds } = require('./helpers');
 
 class Api {
   constructor(authProvider, receiverFactory) {
     this.authProvider = authProvider;
     this.receiverFactory = receiverFactory;
+    this.traktClient = new TraktClient(this.authProvider.getClientId());
   }
 
   handleError(res, err) {
@@ -35,7 +34,7 @@ class Api {
     return models.Watchable.create(props);
   }
 
-  async updateWatchable(models, traktItem, watchable) {
+  async updateWatchable(traktItem, watchable) {
     watchable.media_type = traktItem.type;
     watchable.imdb_id = traktItem[traktItem.type].ids?.imdb;
     watchable.tmdb_id = traktItem[traktItem.type].ids?.tmdb;
@@ -61,8 +60,88 @@ class Api {
     return refreshStatusModel.save();
   }
 
+  async addNotification(models, traktListId, watchable, message) {
+    debug(watchable);
+    await models.Notification.create({
+      trakt_list_id: traktListId,
+      watchable_id: watchable.id,
+      message,
+    });
+  }
+
+  async refreshEpisodes(models, traktListId) {
+    const tasks = [];
+
+    const existingWatchables = await models.Watchable.findAll(
+      { where: { trakt_list_id: traktListId } },
+    );
+
+    for (let i = 0; i < existingWatchables.length; i += 1) {
+      if (existingWatchables[i].media_type === 'show') {
+        tasks.push((async () => {
+          const watchable = existingWatchables[i];
+
+          const existingEpisodes = await watchable.getEpisodes();
+          // get all of our existing episode and season counts
+          const existingEpisodeMap = {};
+          existingEpisodes.forEach((e) => {
+            existingEpisodeMap[e.season] = existingEpisodeMap[e.season] || 0;
+            if (e.episode > existingEpisodeMap[e.season]) {
+              existingEpisodeMap[e.season] = e.episode;
+            }
+          });
+
+          const remoteEpisodeMap = {};
+          const seasons = await this.traktClient.getSeasons(watchable.trakt_id);
+          for (let j = 0; j < seasons.length; j += 1) {
+            const season = seasons[j];
+            const { episodes } = season;
+            // if seasons.length > existingEpisodes.seasons.length then we need to notify new season
+            // if episodes.length > existingEpisodes.length then we need to notify new episodes
+            for (let k = 0; k < episodes.length; k += 1) {
+              const episode = episodes[k];
+              const seasonId = episode.season;
+              const episodeId = episode.number;
+              // collect all remote episode and seasone counts
+              remoteEpisodeMap[seasonId] = remoteEpisodeMap[seasonId] || 0;
+              if (episodeId > remoteEpisodeMap[seasonId]) {
+                remoteEpisodeMap[seasonId] = episodeId;
+              }
+              const episodeModel = existingEpisodes.find(
+                (e) => e.season === seasonId && e.episode === episodeId,
+              );
+              if (!episodeModel) {
+                // eslint-disable-next-line no-await-in-loop
+                await models.Episode.create({
+                  watchable_id: watchable.id,
+                  trakt_id: episode.ids.trakt,
+                  season: seasonId,
+                  episode: episodeId,
+                  title: episode.title,
+                });
+              }
+            }
+          }
+          // find maximum key in remoteEpisodeMap and existingEpisodeMap
+          const maxRemoteSeason = Math.max(...Object.keys(remoteEpisodeMap));
+          const maxExistingSeason = Math.max(...Object.keys(existingEpisodeMap));
+          if (maxExistingSeason > 0 && maxRemoteSeason > maxExistingSeason) {
+            debug(`New season for ${watchable.title}`);
+            tasks.push(this.addNotification(models, traktListId, watchable, 'New season.'));
+          }
+          else if (maxRemoteSeason === maxExistingSeason) {
+            if (remoteEpisodeMap[maxRemoteSeason] > existingEpisodeMap[maxExistingSeason]) {
+              debug(`New episodes for ${watchable.title}`);
+              tasks.push(this.addNotification(models, traktListId, watchable, 'New episodes.'));
+            }
+          }
+        })());
+      }
+    }
+    return Promise.all(tasks);
+  }
+
   async refresh(req, traktListUserId, traktListId, existingWatchables) {
-    const clientId = this.authProvider.getClientId();
     let error = null;
     await singleflight.Do(traktListId, async () => {
       try {
@@ -70,12 +149,8 @@ class Api {
         // do this first so we don't keep refreshing if there's an error
         await this.touchRefresh(req.models);
         const tasks = [];
-        const traktItems = await trakt.getWatchlist(
-          clientId,
-          req.user,
-          traktListUserId,
-          traktListId,
-        );
+        await this.traktClient.importToken(req.user.access_token);
+        const traktItems = await this.traktClient.getListItems(traktListId, traktListUserId);
 
         // 2. find all that no longer exist in watchables
         const existingTraktIds = traktItems.map((traktItem) => getTraktId(traktItem));
@@ -99,13 +174,14 @@ class Api {
           const existingWatchable = existingWatchables.find(
             (ew) => getTraktId(traktItem) === ew.trakt_id,
           );
-          tasks.push(this.updateWatchable(req.models, traktItem, existingWatchable));
+          tasks.push(this.updateWatchable(traktItem, existingWatchable));
         });
 
         newItems.forEach((traktItem) => {
           tasks.push(this.createWatchable(req.models, traktListId, traktItem));
         });
         await Promise.all(tasks);
+        await this.refreshEpisodes(req.models, traktListId);
       } catch (e) {
         error = e;
       }
@@ -121,6 +197,30 @@ class Api {
     apiRouter.get('/logout', (req, res) => {
       req.logout();
       res.redirect('/');
+    });
+
+    apiRouter.get('/notifications/:trakt_list_id/', this.authProvider.requireLogin, async (req, res) => {
+      const traktListId = req.params.trakt_list_id;
+      const notifications = await req.models.Notification.findAll({
+        where: { trakt_list_id: traktListId },
+      });
+      res.json(notifications);
+    });
+
+    apiRouter.delete('/notifications/:trakt_list_id/:notification_id/', this.authProvider.requireLogin, async (req, res) => {
+      const traktListId = req.params.trakt_list_id;
+      const notificationId = req.params.notification_id;
+      debug('Deleting notification', traktListId, notificationId);
+      const notifications = await req.models.Notification.findAll({
+        where: { trakt_list_id: traktListId, id: notificationId },
+      });
+      const tasks = [];
+      debug(notifications.length);
+      for (let i = 0; i < notifications.length; i += 1) {
+        tasks.push(notifications[i].destroy());
+      }
+      await Promise.all(tasks);
+      res.status(204);
     });
 
     // FIXME: should this be a POST since it does something?
@@ -149,25 +249,17 @@ class Api {
     });
 
     apiRouter.get('/lists', this.authProvider.requireLogin, async (req, res) => {
-      const { user } = req;
-      const response = await axios.get(`https://api.trakt.tv/users/${user.trakt_id}/lists/`, {
-        headers: {
-          'Content-Type': 'application/json',
-          'trakt-api-version': '2',
-          'trakt-api-key': this.authProvider.getClientId(),
-          Authorization: `Bearer ${user.access_token}`,
-        },
-      });
-      const response2 = await axios.get(`https://api.trakt.tv/users/${user.trakt_id}/lists/collaborations/`, {
-        headers: {
-          'Content-Type': 'application/json',
-          'trakt-api-version': '2',
-          'trakt-api-key': this.authProvider.getClientId(),
-          Authorization: `Bearer ${user.access_token}`,
-        },
-      });
-      const result = response.data.concat(response2.data);
-      res.json(result);
+      try {
+        const { user } = req;
+        await this.traktClient.importToken(user.access_token);
+        const response = await this.traktClient.getLists(user.trakt_id);
+        const response2 = await this.traktClient.getCollaborations(user.trakt_id);
+        const result = response.concat(response2);
+        res.json(result);
+      } catch (e) {
+        debug(e);
+        res.status(500).send(e);
+      }
     });
 
     apiRouter.get('/watchlist/:trakt_list_user_id/:trakt_list_id/', this.authProvider.requireLogin, async (req, res) => {
@@ -404,40 +496,26 @@ class Api {
         });
         debug(watchable);
         if (watchable.trakt_id) {
-          const traktClient = new Trakt({
-            client_id: this.authProvider.getClientId(),
-            plugins: {
-              images: TraktImages,
-            },
-            options: {
-              images: {
-                tmdbApiKey: process.env.IMG_TMDB_APIKEY,
-                tvdbApiKey: process.env.IMG_TVDB_APIKEY,
-                fanartApiKey: process.env.IMG_FANART_APIKEY,
-                smallerImages: true, // reduce image size, save bandwidth. defaults to false.
-                cached: true, // requires trakt.tv-cached
-              },
-            },
-          }, true);
-
-          const { user } = req;
-          await traktClient.import_token(user.access_token);
+          await this.traktClient.importToken(user.access_token);
           // hmm, so we need to store the type?
-          sres = await traktClient.search.id({ id_type: 'trakt', id: watchable.trakt_id, type: watchable.media_type });
+          sres = await this.traktClient.findWatchable(watchable);
           if (sres.length > 0) {
             for (let i = 0; i < sres.length; i += 1) {
               debug(sres[i]);
               const { ids } = sres[i][watchable.media_type];
               ids.type = watchable.media_type;
 
-              const images = await traktClient.images.get(ids);
+              // eslint-disable-next-line no-await-in-loop
+              const images = await this.traktClient.getImages(ids);
               debug(images);
               if (images.poster) {
+                // eslint-disable-next-line no-await-in-loop
                 const response = await axios({
                   method: 'get',
                   url: images.poster,
                   responseType: 'stream',
                 });
+                // eslint-disable-next-line no-await-in-loop
                 await writeFile(response.data);
                 return;
               }

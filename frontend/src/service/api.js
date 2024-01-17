@@ -62,6 +62,24 @@ class Api {
     return this.handleResponse(res);
   }
 
+  async getNotifications(list) {
+    if (!list) {
+      return [];
+    }
+    const res = await fetch(`/api/notifications/${list.ids.trakt}/`, {
+      withCredentials: true,
+    });
+    return this.handleResponse(res);
+  }
+
+  async deleteNotification(list, id) {
+    const res = await fetch(`/api/notifications/${list.ids.trakt}/${id}/`, {
+      method: 'DELETE',
+      withCredentials: true,
+    });
+    return this.handleResponse(res);
+  }
+
   async refresh(list) {
     if (!list) {
       return [];

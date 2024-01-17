@@ -75,7 +75,7 @@ function App() {
                     }}
                   >
                     <MenuItem onClick={handleClose}>
-                      <RefreshButton list={list}></RefreshButton>
+                      <RefreshButton list={list} sort={sort}></RefreshButton>
                     </MenuItem>
                     <MenuItem onClick={handleClose}>
                       <ShowHiddenButton showHidden={showHidden}

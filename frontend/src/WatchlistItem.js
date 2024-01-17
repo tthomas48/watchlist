@@ -1,5 +1,9 @@
-import { useState } from 'react';
+import { useState, useContext } from 'react';
 import { useNavigate } from 'react-router-dom';
+import {
+  useQueryClient,
+  useMutation,
+} from '@tanstack/react-query';
 import {
   Alert,
   CardActionArea,
@@ -18,16 +22,62 @@ import EditButton from './EditButton';
 import ViewOnTraktButton from './ViewOnTraktButton';
 import HideButton from './HideButton';
 import CommentButton from './CommentButton';
+import { MessageContext } from './context/MessageContext';
+import Api from './service/api';
 
-function WatchlistItem({ item, player, saveWatchable }) {
+function WatchlistItem({
+  item,
+  player,
+  saveWatchable,
+  notifications,
+  list,
+}) {
+  const messageContext = useContext(MessageContext);
+  const [closedNotification, setClosedNotification] = useState(false);
+  const queryClient = useQueryClient();
+  const api = new Api(messageContext);
   const navigate = useNavigate();
   const [anchorEl, setAnchorEl] = useState(null);
   const open = Boolean(anchorEl);
+
+  let notification = null;
+  if (notifications) {
+    for (let i = 0; i < notifications.length; i += 1) {
+      if (notifications[i].watchable_id === item.id) {
+        notification = notifications[i];
+        break;
+      }
+    }
+  }
+
+  const { mutate } = useMutation({
+    mutationFn: async (n) => {
+      // FIXME: this is not deleting fast enough
+      setClosedNotification(true);
+      await api.deleteNotification(list, n.id);
+      return true;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['notifications', list] });
+    },
+  });
+
   const missingUrlWarning = (watchable) => {
     if (!watchable.web_url) {
       return (
         <CardContent>
           <Alert severity="warning">No url has been specified.</Alert>
+        </CardContent>
+      );
+    }
+    return (null);
+  };
+
+  const showNotification = (n) => {
+    if (n != null && !closedNotification) {
+      return (
+        <CardContent>
+          <Alert severity="info" onClose={() => mutate(n)}>{n.message}</Alert>
         </CardContent>
       );
     }
@@ -55,6 +105,7 @@ function WatchlistItem({ item, player, saveWatchable }) {
         <CardMedia component="img" image={`/api/img/${item.id}`} alt={item.title} />
         {missingUrlWarning(item)}
       </CardActionArea>
+      {showNotification(notification)}
       <CardActions disableSpacing>
         <PlayButton player={player} id={item.id}></PlayButton>
         <CommentButton item={item} saveWatchable={saveWatchable}></CommentButton>
