@@ -155,6 +155,13 @@ class Api {
     return this.handleResponse(res);
   }
 
+  async getEpisodes(id) {
+    const res = await fetch(`/api/watchables/${id}/episodes/`, {
+      withCredentials: true,
+    });
+    return this.handleResponse(res);
+  }
+
   async updateImage(id, imageUrl) {
     const res = await fetch(`/api/img/${id}/`, {
       method: 'POST',

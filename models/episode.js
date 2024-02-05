@@ -20,6 +20,7 @@ module.exports = (sequelize, DataTypes) => {
     overview: DataTypes.STRING,
     season: DataTypes.NUMERIC,
     episode: DataTypes.NUMERIC,
+    watched: DataTypes.BOOLEAN,
   }, {
     sequelize,
     modelName: 'Episode',

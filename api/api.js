@@ -41,21 +41,28 @@ class Api {
     return watchable.save();
   }
 
-  async getLastRefresh(models) {
-    let refreshStatusModel = await models.RefreshStatus.findOne({});
+  async getLastRefresh(models, traktListId) {
+    let refreshStatusModel = await models.RefreshStatus.findOne({
+      where: {
+        trakt_list_id: traktListId,
+      },
+    });
     if (!refreshStatusModel) {
-      refreshStatusModel = models.RefreshStatus.build({ lastRefresh: new Date(1970, 1, 1) });
+      refreshStatusModel = models.RefreshStatus.build({
+        lastRefresh: new Date(1970, 1, 1),
+        trakt_list_id: traktListId,
+      });
     }
     return refreshStatusModel;
   }
 
-  async lastRefresh(models) {
-    const refreshStatusModel = await this.getLastRefresh(models);
+  async lastRefresh(models, traktListId) {
+    const refreshStatusModel = await this.getLastRefresh(models, traktListId);
     return refreshStatusModel.lastRefresh;
   }
 
-  async touchRefresh(models) {
-    const refreshStatusModel = await this.getLastRefresh(models);
+  async touchRefresh(models, traktListId) {
+    const refreshStatusModel = await this.getLastRefresh(models, traktListId);
     refreshStatusModel.lastRefresh = new Date();
     return refreshStatusModel.save();
   }
@@ -147,7 +154,7 @@ class Api {
       try {
         debug('performing refresh');
         // do this first so we don't keep refreshing if there's an error
-        await this.touchRefresh(req.models);
+        await this.touchRefresh(req.models, traktListId);
         const tasks = [];
         await this.traktClient.importToken(req.user.access_token);
         const traktItems = await this.traktClient.getListItems(traktListId, traktListUserId);
@@ -289,7 +296,8 @@ class Api {
           order,
         };
         const existingWatchables = await req.models.Watchable.findAll(findAllOptions);
-        const mostRecentUpdate = await this.lastRefresh(req.models);
+        const mostRecentUpdate = await this.lastRefresh(req.models, traktListId);
+        debug(`Most recent update ${mostRecentUpdate}`);
         // if the most recent_update is more than a day ago then we should call refresh
         if (mostRecentUpdate < new Date(Date.now() - 1000 * 60 * 60 * 24)) {
           debug(`Refreshing because ${mostRecentUpdate} is more than a day ago`);
@@ -415,6 +423,18 @@ class Api {
       res.json(watchable);
     });
 
+    apiRouter.get('/watchables/:id/episodes', this.authProvider.requireLogin, async (req, res) => {
+      try {
+        const episodes = await req.models.Episode.findAll({
+          where: { watchable_id: req.params.id },
+          order: ['season', 'episode'],
+        });
+        res.json(episodes);
+      } catch (e) {
+        this.handleError(res, e);
+      }
+    });
+
     apiRouter.get('/providers', this.authProvider.requireLogin, async (req, res) => {
       const providers = await req.models.Provider.findAll();
       res.json(providers);
@@ -496,7 +516,6 @@ class Api {
         });
         debug(watchable);
         if (watchable.trakt_id) {
-          await this.traktClient.importToken(user.access_token);
           // hmm, so we need to store the type?
           sres = await this.traktClient.findWatchable(watchable);
           if (sres.length > 0) {

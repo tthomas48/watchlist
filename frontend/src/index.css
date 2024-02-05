@@ -1,10 +1,15 @@
 .MuiDataGrid-root {
   background-color: rgb(39, 128, 86);
 }
-input.MuiInputBase-input, option, .MuiNativeSelect-root, select, .MuiDialogTitle-root, textarea, .MuiInputBase-root  {
+input.MuiInputBase-input, option, .MuiNativeSelect-root, select, .MuiDialogTitle-root, textarea, .MuiInputBase-root, .MuiListItem-root  {
   color: #333;
 }
 .MuiStack-root, .MuiFormControl-root {
   width: 100%;
   flex-grow: 1;
+}
+.hiddenOverflow {
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
 }

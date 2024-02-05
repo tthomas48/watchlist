@@ -5,7 +5,7 @@ import { useParams, useNavigate } from 'react-router-dom';
 import {
   Typography, Paper, Button, TextField, Stack, FormControl,
   FormHelperText, IconButton, InputLabel, NativeSelect,
-  Tabs, Box, Tab,
+  Tabs, Box, Tab, List, ListItem,
 } from '@mui/material';
 import SearchIcon from '@mui/icons-material/Search';
 import DownloadIcon from '@mui/icons-material/Download';
@@ -86,6 +86,12 @@ function Watchable() {
     staleTime: Infinity,
   });
 
+  const episodesQuery = useQuery({
+    queryKey: ['episodes', id],
+    queryFn: async () => api.getEpisodes(id),
+    staleTime: Infinity,
+  });
+
   const providers = providerQuery.data;
   const doSearch = () => {
     if (!providers) {
@@ -115,6 +121,10 @@ function Watchable() {
     setTabIndex(newValue);
   };
 
+  const handleSeasonChange = (episode) => {
+    console.log(episode);
+  };
+
   if (isLoading || providerQuery.isLoading) {
     return (<h5>Loading...</h5>);
   }
@@ -131,7 +141,7 @@ function Watchable() {
       <Box sx={{ borderBottom: 1, borderColor: 'divider' }}>
         <Tabs value={tabIndex} onChange={handleTabChange} aria-label="watchable edit tabs">
           <Tab label="General" {...a11yProps(0)} />
-          <Tab label="Episodes" {...a11yProps(1)} />
+          {data.watchable.media_type === 'show' && <Tab label="Episodes" {...a11yProps(1)} />}
         </Tabs>
       </Box>
       <CustomTabPanel value={tabIndex} index={0}>
@@ -201,7 +211,26 @@ function Watchable() {
         </form>
       </CustomTabPanel>
       <CustomTabPanel value={tabIndex} index={1}>
-        Episode Button Refresh goes here
+        {episodesQuery.isLoading && <h5>Loading...</h5>}
+        <List>
+        {episodesQuery.data?.map((item) => (
+          <ListItem key={item.id} className="hiddenOverflow">
+            <ListItemButton role={undefined} onClick={handleSeasonChange(item)} dense>
+              <ListItemIcon>
+                <Checkbox
+                  edge="start"
+                  checked={item.watched}
+                  tabIndex={-1}
+                  disableRipple
+                  inputProps={{ 'aria-labelledby': `episode-list-label-${item.id}` }}
+                />
+              </ListItemIcon>
+              <ListItemText id={`episode-list-label-${item.id}`} primary={`[${item.season}:${item.episode}] ${item.title}`} />
+            </ListItemButton>
+          </ListItem>
+        ))};
+        </List>
+
       </CustomTabPanel>
     </Paper>
   );
