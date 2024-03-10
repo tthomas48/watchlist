@@ -3,9 +3,9 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useForm } from 'react-hook-form';
 import { useParams, useNavigate } from 'react-router-dom';
 import {
-  Typography, Paper, Button, TextField, Stack, FormControl,
-  FormHelperText, IconButton, InputLabel, NativeSelect,
-  Tabs, Box, Tab, List, ListItem,
+  Typography, Paper, Button, TextField, Stack, FormControl, Checkbox,
+  FormHelperText, IconButton, InputLabel, NativeSelect, ListItemText,
+  Tabs, Box, Tab, List, ListItem, ListItemButton, ListItemIcon,
 } from '@mui/material';
 import SearchIcon from '@mui/icons-material/Search';
 import DownloadIcon from '@mui/icons-material/Download';
@@ -121,8 +121,8 @@ function Watchable() {
     setTabIndex(newValue);
   };
 
-  const handleSeasonChange = (episode) => {
-    console.log(episode);
+  const handleSeasonChange = (/* episode */) => {
+    // console.log(episode);
   };
 
   if (isLoading || providerQuery.isLoading) {
