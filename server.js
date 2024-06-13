@@ -27,7 +27,7 @@ class Server {
       secret: process.env.SESSION_SECRET,
       resave: false,
       saveUninitialized: false,
-      maxAge: 604800000,
+      maxAge: 604800000, // one weeks
       rolling: true,
       cookie: { secure: 'auto' },
       store: new SequelizeStore({

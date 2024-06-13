@@ -1,11 +1,13 @@
 const debug = require('debug')('watchlist:receiver:factory');
 const adb = require('./adb');
+const googletv = require('./googletv');
 const redirect = require('./redirect');
 
 class ReceiverFactory {
   constructor() {
     this.receivers = {
       adb,
+      googletv,
       redirect,
     };
   }
@@ -38,9 +40,10 @@ class ReceiverFactory {
 
   getReceiver(name) {
     switch (name) {
-      case 'googletv':
-      case 'firetv':
+      case 'adb-googletv':
         return this.receivers.adb;
+      case 'device-googletv':
+        return this.receivers.googletv;
       default:
         return this.receivers.redirect;
     }

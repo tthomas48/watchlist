@@ -8,7 +8,7 @@ function ReconnectButton({ player }) {
   const messageContext = useContext(MessageContext);
   const api = new Api(messageContext);
 
-  if (player !== 'googletv') {
+  if (player !== 'adb-googletv') {
     return (null);
   }
 

@@ -30,7 +30,7 @@ function RemoteControl({ player }) {
     await api.pushButton(player, button);
   };
 
-  if (player !== 'googletv') {
+  if (player !== 'adb-googletv') {
     return (null);
   }
 

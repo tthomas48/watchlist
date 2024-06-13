@@ -327,9 +327,11 @@ class Api {
         }
         const receiver = this.receiverFactory.getReceiver(serviceType);
         debug(`Playing ${uri} with ${serviceType}`);
-        if (await receiver.play(uri)) {
+        const playResponse = await receiver.play(uri);
+        if (playResponse.result) {
           await watchable.save();
-          res.json({ uri, message: `Playing ${watchable.title} with ${serviceType}` });
+          // ok, so here, rather than just uri we want to be able to get all data from the receiver
+          res.json({ uri, message: `Playing ${watchable.title} with ${serviceType}`, ...playResponse });
           return;
         }
         throw new Error('unable to play');

@@ -1,5 +1,8 @@
 const passport = require('passport');
 const TraktStrategy = require('passport-trakt').Strategy;
+const AccessTokenStrategy = require('passport-access-token').Strategy;
+const TraktClient = require('../traktclient');
+const ErrorWithStatus = require('../../ErrorWithStatus');
 
 class TraktOauthProvider {
   getClientId() {
@@ -8,6 +11,7 @@ class TraktOauthProvider {
 
   configure(app, db) {
     this.clientId = process.env.TRAKT_CLIENT_ID;
+    this.traktClient = new TraktClient(this.clientId);
     const clientSecret = process.env.TRAKT_CLIENT_SECRET;
     const oauthHost = process.env.OAUTH_HOST; // This needs to match your Trakt app settings
 
@@ -49,6 +53,34 @@ class TraktOauthProvider {
         return done(null, user);
       }),
     ));
+    passport.use(new AccessTokenStrategy({
+      tokenField: 'token',
+    }, async (token, done) => {
+      if (!token) {
+        return done(new ErrorWithStatus('no token specified', 401), null);
+      }
+      try {
+        await this.traktClient.importToken(token);
+        const profile = await this.traktClient.getProfile();
+        let user = await db.User.findOne({ where: { trakt_id: profile.username } });
+        if (!user) {
+          user = await db.User.create({
+            trakt_id: profile.username,
+            name: profile.name,
+            username: profile.username,
+            private: profile.private,
+            vip: profile.vip,
+            vip_ep: profile.vip_ep,
+            access_token: token,
+          });
+        } else {
+          user = await user.update({ access_token: token });
+        }
+        return done(null, user);
+      } catch (e) {
+        return done(new ErrorWithStatus(e, 401));
+      }
+    }));
   }
 
   redirect(req, res) {
@@ -90,6 +122,16 @@ class TraktOauthProvider {
       '/auth/trakt/callback',
       passport.authenticate('trakt', { failureRedirect: '/api/login' }),
       this.callback,
+    );
+
+    apiRouter.post(
+      '/auth/device',
+      passport.authenticate('token', {
+        session: true,
+      }),
+      (req, res) => {
+        res.json();
+      },
     );
   }
 }

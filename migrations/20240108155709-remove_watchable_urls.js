@@ -1,3 +1,4 @@
+const debug = require('debug')('watchlist:migration');
 const { Watchable } = require('../models');
 
 /** @type {import('sequelize-cli').Migration} */
@@ -13,12 +14,10 @@ module.exports = {
       'SELECT * FROM WatchableUrls',
       { type: Sequelize.QueryTypes.SELECT },
     );
-  
     await queryInterface.removeColumn('Watchables', 'web_url');
     await queryInterface.addColumn('Watchables', 'web_url', {
       type: Sequelize.STRING,
     });
-
 
     const watchables = await Watchable.findAll({ attributes: ['id', 'title', 'sortable_title'] });
     const tasks = [];
@@ -30,7 +29,7 @@ module.exports = {
           try {
             await watchables[i].save({ fields: ['web_url'] });
           } catch (e) {
-            console.error('error trying to save', watchables[i], e);
+            debug('error trying to save', watchables[i], e);
           }
         })());
       }

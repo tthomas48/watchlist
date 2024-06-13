@@ -9,7 +9,7 @@ function PlayButton({ player, id }) {
   const api = new Api(messageContext);
   const playAction = async () => {
     const result = await api.play(player, id);
-    if (player === 'googletv' || player === 'firetv') {
+    if (player !== 'browser') {
       return;
     }
     window.open(result.uri, 'watchlist_view_window', 'noreferrer');

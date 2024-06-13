@@ -43,6 +43,7 @@
     "node-singleflight": "^0.1.2",
     "npm-watch": "^0.11.0",
     "passport": "^0.6.0",
+    "passport-access-token": "^1.0.3",
     "passport-trakt": "^1.0.4",
     "promise-streams": "^2.1.1",
     "react": "^18.2.0",

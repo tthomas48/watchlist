@@ -8,7 +8,7 @@ function PlayerPicker({ setPlayer, player }) {
   // FIXME: this is hardcoded
   const isADBSupported = true;
   if (isADBSupported) {
-    options.push({ label: 'GoogleTV', value: 'googletv' });
+    options.push({ label: 'GoogleTV', value: 'adb-googletv' });
   }
   return (
     <FormControl fullWidth>

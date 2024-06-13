@@ -10,7 +10,7 @@ class Redirect {
 
   async play(uri) {
     // NOOP - happens on the frontend
-    return true;
+    return { result: true, output: '' };
   }
 
   async pushButton(button) {

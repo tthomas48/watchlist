@@ -16,13 +16,20 @@ class ProviderFactory {
   }
 
   getCommand(uri) {
+    const params = this.getParams(uri);
+    if (params == null) {
+      return params;
+    }
+    return `am start -a android.intent.action.VIEW -d ${params.data} -f 0x10808000 -e source 30 ${params.component}`;
+  }
+
+  getParams(uri) {
     for (let i = 0; i < this.providers.length; i += 1) {
       const provider = this.providers[i];
       if (provider.provides(uri)) {
         const data = provider.getData(uri);
         const component = provider.getComponent(uri);
-        const cmd = `am start -a android.intent.action.VIEW -d ${data} -f 0x10808000 -e source 30 ${component}`;
-        return cmd;
+        return { data, component };
       }
     }
     return null;

@@ -31,6 +31,10 @@ class TraktClient {
     await this.traktClient.import_token({ access_token: accessToken });
   }
 
+  async getProfile() {
+    return this.traktClient.users.profile({ username: 'me' });
+  }
+
   async getListItems(traktListId, traktUserId) {
     return this.traktClient.users.list.items.get({
       id: traktListId,

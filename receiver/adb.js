@@ -54,7 +54,7 @@ class Adb {
       const result = await device.shell(cmd);
       const output = await ADB.Adb.util.readAll(result);
       debug(output.toString().trim());
-      return output;
+      return { result: true, output };
     } catch (e) {
       debug(e);
       if (attempt === 0 && String(e).includes('not found')) {
