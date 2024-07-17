@@ -13,7 +13,7 @@ class GoogleTV {
   async play(uri) {
     const params = ProviderFactory.getParams(uri);
     params.result = true;
-    debug(`Params: ${params}`);
+    debug(`Params: ${JSON.stringify(params)}`);
     return params;
   }
 

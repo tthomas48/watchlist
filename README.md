@@ -52,3 +52,8 @@ Would love assistance in adding more integrations (FireTV, others?) and writing 
 
 ### Running migrations
 - npx sequelize-cli db:migrate
+
+BROKEN:
+Hulu
+Max
+Netflix (not redirecting properly)
