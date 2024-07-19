@@ -10,7 +10,7 @@ class PBS {
   }
 
   getComponent(/* uri */) {
-    return 'com.pbs.video/.ui.main.activities.StartupActivity';
+    return 'com.pbs.video/com.pbs.video.deeplinks.DeepLinkActivity';
   }
 }
 module.exports = PBS;
