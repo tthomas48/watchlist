@@ -19,7 +19,7 @@ class PeacockTV {
   }
 
   getComponent(/* uri */) {
-    return 'com.peacocktv.peacockandroid/com.peacock.peacocktv.GoogleMainActivity';
+    return 'com.peacocktv.peacockandroid/com.sky.clientlib.deeplink.DeeplinkActivity';
   }
 }
 module.exports = PeacockTV;
