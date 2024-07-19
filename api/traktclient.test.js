@@ -1,6 +1,6 @@
 // global test, expect, describe, it
 const axios = require('axios');
-const trakt = require('./trakt');
+const trakt = require('./traktclient');
 
 jest.mock('axios');
 

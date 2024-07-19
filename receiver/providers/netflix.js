@@ -7,8 +7,9 @@ class Netflix {
   getData(uri) {
     let id = '';
     if (uri.match(/.*\/title\/([0-9]+)/)) {
-      // id = uri.replace(/.*\/title\/([0-9]+)/, "$1");
-      return uri;
+      const urlObj = new URL(uri);
+      urlObj.search = '';
+      return urlObj.toString();
     }
     if (uri.match(/.*\/browse\?jbv=([0-9]+)/)) {
       id = uri.replace(/.*\/browse\?jbv=([0-9]+)/, '$1');
