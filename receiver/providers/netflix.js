@@ -6,12 +6,15 @@ class Netflix {
 
   getData(uri) {
     if (uri.match(/.*jbv=([0-9]+).*/)) {
-      return uri.replace(/.*jbv=([0-9]+).*/, '$1');
+      const id = uri.replace(/.*jbv=([0-9]+).*/, '$1');
+      return `https://www.netflix.com/title/${id}`;
     }
     if (uri.match(/.*\/title\/([0-9]+)/)) {
-      return uri.replace(/.*\/title\/([0-9]+).*/, '$1');
+      const urlObj = new URL(uri);
+      urlObj.search = '';
+      return urlObj.toString();
     }
-    throw new Error(`Unknown Netflix uri format ${uri}`);
+    return uri;
   }
 
   getComponent(/* uri */) {
