@@ -5,17 +5,13 @@ class Netflix {
   }
 
   getData(uri) {
-    let id = '';
+    if (uri.match(/.*jbv=([0-9]+).*/)) {
+      return uri.replace(/.*jbv=([0-9]+).*/, '$1');
+    }
     if (uri.match(/.*\/title\/([0-9]+)/)) {
-      const urlObj = new URL(uri);
-      urlObj.search = '';
-      return urlObj.toString();
+      return uri.replace(/.*\/title\/([0-9]+).*/, '$1');
     }
-    if (uri.match(/.*\/browse\?jbv=([0-9]+)/)) {
-      id = uri.replace(/.*\/browse\?jbv=([0-9]+)/, '$1');
-      return `https://www.netflix.com/title/${id}`;
-    }
-    return uri;
+    throw new Error(`Unknown Netflix uri format ${uri}`);
   }
 
   getComponent(/* uri */) {
