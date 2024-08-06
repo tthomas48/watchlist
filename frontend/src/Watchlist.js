@@ -8,10 +8,7 @@ import Api from './service/api';
 import WatchlistItem from './WatchlistItem';
 import RemoteControl from './RemoteControl';
 
-function showItem(item, player, saveWatchableMutation, showHidden, notifications, list) {
-  if (!showHidden && item.hidden) {
-    return (null);
-  }
+function showItem(item, player, saveWatchableMutation, notifications, list) {
   return (
     <Grid xs={6} md={3} key={`${item.id}.wrapper`}>
       <WatchlistItem key={item.id} item={item} player={player}
@@ -27,7 +24,7 @@ function Watchlist() {
   const api = new Api(messageContext);
   // Queries
   const queryClient = useQueryClient();
-  const [list, player, showHidden, sort] = useOutletContext();
+  const [list, player, sort] = useOutletContext();
   const {
     data, isLoading, isError, error,
   } = useQuery({
@@ -69,7 +66,6 @@ function Watchlist() {
               item,
               player,
               saveWatchableMutation,
-              showHidden,
               notificationsRequest.data,
               list,
             ))}

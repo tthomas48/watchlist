@@ -45,11 +45,16 @@ class Api {
     }
   }
 
-  async getWatchlist(list, sort) {
+  async getWatchlist(list, sort, showHidden) {
     if (!list) {
       return [];
     }
-    const res = await fetch(`/api/watchlist/${list.user.username}/${list.ids.trakt}/?sort=${sort}`, {
+    const query = [];
+    query.push(`sort=${sort}`);
+    if (showHidden) {
+      query.push('hidden=true');
+    }
+    const res = await fetch(`/api/watchlist/${list.user.username}/${list.ids.trakt}/?${query.join('&')}`, {
       withCredentials: true,
     });
     return this.handleResponse(res);
