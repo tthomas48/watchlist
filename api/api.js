@@ -290,12 +290,15 @@ class Api {
             order.push(['last_played', 'ASC']);
             break;
         }
-        const hidden = req.query.hidden || false;
+        const hidden = req.query.hidden === 'true';
 
         const findAllOptions = {
-          where: { trakt_list_id: traktListId, hidden },
+          where: { trakt_list_id: traktListId },
           order,
         };
+        if (!hidden) {
+          findAllOptions.where.hidden = false;
+        }
         const existingWatchables = await req.models.Watchable.findAll(findAllOptions);
         const mostRecentUpdate = await this.lastRefresh(req.models, traktListId);
         debug(`Most recent update ${mostRecentUpdate}`);
