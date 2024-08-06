@@ -24,12 +24,12 @@ function Watchlist() {
   const api = new Api(messageContext);
   // Queries
   const queryClient = useQueryClient();
-  const [list, player, sort] = useOutletContext();
+  const [list, player, showHidden, sort] = useOutletContext();
   const {
     data, isLoading, isError, error,
   } = useQuery({
     queryKey: ['watchlist', list, sort],
-    queryFn: async () => api.getWatchlist(list, sort),
+    queryFn: async () => api.getWatchlist(list, sort, showHidden),
   });
 
   const notificationsRequest = useQuery({

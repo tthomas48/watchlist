@@ -4,6 +4,7 @@ const path = require('path');
 const { PassThrough } = require('stream');
 const axios = require('axios');
 const singleflight = require('node-singleflight');
+const { Op } = require('sequelize');
 const TraktClient = require('./traktclient');
 const { getTitle, getTraktId, getTraktIds } = require('./helpers');
 
@@ -292,13 +293,16 @@ class Api {
         }
         const showHidden = req.query.hidden === 'true';
 
+        const where = {[Op.and]: [{ trakt_list_id: traktListId }]};
+        if (!showHidden) {
+          // by using ne true we get nulls as well
+          where[Op.and].push({ [Op.or]: [{hidden: 0 }, {hidden: null}] });
+        }
+
         const findAllOptions = {
-          where: { trakt_list_id: traktListId },
+          where,
           order,
         };
-        if (!showHidden) {
-          findAllOptions.where.hidden = false;
-        }
         const existingWatchables = await req.models.Watchable.findAll(findAllOptions);
         const mostRecentUpdate = await this.lastRefresh(req.models, traktListId);
         debug(`Most recent update ${mostRecentUpdate}`);
