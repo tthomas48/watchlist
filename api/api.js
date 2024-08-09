@@ -303,18 +303,22 @@ class Api {
           where,
           order,
         };
-        const existingWatchables = await req.models.Watchable.findAll(findAllOptions);
+        let existingWatchables = await req.models.Watchable.findAll(findAllOptions);
         const mostRecentUpdate = await this.lastRefresh(req.models, traktListId);
         debug(`Most recent update ${mostRecentUpdate}`);
         // if the most recent_update is more than a day ago then we should call refresh
         if (mostRecentUpdate < new Date(Date.now() - 1000 * 60 * 60 * 24)) {
           debug(`Refreshing because ${mostRecentUpdate} is more than a day ago`);
-          this.refresh(
+          const allWatchables = await req.models.Watchable.findAll(
+            { where: { trakt_list_id: traktListId } },
+          );
+          await this.refresh(
             req,
             traktListUserId,
             traktListId,
-            existingWatchables,
+            allWatchables,
           );
+          existingWatchables = await req.models.Watchable.findAll(findAllOptions);
         }
         res.json(existingWatchables);
       } catch (e) {
