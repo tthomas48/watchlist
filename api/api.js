@@ -12,7 +12,10 @@ class Api {
   constructor(authProvider, receiverFactory) {
     this.authProvider = authProvider;
     this.receiverFactory = receiverFactory;
-    this.traktClient = new TraktClient(this.authProvider.getClientId());
+    // we would only expect this in tests
+    if (this.authProvider && this.authProvider.getClientId) {
+      this.traktClient = new TraktClient(this.authProvider.getClientId());
+    }
   }
 
   handleError(res, err) {

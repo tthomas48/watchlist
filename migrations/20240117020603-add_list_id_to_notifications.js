@@ -8,7 +8,7 @@ module.exports = {
     });
   },
 
-  async down(queryInterface, Sequelize) {
+  async down(queryInterface) {
     // remove column trakt_list_id from Notifications table
     await queryInterface.removeColumn('Notifications', 'trakt_list_id');
   },

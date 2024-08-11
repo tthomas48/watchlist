@@ -13,5 +13,4 @@ test('AmazonPrime transforms url', () => {
   uri = 'ttps://www.amazon.com/Official-Trailer/dp/B089XXLCST/ref=sr_1_1';
   expected = 'https://watch.amazon.com/detail?asin=B089XXLCST';
   expect(new AmazonPrime().getData(uri)).toBe(expected);
-
 });

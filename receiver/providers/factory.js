@@ -9,6 +9,7 @@ const Netflix = require('./netflix');
 const PBS = require('./pbs');
 const PeacockTV = require('./peacocktv');
 const Starz = require('./starz');
+const YouTube = require('./youtube');
 
 class ProviderFactory {
   constructor(providers) {
@@ -52,4 +53,5 @@ module.exports = new ProviderFactory([
   new PeacockTV(),
   new PBS(),
   new Starz(),
+  new YouTube(),
 ]);
