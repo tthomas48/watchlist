@@ -34,7 +34,7 @@ class Api {
       media_type: traktItem.type,
       imdb_id: ids?.imdb,
       tmdb_id: ids?.tmdb,
-      homepage: traktItem[traktItem.type].homepage,
+      homepage: traktItem[traktItem.type]?.homepage,
     };
     return models.Watchable.create(props);
   }

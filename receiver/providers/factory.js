@@ -8,6 +8,7 @@ const Max = require('./max');
 const Netflix = require('./netflix');
 const PBS = require('./pbs');
 const PeacockTV = require('./peacocktv');
+const Roku = require('./roku');
 const Starz = require('./starz');
 const YouTube = require('./youtube');
 
@@ -52,6 +53,7 @@ module.exports = new ProviderFactory([
   new Netflix(),
   new PeacockTV(),
   new PBS(),
+  new Roku(),
   new Starz(),
   new YouTube(),
 ]);

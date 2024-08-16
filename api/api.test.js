@@ -5,8 +5,9 @@ describe('api', () => {
   describe('createWatchable', () => {
     it.each([
       [{
-        type: 'movie', movie: { ids: { imdb: 'tt1234', tmdb: '2343', trakt: '1111' }, title: 'A Movie', year: 2021 },
+        type: 'movie', movie: { ids: { imdb: 'tt1234', tmdb: '2343', trakt: '1111' }, title: 'A Movie', homepage: 'https://example.com', year: 2021 },
       }, {
+        homepage: 'https://example.com',
         image: undefined,
         imdb_id: 'tt1234',
         media_type: 'movie',
