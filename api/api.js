@@ -34,12 +34,14 @@ class Api {
       media_type: traktItem.type,
       imdb_id: ids?.imdb,
       tmdb_id: ids?.tmdb,
+      homepage: traktItem[traktItem.type].homepage,
     };
     return models.Watchable.create(props);
   }
 
   async updateWatchable(traktItem, watchable) {
     watchable.media_type = traktItem.type;
+    watchable.homepage = traktItem[traktItem.type].homepage;
     watchable.imdb_id = traktItem[traktItem.type].ids?.imdb;
     watchable.tmdb_id = traktItem[traktItem.type].ids?.tmdb;
     return watchable.save();

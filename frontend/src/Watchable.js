@@ -9,6 +9,8 @@ import {
 } from '@mui/material';
 import SearchIcon from '@mui/icons-material/Search';
 import DownloadIcon from '@mui/icons-material/Download';
+import LinkIcon from '@mui/icons-material/Link';
+import ContentCopyIcon from '@mui/icons-material/ContentCopy';
 import { MessageContext } from './context/MessageContext';
 import Api from './service/api';
 
@@ -51,7 +53,7 @@ function Watchable() {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   const {
-    register, handleSubmit, getValues,
+    register, handleSubmit, getValues, setValue,
   } = useForm();
 
   const { mutate } = useMutation({
@@ -104,10 +106,20 @@ function Watchable() {
     window.open(url, '_watchlist', 'noreferrer');
   };
 
+  const visitHomePage = (homepage) => {
+    if (homepage) {
+      window.open(homepage, '_watchlist', 'noreferrer');
+    }
+  };
+
   const doDownload = async (item) => {
     const values = getValues();
     await api.updateImage(item.id, values.image_url);
     queryClient.invalidateQueries({ queryKey: ['watchable', id] });
+  };
+
+  const copyDown = async (homepage) => {
+    setValue('webUrl', homepage);
   };
 
   const doDelete = async (item) => {
@@ -173,6 +185,25 @@ function Watchable() {
               </FormControl>
               <IconButton aria-label="search" onClick={doSearch}>
                 <SearchIcon />
+              </IconButton>
+            </Stack>
+            <Stack
+              direction="row"
+              justifyContent="center"
+              alignItems="flex-start"
+              spacing={1}
+            >
+            <TextField label="Home Page" variant="outlined" sx={{
+              color: 'text.paper',
+            }} defaultValue={data.watchable.homepage}
+            InputLabelProps={{ shrink: true, readOnly: true }} />
+              <IconButton aria-label="copy to web url"
+                onClick={() => copyDown(data.watchable.homepage)}>
+                <ContentCopyIcon />
+              </IconButton>
+              <IconButton aria-label="visit home page"
+                onClick={() => visitHomePage(data.watchable.homepage)}>
+                <LinkIcon />
               </IconButton>
             </Stack>
             <TextField {...register('webUrl')} label="Web URL" variant="outlined" sx={{

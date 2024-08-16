@@ -39,6 +39,7 @@ class TraktClient {
     return this.traktClient.users.list.items.get({
       id: traktListId,
       username: traktUserId,
+      extended: 'full',
     });
   }
 
