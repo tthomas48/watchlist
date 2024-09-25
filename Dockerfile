@@ -10,6 +10,6 @@ FROM node:18-alpine
 WORKDIR /usr/src/watchlist
 RUN apk update && apk add --no-cache android-tools
 COPY --from=build /usr/src/watchlist/node_modules ./node_modules
-COPY . .
+COPY --from=build . .
 
 CMD [ "npm", "run", "start" ]
