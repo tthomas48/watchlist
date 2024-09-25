@@ -1,12 +1,16 @@
-FROM node:18-alpine
+FROM node:18-alpine as build
 
-WORKDIR /usr/src/watchlist
+WORKDIR /app
 
 COPY package*.json ./
 
 RUN apk update && apk add --no-cache android-tools
-RUN mkdir -p /usr/src/watchlist/data/
 RUN npm ci --omit=dev
+
+FROM node:18-alpine
+
+WORKDIR /app
+COPY --from=build /app/node_modules ./node_modules
 COPY . .
-RUN npm run build-ui
+
 CMD [ "npm", "run", "start" ]
