@@ -9,7 +9,7 @@ RUN npm remove sqlite3
 FROM node:20-alpine
 
 WORKDIR /usr/src/watchlist
-RUN apk update && apk add --no-cache android-tools python3 py3-pip py3-setuptools alpine-sdk libsqlite3-dev
+RUN apk update && apk add --no-cache android-tools python3 py3-pip py3-setuptools alpine-sdk
 COPY --from=build /usr/src/watchlist/node_modules ./node_modules
 COPY --from=build /usr/src/watchlist .
 RUN npm install sqlite3 --build-from-source sqlite3 --verbose
