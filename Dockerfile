@@ -4,6 +4,7 @@ WORKDIR /usr/src/watchlist
 
 COPY . .
 RUN apk update && apk add --no-cache python3
+RUN pip install setuptools
 RUN npm ci --omit=dev
 RUN npm remove sqlite3
 RUN npm install sqlite3 --build-from-source sqlite3 --target_platform=linux --target_arch=armv7  --verbose
