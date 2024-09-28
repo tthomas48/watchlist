@@ -25,3 +25,12 @@ https://www.peacocktv.com/deeplink?deeplinkData%3D%7B%22providerSeriesId%22%3A%2
   //
   // Hulu - I want the series URL - https://www.hulu.com/series/c6ebcc8a-ed80-4bc9-9d31-31b0f0bf9798 or https://www.hulu.com/movie/34fdd2c6-dd92-4440-ae64-4c820e476978
   // Disney - https://www.disneyplus.com/series/never-say-never-with-jeff-jenkins/6Qsx2pH8tIly
+
+     https:
+        b653eb5 com.roku.web.trc/.MainActivity filter a5b0bb
+          Action: "android.intent.action.VIEW"
+          Category: "android.intent.category.DEFAULT"
+          Category: "android.intent.category.BROWSABLE"
+          Scheme: "https"
+          Authority: "therokuchannel.roku.com": -1
+          AutoVerify=true

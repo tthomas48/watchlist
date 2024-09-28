@@ -4,7 +4,7 @@ module.exports = {
     await queryInterface.addColumn('Watchables', 'last_played', {
       type: Sequelize.DATE,
     });
-    await queryInterface.sequelize.query('UPDATE watchables set last_played = CURRENT_TIMESTAMP');
+    await queryInterface.sequelize.query('UPDATE "Watchables" set last_played = CURRENT_TIMESTAMP');
   },
 
   async down(queryInterface) {

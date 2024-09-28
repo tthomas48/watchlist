@@ -1,4 +1,5 @@
 /* eslint import/no-dynamic-require: 0, global-require: 0 */
+const debug = require('debug')('watchlist:models');
 const fs = require('fs');
 const path = require('path');
 const Sequelize = require('sequelize');

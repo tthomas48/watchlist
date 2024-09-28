@@ -301,7 +301,7 @@ class Api {
         const where = {[Op.and]: [{ trakt_list_id: traktListId }]};
         if (!showHidden) {
           // by using ne true we get nulls as well
-          where[Op.and].push({ [Op.or]: [{hidden: 0 }, {hidden: null}] });
+          where[Op.and].push({ [Op.or]: [{hidden: false }, {hidden: null}] });
         }
 
         const findAllOptions = {
@@ -448,6 +448,7 @@ class Api {
           where: { watchable_id: req.params.id },
           order: ['season', 'episode'],
         });
+        // TODO: create an array of seasons and then an array of episodes
         res.json(episodes);
       } catch (e) {
         this.handleError(res, e);

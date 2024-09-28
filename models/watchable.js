@@ -10,7 +10,9 @@ module.exports = (sequelize, DataTypes) => {
      * The `models/index` file will call this method automatically.
      */
     static associate(models) {
-      models.Watchable.hasMany(models.Episode, { as: 'episodes', foreignKey: 'watchable_id', onDelete: 'CASCADE' });
+      models.Watchable.hasMany(models.Episode, {
+        as: 'episodes', foreignKey: 'watchable_id', onDelete: 'CASCADE', type: DataTypes.INTEGER,
+      });
     }
   }
   Watchable.init({

@@ -11,7 +11,7 @@ module.exports = (sequelize, DataTypes) => {
      */
     static associate(models) {
       // define association here
-      models.Episode.belongsTo(models.Watchable, { foreignKey: 'watchable_id' });
+      models.Episode.belongsTo(models.Watchable, { foreignKey: 'watchable_id', type: DataTypes.INTEGER });
     }
   }
   Episode.init({

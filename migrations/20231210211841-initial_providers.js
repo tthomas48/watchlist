@@ -1,7 +1,7 @@
 /** @type {import('sequelize-cli').Migration} */
 module.exports = {
   async up(queryInterface) {
-    await queryInterface.bulkInsert('providers', [
+    await queryInterface.bulkInsert('Providers', [
       {
         name: 'AMC+',
         url: 'https://www.amcplus.com/search?search=%s',
@@ -60,7 +60,7 @@ module.exports = {
   },
 
   async down(queryInterface) {
-    await queryInterface.bulkDelete('providers', [
+    await queryInterface.bulkDelete('Providers', [
       {
         name: 'AMC+',
         url: 'https://www.amcplus.com/search?search=%s',

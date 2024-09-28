@@ -11,10 +11,10 @@ module.exports = {
     // fourth we're going to save all the watchables
     // fifth we're going to drop the watchable_urls table
     const urls = await queryInterface.sequelize.query(
-      'SELECT * FROM WatchableUrls',
+      'SELECT * FROM "WatchableUrls"',
       { type: Sequelize.QueryTypes.SELECT },
     );
-    await queryInterface.removeColumn('Watchables', 'web_url');
+    // await queryInterface.removeColumn('Watchables', 'web_url');
     await queryInterface.addColumn('Watchables', 'web_url', {
       type: Sequelize.STRING,
     });
