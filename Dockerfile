@@ -4,6 +4,7 @@ WORKDIR /usr/src/watchlist
 
 COPY . .
 RUN npm ci --omit=dev
+RUN npm run build-ui
 
 FROM node:20-alpine
 
