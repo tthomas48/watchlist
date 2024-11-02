@@ -233,7 +233,7 @@ class Api {
         tasks.push(notifications[i].destroy());
       }
       await Promise.all(tasks);
-      res.status(204);
+      res.status(204).send();
     });
 
     // FIXME: should this be a POST since it does something?
