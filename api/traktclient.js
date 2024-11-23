@@ -72,8 +72,8 @@ class TraktClient {
     const options = {
       username: traktUserId,
     };
-    options[traktType] = { ids: { trakt: traktId } };
-    return this.traktClient.checkin.add(options);
+    options[`${traktType}s`] = [{ ids: { trakt: traktId } }];
+    return this.traktClient.sync.history.add(options);
   }
 
   async getWatched(traktUserId, traktId) {

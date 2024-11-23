@@ -1,5 +1,6 @@
 const {
   Model,
+  QueryTypes,
 } = require('sequelize');
 
 module.exports = (sequelize, DataTypes) => {
@@ -41,5 +42,15 @@ module.exports = (sequelize, DataTypes) => {
   Watchable.beforeUpdate(async (user) => {
     user.sortable_title = user.title.toLowerCase().replace(/^(the|a|an) /, '');
   });
+  Watchable.prototype.getNextUnwatchedId = async function getNextUnwatchedId() {
+    const nextUnwatched = await sequelize.query('select trakt_id from episodes where watchable_id = :id and coalesce(watched, 0) = 0 order by season, episode limit 1;', {
+      replacements: { id: this.id },
+      type: QueryTypes.SELECT,
+    });
+    if (nextUnwatched.length === 0) {
+      return null;
+    }
+    return nextUnwatched[0].trakt_id;
+  }
   return Watchable;
 };

@@ -341,6 +341,25 @@ class Api {
         const serviceType = req.params.service_type;
         const watchable = await req.models.Watchable.findByPk(id);
         watchable.last_played = new Date();
+        try {
+          if (watchable.media_type === 'show') {
+            const nextUnwatchedId = await watchable.getNextUnwatchedId();
+            if (nextUnwatchedId) {
+              await this.traktClient.setWatched(req.user.trakt_id, 'episode', nextUnwatchedId);
+            }
+          } else if (!watchable.local) {
+            console.log(watchable);
+            await this.traktClient.setWatched(
+              req.user.trakt_id,
+              watchable.media_type,
+              watchable.trakt_id,
+            );
+          }
+        } catch (err) {
+          console.log(err);
+          // we log this, but don't want to actually stop playing if it doesn't work.
+          Sentry.captureException(err);
+        }
 
         const uri = watchable.web_url;
         if (!uri) {
