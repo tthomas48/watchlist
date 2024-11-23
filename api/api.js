@@ -5,6 +5,7 @@ const { PassThrough } = require('stream');
 const axios = require('axios');
 const singleflight = require('node-singleflight');
 const { Op } = require('sequelize');
+const Sentry = require('@sentry/node');
 const TraktClient = require('./traktclient');
 const { getTitle, getTraktId, getTraktIds } = require('./helpers');
 
@@ -14,11 +15,15 @@ class Api {
     this.receiverFactory = receiverFactory;
     // we would only expect this in tests
     if (this.authProvider && this.authProvider.getClientId) {
-      this.traktClient = new TraktClient(this.authProvider.getClientId());
+      this.traktClient = new TraktClient(
+        this.authProvider.getClientId(),
+        this.authProvider.getClientSecret(),
+      );
     }
   }
 
   handleError(res, err) {
+    Sentry.captureException(err);
     const msg = JSON.stringify(err, Object.getOwnPropertyNames(err));
     debug(msg);
     res.status(500).send(msg);
@@ -141,8 +146,7 @@ class Api {
           if (maxExistingSeason > 0 && maxRemoteSeason > maxExistingSeason) {
             debug(`New season for ${watchable.title}`);
             tasks.push(this.addNotification(models, traktListId, watchable, 'New season.'));
-          }
-          else if (maxRemoteSeason === maxExistingSeason) {
+          } else if (maxRemoteSeason === maxExistingSeason) {
             if (remoteEpisodeMap[maxRemoteSeason] > existingEpisodeMap[maxExistingSeason]) {
               debug(`New episodes for ${watchable.title}`);
               tasks.push(this.addNotification(models, traktListId, watchable, 'New episodes.'));
@@ -196,6 +200,7 @@ class Api {
         await Promise.all(tasks);
         await this.refreshEpisodes(req.models, traktListId);
       } catch (e) {
+        Sentry.captureException(e);
         error = e;
       }
     });
@@ -270,8 +275,7 @@ class Api {
         const result = response.concat(response2);
         res.json(result);
       } catch (e) {
-        debug(e);
-        res.status(500).send(e);
+        this.handleError(res, e);
       }
     });
 
@@ -298,10 +302,10 @@ class Api {
         }
         const showHidden = req.query.hidden === 'true';
 
-        const where = {[Op.and]: [{ trakt_list_id: traktListId }]};
+        const where = { [Op.and]: [{ trakt_list_id: traktListId }] };
         if (!showHidden) {
           // by using ne true we get nulls as well
-          where[Op.and].push({ [Op.or]: [{hidden: false }, {hidden: null}] });
+          where[Op.and].push({ [Op.or]: [{ hidden: false }, { hidden: null }] });
         }
 
         const findAllOptions = {
@@ -455,6 +459,27 @@ class Api {
       }
     });
 
+    apiRouter.post('/watchables/:id/episodes/:episodeId', this.authProvider.requireLogin, async (req, res) => {
+      try {
+        const episode = await req.models.Episode.findOne({
+          where: { watchable_id: req.params.id, id: req.params.episodeId },
+        });
+        const tasks = [];
+        episode.watched = req.body.watched;
+        tasks.push(episode.save());
+        if (episode.watched) {
+          tasks.push((async () => {
+            await this.traktClient.importToken(req.user.access_token);
+            await this.traktClient.setWatched(req.user.trakt_id, 'episode', episode.trakt_id);
+          })());
+        }
+        await Promise.all(tasks);
+        res.json(episode);
+      } catch (e) {
+        this.handleError(res, e);
+      }
+    });
+
     apiRouter.get('/providers', this.authProvider.requireLogin, async (req, res) => {
       const providers = await req.models.Provider.findAll();
       res.json(providers);
@@ -565,6 +590,7 @@ class Api {
         // save the default image path
         await writeFile(fs.createReadStream(defaultImagePath));
       } catch (e) {
+        Sentry.captureException(e);
         debug(sres, e);
       }
     });
@@ -588,6 +614,7 @@ class Api {
             await input.pipe(combined);
           } catch (e) {
             debug(e);
+            Sentry.captureException(e);
           }
         };
 
@@ -600,6 +627,7 @@ class Api {
         res.json({});
       } catch (e) {
         debug(e);
+        Sentry.captureException(e);
       }
     });
 

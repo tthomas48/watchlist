@@ -38,8 +38,8 @@ function CustomTabPanel(props) {
       {...other}
     >
       {value === index && (
-        <Box sx={{ p: 3 }}>
-          <Typography>{children}</Typography>
+        <Box>
+          {children}
         </Box>
       )}
     </div>
@@ -53,6 +53,7 @@ function Watchable() {
   const { id } = useParams();
   const [provider, setProvider] = useState('');
   const [tabIndex, setTabIndex] = useState(0);
+  const [checked, setChecked] = useState([]);
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   const {
@@ -95,6 +96,15 @@ function Watchable() {
     queryKey: ['episodes', id],
     queryFn: async () => api.getEpisodes(id),
     staleTime: Infinity,
+    onSuccess: (episodes) => {
+      const checkedEpisodes = [];
+      for (let i = 0; i < episodes.length; i += 1) {
+        if (episodes[i].watched) {
+          checkedEpisodes.push(episodes[i].id);
+        }
+      }
+      setChecked(checkedEpisodes);
+    },
   });
 
   const providers = providerQuery.data;
@@ -132,12 +142,29 @@ function Watchable() {
     navigate('/');
   };
 
-  const handleTabChange = (event, newValue) => {
-    setTabIndex(newValue);
+  const setWatched = async (item, watched) => {
+    item.watched = !item.watched;
+    await api.updateEpisode(item.watchable_id, item.id, watched);
+    queryClient.invalidateQueries({ queryKey: ['episodes', id] });
   };
 
-  const handleSeasonChange = (/* episode */) => {
-    // console.log(episode);
+  const handleToggle = (item) => () => {
+    const currentIndex = checked.indexOf(item.id);
+    const newChecked = [...checked];
+
+    if (currentIndex === -1) {
+      newChecked.push(item.id);
+    } else {
+      newChecked.splice(currentIndex, 1);
+    }
+
+    setChecked(newChecked);
+
+    setWatched(item, checked.indexOf(item.id) === -1);
+  };
+
+  const handleTabChange = (event, newValue) => {
+    setTabIndex(newValue);
   };
 
   if (isLoading || providerQuery.isLoading) {
@@ -156,7 +183,7 @@ function Watchable() {
       <Box sx={{ borderBottom: 1, borderColor: 'divider' }}>
         <Tabs value={tabIndex} onChange={handleTabChange} aria-label="watchable edit tabs">
           <Tab label="General" {...a11yProps(0)} />
-          {data.watchable.media_type === 'show' && <Tab label="Episodes" {...a11yProps(1)} />}
+          {data.watchable.media_type === 'show' && <Tab label="Episodes" {...a11yProps(2)} />}
         </Tabs>
       </Box>
       <CustomTabPanel value={tabIndex} index={0}>
@@ -249,22 +276,21 @@ function Watchable() {
         <List>
         {episodesQuery.data?.map((item) => (
           <ListItem key={item.id} className="hiddenOverflow">
-            <ListItemButton role={undefined} onClick={handleSeasonChange(item)} dense>
-              <ListItemIcon>
-                <Checkbox
-                  edge="start"
-                  checked={item.watched}
-                  tabIndex={-1}
-                  disableRipple
-                  inputProps={{ 'aria-labelledby': `episode-list-label-${item.id}` }}
-                />
-              </ListItemIcon>
-              <ListItemText id={`episode-list-label-${item.id}`} primary={`[${item.season}:${item.episode}] ${item.title}`} />
+            <ListItemButton role={undefined} onClick={handleToggle(item)} dense>
+            <ListItemIcon>
+              <Checkbox
+                edge="start"
+                checked={checked.includes(item.id)}
+                tabIndex={-1}
+                disableRipple
+                inputProps={{ 'aria-labelledby': `episode-list-label-${item.id}` }}
+              />
+            </ListItemIcon>
+            <ListItemText id={`episode-list-label-${item.id}`} primary={`[${item.season}:${item.episode}] ${item.title}`} />
             </ListItemButton>
           </ListItem>
-        ))};
+        ))}
         </List>
-
       </CustomTabPanel>
     </Paper>
   );

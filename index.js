@@ -1,6 +1,13 @@
 const debug = require('debug')('watchlist:proxy');
 const express = require('express');
+const Sentry = require('@sentry/node');
 const Server = require('./server');
+
+let useSentry = false;
+if (process.env.SENTRY_DSN) {
+  Sentry.init({ dsn: process.env.SENTRY_DSN });
+  useSentry = true;
+}
 
 // so it's host and port
 if (process.env.REACT_DEV_SERVER === 'true') {
@@ -33,5 +40,8 @@ if (process.env.REACT_DEV_SERVER === 'true') {
   const app = express();
   const server = new Server();
   server.init(app);
+  if (useSentry) {
+    Sentry.setupExpressErrorHandler(app);
+  }
   server.listen(app);
 }

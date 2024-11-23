@@ -167,6 +167,18 @@ class Api {
     return this.handleResponse(res);
   }
 
+  async updateEpisode(watchableId, episodeId, watched) {
+    const res = await fetch(`/api/watchables/${watchableId}/episodes/${episodeId}`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ watched }),
+      withCredentials: true,
+    });
+    return this.handleResponse(res);
+  }
+
   async updateImage(id, imageUrl) {
     const res = await fetch(`/api/img/${id}/`, {
       method: 'POST',

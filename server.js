@@ -62,20 +62,22 @@ class Server {
     const apiRouter = new express.Router();
     app.use('/api', api.addRoutes(apiRouter));
 
+
     if (process.env.REACT_DEV_SERVER === 'true') {
       // this starts the server through react-scripts
       // src/setupProxy.js adds all the routes to the dev server
       (async () => {
         require('react-app-rewired/scripts/start');
       })();
+    } else {
+      app.use(express.static(path.resolve(`${__dirname}/build/`)));
+      app.get('/*', (req, res) => {
+        res.sendFile(path.resolve(`${__dirname}/build/index.html`));
+      });
     }
   }
 
   listen(app) {
-    app.use(express.static(path.resolve(`${__dirname}/build/`)));
-    app.get('/*', (req, res) => {
-      res.sendFile(path.resolve(`${__dirname}/build/index.html`));
-    });
     app.listen(this.port, this.bindHost, () => {
       debug(`API listening at http://${this.bindHost}:${this.port}`);
     });

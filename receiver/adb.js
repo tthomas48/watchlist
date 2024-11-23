@@ -1,4 +1,5 @@
 const debug = require('debug')('watchlist:receiver:adb');
+const Sentry = require('@sentry/node');
 const ADB = require('@devicefarmer/adbkit');
 const ProviderFactory = require('./providers/factory');
 
@@ -43,14 +44,16 @@ class Adb {
   }
 
   async play(uri, attempt = 0) {
-    try {
+    try {     
       this.verifyConnected();
       await this.goHome();
       debug(`Playing ${uri}`);
+      Sentry.captureMessage(`Playing ${uri}`);
       const device = this.client.getDevice(this.remoteID);
       // I used to use device.startActivity, but couldn't make it work consistenly
       const cmd = ProviderFactory.getCommand(uri);
       debug(`Cmd: ${cmd}`);
+      Sentry.captureMessage(`Cmd: ${cmd}`);
       const result = await device.shell(cmd);
       const output = await ADB.Adb.util.readAll(result);
       debug(output.toString().trim());

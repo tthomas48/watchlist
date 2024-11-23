@@ -4,9 +4,10 @@ const TraktImages = require('trakt.tv-images');
 const TraktQueued = require('trakt.tv-queued');
 
 class TraktClient {
-  constructor(clientId) {
+  constructor(clientId, clientSecret) {
     this.traktClient = new Trakt({
       client_id: clientId,
+      client_secret: clientSecret,
       plugins: {
         images: TraktImages,
         queued: TraktQueued,
@@ -68,9 +69,10 @@ class TraktClient {
   }
 
   async setWatched(traktUserId, traktType, traktId) {
-    const options = {};
-    options[traktType] = { trakt: traktId };
-
+    const options = {
+      username: traktUserId,
+    };
+    options[traktType] = { ids: { trakt: traktId } };
     return this.traktClient.checkin.add(options);
   }
 

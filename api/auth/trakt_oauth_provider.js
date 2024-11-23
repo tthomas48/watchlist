@@ -9,10 +9,14 @@ class TraktOauthProvider {
     return this.clientId;
   }
 
+  getClientSecret() {
+    return this.clientSecret;
+  }
+
   configure(app, db) {
     this.clientId = process.env.TRAKT_CLIENT_ID;
     this.traktClient = new TraktClient(this.clientId);
-    const clientSecret = process.env.TRAKT_CLIENT_SECRET;
+    this.clientSecret = process.env.TRAKT_CLIENT_SECRET;
     const oauthHost = process.env.OAUTH_HOST; // This needs to match your Trakt app settings
 
     passport.serializeUser((user, next) => {
@@ -29,7 +33,7 @@ class TraktOauthProvider {
     passport.use(new TraktStrategy(
       {
         clientID: this.clientId,
-        clientSecret,
+        clientSecret: this.clientSecret,
         callbackURL: `${oauthHost}/api/auth/trakt/callback`,
       },
       (async (accessToken, refreshToken, params, profile, done) => {

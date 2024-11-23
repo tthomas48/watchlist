@@ -25,6 +25,7 @@
     "@mui/x-data-grid": "^6.18.5",
     "@mui/x-data-grid-generator": "^6.18.5",
     "@ngrok/ngrok": "^0.9.1",
+    "@sentry/node": "^8.39.0",
     "@tanstack/react-query": "^4.29.25",
     "@testing-library/jest-dom": "^5.16.5",
     "@testing-library/react": "^13.4.0",
