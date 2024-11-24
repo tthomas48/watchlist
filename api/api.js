@@ -348,7 +348,6 @@ class Api {
               await this.traktClient.setWatched(req.user.trakt_id, 'episode', nextUnwatchedId);
             }
           } else if (!watchable.local) {
-            console.log(watchable);
             await this.traktClient.setWatched(
               req.user.trakt_id,
               watchable.media_type,
@@ -356,7 +355,6 @@ class Api {
             );
           }
         } catch (err) {
-          console.log(err);
           // we log this, but don't want to actually stop playing if it doesn't work.
           Sentry.captureException(err);
         }
