@@ -87,6 +87,7 @@ const AddItem = ({ list }) => {
         local: true,
         title: values.title,
         trakt_list_id: list.ids.trakt,
+        noautoadvance: true,
       };
       await api.createWatchable(watchable);
       queryClient.invalidateQueries({ queryKey: ['watchlist'] });

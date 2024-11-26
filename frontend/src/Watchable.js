@@ -6,6 +6,7 @@ import {
   Typography, Paper, Button, TextField, Stack, FormControl, Checkbox,
   FormHelperText, IconButton, InputLabel, NativeSelect, ListItemText,
   Tabs, Box, Tab, List, ListItem, ListItemButton, ListItemIcon,
+  FormControlLabel,
 } from '@mui/material';
 // import Accordion from '@mui/material/Accordion';
 // import AccordionDetails from '@mui/material/AccordionDetails';
@@ -239,6 +240,11 @@ function Watchable() {
             <TextField {...register('webUrl')} label="Web URL" variant="outlined" sx={{
               color: 'text.paper',
             }} defaultValue={data.watchable.web_url} InputLabelProps={{ shrink: true }} />
+            <FormControlLabel control={
+              <Checkbox {...register('noautoadvance')} label="Disable Auto Advance" variant="outlined" sx={{
+                color: 'text.paper',
+              }} defaultChecked={data.watchable.noautoadvance} />
+            } label="Disable Auto Advance" />
 
             <Stack
               direction="row"

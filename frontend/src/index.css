@@ -1,7 +1,7 @@
 .MuiDataGrid-root {
   background-color: rgb(39, 128, 86);
 }
-input.MuiInputBase-input, option, .MuiNativeSelect-root, select, .MuiDialogTitle-root, textarea, .MuiInputBase-root, .MuiListItem-root  {
+input.MuiInputBase-input, option, .MuiNativeSelect-root, select, .MuiDialogTitle-root, textarea, .MuiInputBase-root, .MuiListItem-root, .MuiFormControlLabel-label  {
   color: #333;
 }
 .MuiStack-root, .MuiFormControl-root {

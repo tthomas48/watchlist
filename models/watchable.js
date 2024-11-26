@@ -32,6 +32,7 @@ module.exports = (sequelize, DataTypes) => {
     local: DataTypes.BOOLEAN,
     web_url: DataTypes.STRING,
     homepage: DataTypes.STRING,
+    noautoadvance: DataTypes.BOOLEAN,
   }, {
     sequelize,
     modelName: 'Watchable',

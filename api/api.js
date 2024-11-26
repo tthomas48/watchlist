@@ -335,28 +335,36 @@ class Api {
       }
     });
 
+    const markWatched = async function markWatched(userId, watchable) {
+      try {
+        if (watchable.media_type === 'show') {
+          const nextUnwatchedId = await watchable.getNextUnwatchedId();
+          if (nextUnwatchedId) {
+            debug(`Auto-advancing ${watchable.title}`);
+            await this.traktClient.setWatched(userId, 'episode', nextUnwatchedId);
+          }
+        } else if (!watchable.local) {
+          debug(`Auto-advancing ${watchable.title}`);
+          await this.traktClient.setWatched(
+            userId,
+            watchable.media_type,
+            watchable.trakt_id,
+          );
+        }
+      } catch (err) {
+        // we log this, but don't want to actually stop playing if it doesn't work.
+        Sentry.captureException(err);
+      }
+    };
+
     apiRouter.post('/play/:service_type/:id/', this.authProvider.requireLogin, async (req, res) => {
       try {
         const { id } = req.params;
         const serviceType = req.params.service_type;
         const watchable = await req.models.Watchable.findByPk(id);
         watchable.last_played = new Date();
-        try {
-          if (watchable.media_type === 'show') {
-            const nextUnwatchedId = await watchable.getNextUnwatchedId();
-            if (nextUnwatchedId) {
-              await this.traktClient.setWatched(req.user.trakt_id, 'episode', nextUnwatchedId);
-            }
-          } else if (!watchable.local) {
-            await this.traktClient.setWatched(
-              req.user.trakt_id,
-              watchable.media_type,
-              watchable.trakt_id,
-            );
-          }
-        } catch (err) {
-          // we log this, but don't want to actually stop playing if it doesn't work.
-          Sentry.captureException(err);
+        if (watchable.noautoadvance !== true) {
+          await markWatched(req.user.trakt_id, watchable);
         }
 
         const uri = watchable.web_url;
@@ -458,6 +466,7 @@ class Api {
       watchable.hidden = watchableUpdate.hidden;
       watchable.comment = watchableUpdate.comment;
       watchable.web_url = watchableUpdate.webUrl;
+      watchable.noautoadvance = watchableUpdate.noautoadvance;
 
       await watchable.save();
       res.json(watchable);
