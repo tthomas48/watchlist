@@ -51,6 +51,6 @@ module.exports = (sequelize, DataTypes) => {
       return null;
     }
     return nextUnwatched[0].trakt_id;
-  }
+  };
   return Watchable;
 };

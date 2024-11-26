@@ -1,7 +1,7 @@
 /** @type {import('sequelize-cli').Migration} */
 module.exports = {
   async up(queryInterface, Sequelize) {
-    if (queryInterface.queryGenerator.dialect == 'sqlite') {
+    if (queryInterface.queryGenerator.dialect === 'sqlite') {
       await queryInterface.changeColumn('Episodes', 'watchable_id', {
         type: Sequelize.INTEGER,
       });
@@ -13,7 +13,7 @@ module.exports = {
   },
 
   async down(queryInterface, Sequelize) {
-    if (queryInterface.queryGenerator.dialect == 'sqlite') {
+    if (queryInterface.queryGenerator.dialect === 'sqlite') {
       await queryInterface.changeColumn('Episodes', 'watchable_id', {
         type: Sequelize.INTEGER,
       });
