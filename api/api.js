@@ -335,18 +335,25 @@ class Api {
       }
     });
 
-    const markWatched = async function markWatched(userId, watchable) {
+    const markWatched = async function markWatched(req, watchable) {
       try {
         if (watchable.media_type === 'show') {
           const nextUnwatchedId = await watchable.getNextUnwatchedId();
           if (nextUnwatchedId) {
             debug(`Auto-advancing ${watchable.title}`);
-            await this.traktClient.setWatched(userId, 'episode', nextUnwatchedId);
+            const episode = await req.models.Episode.findOne({
+              where: { watchable_id: watchable.id, id: nextUnwatchedId },
+            });
+            if (episode) {
+              episode.watched = true;
+              await episode.save();
+            }
+            await this.traktClient.setWatched(req.user.trakt_id, 'episode', nextUnwatchedId);
           }
         } else if (!watchable.local) {
           debug(`Auto-advancing ${watchable.title}`);
           await this.traktClient.setWatched(
-            userId,
+            req.user.trakt_id,
             watchable.media_type,
             watchable.trakt_id,
           );
@@ -364,7 +371,7 @@ class Api {
         const watchable = await req.models.Watchable.findByPk(id);
         watchable.last_played = new Date();
         if (watchable.noautoadvance !== true) {
-          await markWatched(req.user.trakt_id, watchable);
+          await markWatched(req, watchable);
         }
 
         const uri = watchable.web_url;

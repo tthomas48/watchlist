@@ -13,6 +13,5 @@ RUN apk update && apk add --no-cache --virtual .build-deps android-tools sqlite 
 RUN apk update python3
 COPY --from=build /usr/src/watchlist/node_modules ./node_modules
 COPY --from=build /usr/src/watchlist .
-RUN npm install sqlite3 --build-from-source --sqlite=/usr
 
 CMD [ "npm", "run", "start" ]

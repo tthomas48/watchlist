@@ -245,7 +245,6 @@ function Watchable() {
                 color: 'text.paper',
               }} defaultChecked={data.watchable.noautoadvance} />
             } label="Disable Auto Advance" />
-
             <Stack
               direction="row"
               justifyContent="center"
