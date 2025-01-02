@@ -17,6 +17,22 @@ class ProviderFactory {
     this.providers = providers;
   }
 
+  getStreamingUrl(homepageUrl) {
+    if (homepageUrl == null) {
+      return '';
+    }
+    for (let i = 0; i < this.providers.length; i += 1) {
+      const provider = this.providers[i];
+      if (provider.provides(homepageUrl)) {
+        const streamingUrl = provider.getStreamingUrl(homepageUrl);
+        if (streamingUrl) {
+          return streamingUrl;
+        }
+      }
+    }
+    return '';
+  }
+
   getCommand(uri) {
     const params = this.getParams(uri);
     if (params == null) {

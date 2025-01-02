@@ -5,6 +5,10 @@ class PBS {
     return uri.includes('www.pbs.org');
   }
 
+  getStreamingUrl(homepageUrl) {
+    return homepageUrl.replace('http://', 'https://');
+  }
+
   getData(uri) {
     return uri;
   }

@@ -1,7 +1,11 @@
 /* eslint-disable class-methods-use-this */
 class AmazonPrime {
   provides(uri) {
-    return uri.includes('intent://watch.amazon.com') || uri.includes('amazon.com');
+    return uri?.includes('intent://watch.amazon.com') || uri?.includes('amazon.com');
+  }
+
+  getStreamingUrl(homepageUrl) {
+    return homepageUrl.replace('http://', 'https://');
   }
 
   getData(uri) {

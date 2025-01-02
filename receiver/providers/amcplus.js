@@ -4,6 +4,10 @@ class AMCPlus {
     return uri.includes('www.amcplus.com');
   }
 
+  getStreamingUrl(homepageUrl) {
+    return homepageUrl.replace('http://', 'https://');
+  }
+
   getData(uri) {
     return uri.replace(/.*-([0-9]+)/, '$1');
   }

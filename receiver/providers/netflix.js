@@ -4,6 +4,10 @@ class Netflix {
     return uri.includes('www.netflix.com/');
   }
 
+  getStreamingUrl(homepageUrl) {
+    return homepageUrl.replace('http://', 'https://');
+  }
+
   getData(uri) {
     if (uri.match(/.*jbv=([0-9]+).*/)) {
       const id = uri.replace(/.*jbv=([0-9]+).*/, '$1');

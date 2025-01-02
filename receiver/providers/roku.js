@@ -4,6 +4,10 @@ class Roku {
     return uri.includes('roku.com');
   }
 
+  getStreamingUrl(homepageUrl) {
+    return homepageUrl.replace('http://', 'https://');
+  }
+
   getData(uri) {
     if (uri.includes('https://therokuchannel.roku.com/details/')) {
       const formatted = uri.replace(/(https:\/\/therokuchannel.roku.com\/details\/[^/]+).*/, '$1');

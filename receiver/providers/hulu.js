@@ -4,6 +4,10 @@ class Hulu {
     return uri.includes('package=com.hulu.livingroomplus') || uri.includes('www.hulu.com');
   }
 
+  getStreamingUrl(homepageUrl) {
+    return homepageUrl.replace('http://', 'https://');
+  }
+
   getData(uri) {
     return uri;
   }

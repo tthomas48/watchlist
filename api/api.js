@@ -40,6 +40,7 @@ class Api {
       imdb_id: ids?.imdb,
       tmdb_id: ids?.tmdb,
       homepage: traktItem[traktItem.type]?.homepage,
+      web_url: this.receiverFactory?.getStreamingUrl(traktItem[traktItem.type]?.homepage),
     };
     return models.Watchable.create(props);
   }
@@ -49,6 +50,9 @@ class Api {
     watchable.homepage = traktItem[traktItem.type].homepage;
     watchable.imdb_id = traktItem[traktItem.type].ids?.imdb;
     watchable.tmdb_id = traktItem[traktItem.type].ids?.tmdb;
+    if (!watchable.web_url) {
+      watchable.web_url = this.receiverFactory?.getStreamingUrl(watchable.homepage);
+    }
     return watchable.save();
   }
 
@@ -335,7 +339,7 @@ class Api {
       }
     });
 
-    const markWatched = async function markWatched(req, watchable) {
+    const markWatched = async function markWatched(traktClient, req, watchable) {
       try {
         if (watchable.media_type === 'show') {
           const nextUnwatchedId = await watchable.getNextUnwatchedId();
@@ -348,11 +352,11 @@ class Api {
               episode.watched = true;
               await episode.save();
             }
-            await this.traktClient.setWatched(req.user.trakt_id, 'episode', nextUnwatchedId);
+            await traktClient.setWatched(req.user.trakt_id, 'episode', nextUnwatchedId);
           }
         } else if (!watchable.local) {
           debug(`Auto-advancing ${watchable.title}`);
-          await this.traktClient.setWatched(
+          await traktClient.setWatched(
             req.user.trakt_id,
             watchable.media_type,
             watchable.trakt_id,
@@ -371,7 +375,7 @@ class Api {
         const watchable = await req.models.Watchable.findByPk(id);
         watchable.last_played = new Date();
         if (watchable.noautoadvance !== true) {
-          await markWatched(req, watchable);
+          await markWatched(this.traktClient, req, watchable);
         }
 
         const uri = watchable.web_url;

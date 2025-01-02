@@ -13,4 +13,8 @@ test('PeacockTV transforms url', () => {
   uri = 'https://www.peacocktv.com/watch/asset/movies/please-dont-destroy-the-treasure-of-foggy-mountain/95d367f5-06f1-37dd-9c9c-44a8c53faedb';
   expected = 'https://www.peacocktv.com/deeplink?deeplinkData%3D%7B%22pvid%22%3A%2295d367f5-06f1-37dd-9c9c-44a8c53faedb%22%2C%22type%22%3A%22PROGRAMME%22%2C%22action%22%3A%22PDP%22%7D';
   expect(new PeacockTV().getData(uri)).toBe(expected);
+
+  uri = 'http://www.peacocktv.com/stream-tv/fight-night-the-million-dollar-heist';
+  expected = 'https://www.peacocktv.com/stream-tv/fight-night-the-million-dollar-heist';
+  expect(new PeacockTV().getStreamingUrl(uri)).toBe(expected);
 });

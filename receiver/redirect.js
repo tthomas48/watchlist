@@ -1,4 +1,6 @@
 /* eslint-disable class-methods-use-this, no-unused-vars */
+const ProviderFactory = require('./providers/factory');
+
 class Redirect {
   async init(settings) {
     // NOOP;

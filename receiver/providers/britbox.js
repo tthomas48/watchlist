@@ -5,6 +5,10 @@ class BritBox {
     return uri.includes('component=com.britbox.us');
   }
 
+  getStreamingUrl(homepageUrl) {
+    return '';
+  }
+
   getData(uri) {
     return uri;
   }

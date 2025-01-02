@@ -5,6 +5,10 @@ class YouTube {
     return uri.includes('youtube');
   }
 
+  getStreamingUrl(homepageUrl) {
+    return homepageUrl.replace('http://', 'https://');
+  }
+
   getData(uri) {
     return uri;
   }

@@ -2,6 +2,7 @@ const debug = require('debug')('watchlist:receiver:factory');
 const adb = require('./adb');
 const googletv = require('./googletv');
 const redirect = require('./redirect');
+const ProviderFactory = require('./providers/factory');
 
 class ReceiverFactory {
   constructor() {
@@ -47,6 +48,10 @@ class ReceiverFactory {
       default:
         return this.receivers.redirect;
     }
+  }
+
+  getStreamingUrl(homepageUrl) {
+    return ProviderFactory.getStreamingUrl(homepageUrl);
   }
 }
 module.exports = new ReceiverFactory();

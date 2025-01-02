@@ -44,7 +44,7 @@ class Adb {
   }
 
   async play(uri, attempt = 0) {
-    try {     
+    try {
       this.verifyConnected();
       await this.goHome();
       debug(`Playing ${uri}`);

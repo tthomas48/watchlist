@@ -17,4 +17,8 @@ test('Netflix transforms url', () => {
   uri = 'https://www.netflix.com/us/title/81288370?s=a&trskid=13747225&trg=cp&vlang=en&clip=81660323';
   expected = 'https://www.netflix.com/us/title/81288370';
   expect(new Netflix().getData(uri)).toBe(expected);
+
+  uri = 'http://www.netflix.com/title/81677257';
+  expected = 'https://www.netflix.com/title/81677257';
+  expect(new Netflix().getStreamingUrl(uri)).toBe(expected);
 });

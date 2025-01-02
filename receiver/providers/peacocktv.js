@@ -4,6 +4,10 @@ class PeacockTV {
     return uri.includes('www.peacocktv.com');
   }
 
+  getStreamingUrl(homepageUrl) {
+    return homepageUrl.replace('http://', 'https://');
+  }
+
   getData(uri) {
     if (uri.includes('https://www.peacocktv.com/watch/asset/tv/')) {
       const id = uri.replace(/https:\/\/www.peacocktv.com\/watch\/asset\/tv\/[^/]+\/([^/]+)/, '$1');

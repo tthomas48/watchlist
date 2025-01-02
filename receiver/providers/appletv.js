@@ -4,6 +4,10 @@ class AppleTV {
     return uri.includes('tv.apple.com');
   }
 
+  getStreamingUrl(homepageUrl) {
+    return homepageUrl.replace('http://', 'https://');
+  }
+
   getData(uri) {
     return uri;
   }

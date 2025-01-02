@@ -4,6 +4,10 @@ class DisneyPlus {
     return uri.includes('www.disneyplus.com');
   }
 
+  getStreamingUrl(homepageUrl) {
+    return homepageUrl.replace('http://', 'https://');
+  }
+
   getData(uri) {
     return uri;
   }
