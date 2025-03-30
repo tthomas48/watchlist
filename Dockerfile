@@ -1,17 +1,9 @@
-FROM node:22-alpine AS build
+FROM node:22-alpine
 
 WORKDIR /usr/src/watchlist
 
 COPY . .
 RUN npm ci --omit=dev
 RUN npm run build-ui
-
-FROM node:22-alpine
-
-WORKDIR /usr/src/watchlist
-RUN apk update && apk add --no-cache --virtual .build-deps android-tools sqlite sqlite-dev g++ python3-dev py3-setuptools libffi-dev openssl-dev make
-RUN apk update python3
-COPY --from=build /usr/src/watchlist/node_modules ./node_modules
-COPY --from=build /usr/src/watchlist .
 
 CMD [ "npm", "run", "start" ]
