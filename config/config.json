@@ -5,14 +5,13 @@
     "logging": false
   },
   "test": {
-    "dialect": "postgres",
-    "use_env_variable": "DATABASE_URL",
-    "use_ssl": true,
+    "dialect": "sqlite",
+    "storage": "data/watchlist.sqlite",
     "logging": false
   },
   "production": {
-    "dialect": "postgres",
-    "use_env_variable": "DATABASE_URL",
+    "dialect": "sqlite",
+    "storage": "data/watchlist.sqlite",
     "logging": false
   }
 }
