@@ -15,7 +15,6 @@ class TraktClient {
       options: {
         images: {
           tmdbApiKey: process.env.IMG_TMDB_APIKEY,
-          tvdbApiKey: process.env.IMG_TVDB_APIKEY,
           fanartApiKey: process.env.IMG_FANART_APIKEY,
           smallerImages: true, // reduce image size, save bandwidth. defaults to false.
           cached: true, // requires trakt.tv-cached
