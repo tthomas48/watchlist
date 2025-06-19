@@ -2,7 +2,7 @@ import { useContext } from 'react';
 import { useQuery, useQueryClient, useMutation } from '@tanstack/react-query';
 import { useOutletContext } from 'react-router-dom';
 import { Box } from '@mui/material';
-import Grid from '@mui/material/Unstable_Grid2';
+import Grid from '@mui/material/Grid';
 import { MessageContext } from './context/MessageContext';
 import Api from './service/api';
 import WatchlistItem from './WatchlistItem';

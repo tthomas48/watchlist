@@ -5,7 +5,7 @@ import {
 import {
   Typography, Toolbar, Container, AppBar, IconButton, Menu, MenuItem, Paper,
 } from '@mui/material';
-import Grid from '@mui/material/Unstable_Grid2';
+import Grid from '@mui/material/Grid';
 import MenuIcon from '@mui/icons-material/Menu';
 import ListPicker from './ListPicker';
 import PlayerPicker from './PlayerPicker';
