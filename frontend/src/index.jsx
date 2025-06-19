@@ -10,8 +10,8 @@ import {
 } from '@tanstack/react-query';
 import StyledEngineProvider from '@mui/material/StyledEngineProvider';
 import CssBaseline from '@mui/material/CssBaseline';
-import { ThemeProvider, createTheme } from '@mui/material/styles';
-import themeOptions from './theme';
+import { ThemeProvider } from '@mui/material/styles';
+import greenTheme from './theme';
 import './index.css';
 import App from './App';
 import Settings from './Settings';
@@ -19,7 +19,7 @@ import Providers from './Providers';
 import Watchlist from './Watchlist';
 import Watchable from './Watchable';
 
-const greenTheme = createTheme(themeOptions);
+//const greenTheme = createTheme(themeOptions);
 
 // Create a client
 const queryClient = new QueryClient();

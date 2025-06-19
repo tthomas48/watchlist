@@ -27,13 +27,15 @@ Would love assistance in adding more integrations (FireTV, others?) and writing 
   https://ngrok.com
   In the setup instructions click on 'Static Domain' to get your free static domain
 - Put your auth token in your .env file as NGROK_AUTHTOKEN
-- Put your staic domain in your .env file as NGROK_DOMAIN
+- Put your static domain in your .env file as NGROK_DOMAIN
+- Put your static domain in your .env file as __VITE_ADDITIONAL_SERVER_ALLOWED_HOSTS
 - Create a Trakt.tv account and setup an oauth app on Trakt.tv
   https://trakt.tv/oauth/applications
 - Under Redirect URI add (put in the actual text there is no variable expansion supported):
   [NGROK_DOMAIN]/api/auth/trakt/callback
 - Under CORS add:
   [NGROK_DOMAIN]
+
 
 ### Install Code
 - $ npm i

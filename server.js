@@ -5,6 +5,7 @@ dotenv.config();
 const debug = require('debug')('watchlist:routes');
 const path = require('path');
 const express = require('express');
+const ViteExpress = require("vite-express");
 const cors = require('cors');
 const bodyParser = require('body-parser');
 const session = require('express-session');
@@ -63,23 +64,37 @@ class Server {
     app.use('/api', api.addRoutes(apiRouter));
 
 
-    if (process.env.REACT_DEV_SERVER === 'true') {
-      // this starts the server through react-scripts
-      // src/setupProxy.js adds all the routes to the dev server
-      (async () => {
-        require('react-app-rewired/scripts/start');
-      })();
-    } else {
-      app.use(express.static(path.resolve(`${__dirname}/build/`)));
-      app.get('/*', (req, res) => {
-        res.sendFile(path.resolve(`${__dirname}/build/index.html`));
-      });
-    }
+    //   if (process.env.REACT_DEV_SERVER === 'true') {
+    //     // this starts the server through react-scripts
+    //     // src/setupProxy.js adds all the routes to the dev server
+    //     (async () => {
+    //       require('react-app-rewired/scripts/start');
+    //     })();
+    //   } else {
+    // if(process.env.NODE_ENV === 'production') {
+    //   app.use(express.static(path.resolve(`${__dirname}/build/`)));
+    //   app.get('/*', (req, res) => {
+    //     res.sendFile(path.resolve(`${__dirname}/build/index.html`));
+    //   });
+    // }
+    //   }
   }
 
   listen(app) {
-    app.listen(this.port, this.bindHost, () => {
+    const server = app.listen(this.port, this.bindHost, () => {
       debug(`API listening at http://${this.bindHost}:${this.port}`);
+    });
+
+    ViteExpress.config({
+      mode: process.env.NODE_ENV === 'production' ? 'production' : 'development',
+      viteConfigFile: 'frontend/vite.config.js',
+      base: '/',
+      root: `${__dirname}/frontend/`,
+    });
+    ViteExpress.bind(app, server, async () => {
+      const { root, base } = await ViteExpress.getViteConfig();
+      debug(`Serving app from root ${root} ${base}`);
+      debug(`Server is listening at http://${this.bindHost}:${this.port}`);
     });
   }
 }
