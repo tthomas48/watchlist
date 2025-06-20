@@ -9,9 +9,9 @@ export default {
   base: '/',
   plugins: [react()],
   root: __dirname,
-  optimizeDeps: {
-    include: [
-      '@mui/material/Unstable_Grid2',
-    ],
-  },
+//   optimizeDeps: {
+//     include: [
+//       '@mui/material/Unstable_Grid2',
+//     ],
+//   },
 };
