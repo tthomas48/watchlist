@@ -14,4 +14,7 @@ test('Max transforms url', () => {
   expected = 'https://play.max.com/show/86312320-8f2e-4b45-b06f-376224def821';
 
   expect(new Max().getStreamingUrl(uri)).toBe(expected);
+
+  uri = 'https://play.hbomax.com/show/b9c42890-337d-4e56-a65f-736a5b3b00b0?utm_source=hbomax&utm_medium=sharebutton&utm_id=ff56b4ff-3a6c-49f9-89f2-e5bcfd2dd970';
+  expected = 'https://play.max.com/show/b9c42890-337d-4e56-a65f-736a5b3b00b0';
 });

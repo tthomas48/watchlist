@@ -21,7 +21,7 @@ h2 {
   font-weight: normal;
 }
 
-ul {
+.App ul {
   list-style-type: none;
   padding: 0 0 10px 0;
   display: flex;
@@ -30,7 +30,7 @@ ul {
   justify-content: center;
 }
 
-li {
+.App li {
   background-color: #2a2a2a;
   border-radius: 10px;
   box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);

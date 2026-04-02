@@ -7,7 +7,12 @@ const process = require('process');
 
 const basename = path.basename(__filename);
 const env = process.env.NODE_ENV || 'development';
-const config = require(`${__dirname}/../config/config.json`)[env];
+const fileConfig = require(`${__dirname}/../config/config.json`)[env];
+const config = { ...fileConfig };
+if (process.env.SQLITE_STORAGE) {
+  config.storage = process.env.SQLITE_STORAGE;
+}
+
 const db = {};
 
 let sequelize;

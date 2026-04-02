@@ -67,6 +67,59 @@ class Api {
     return this.handleResponse(res);
   }
 
+  async getCapabilities() {
+    const res = await fetch('/api/capabilities', {
+      withCredentials: true,
+    });
+    return this.handleResponse(res);
+  }
+
+  async getStreamingAvailability({
+    type, imdbId, tmdbId, country, includeRentals = false,
+  }) {
+    const params = new URLSearchParams({ type });
+    if (imdbId != null && String(imdbId).trim() !== '') {
+      params.set('imdb_id', String(imdbId));
+    }
+    if (tmdbId != null && String(tmdbId).trim() !== '') {
+      params.set('tmdb_id', String(tmdbId));
+    }
+    if (country) {
+      params.set('country', country);
+    }
+    if (includeRentals) {
+      params.set('includeRentals', 'true');
+    }
+    const res = await fetch(`/api/streaming/availability?${params.toString()}`, {
+      withCredentials: true,
+    });
+    return this.handleResponse(res);
+  }
+
+  async traktSearch(query, type = 'movie,show') {
+    const params = new URLSearchParams({ q: query, type });
+    const res = await fetch(`/api/trakt/search?${params.toString()}`, {
+      withCredentials: true,
+    });
+    return this.handleResponse(res);
+  }
+
+  async traktAddToList(list, mediaType, traktId) {
+    if (!list?.user?.username || list?.ids?.trakt == null) {
+      throw new Error('No list selected');
+    }
+    const res = await fetch(
+      `/api/trakt/lists/${encodeURIComponent(list.user.username)}/${encodeURIComponent(list.ids.trakt)}/items`,
+      {
+        method: 'POST',
+        withCredentials: true,
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ type: mediaType, traktId }),
+      },
+    );
+    return this.handleResponse(res);
+  }
+
   async getNotifications(list) {
     if (!list) {
       return [];

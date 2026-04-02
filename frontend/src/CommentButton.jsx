@@ -53,14 +53,14 @@ function CommentButton({ item, saveWatchable }) {
   if (item.comment) {
     return (
       <Fragment>
-        <IconButton variant="outlined" onClick={handleOpen}><CommentIcon /></IconButton>
+        <IconButton color="primary" variant="outlined" onClick={handleOpen}><CommentIcon /></IconButton>
         {dialog}
       </Fragment>);
   }
 
   return (
     <Fragment>
-      <IconButton variant="outlined" onClick={handleOpen}><AddCommentIcon /></IconButton>
+      <IconButton color="primary" variant="outlined" onClick={handleOpen}><AddCommentIcon /></IconButton>
       {dialog}
     </Fragment>);
 }

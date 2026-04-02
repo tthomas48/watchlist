@@ -12,7 +12,7 @@ import {
   CardContent,
   CardMedia,
   CardActions,
-  Button,
+  IconButton,
   Menu,
   MenuItem,
 } from '@mui/material';
@@ -96,28 +96,38 @@ function WatchlistItem({
       backgroundColor: '#278056',
     }}>
       <CardActionArea onClick={editAction}>
-        <CardHeader title={item.title} sx={{
-          fontSize: '1.0rem',
-          textOverflow: 'ellipsis',
-          whiteSpace: 'nowrap',
-          overflow: 'hidden',
-        }}></CardHeader>
+        <CardHeader
+          title={item.title}
+          titleTypographyProps={{
+            noWrap: true,
+            sx: {
+              color: 'primary.main',
+              fontSize: '1rem',
+              fontWeight: 600,
+            },
+          }}
+          sx={{
+            overflow: 'hidden',
+            '& .MuiCardHeader-content': { overflow: 'hidden' },
+          }}
+        />
         <CardMedia component="img" image={`/api/img/${item.id}`} alt={item.title} />
         {missingUrlWarning(item)}
       </CardActionArea>
       {showNotification(notification)}
-      <CardActions disableSpacing>
+      <CardActions disableSpacing sx={{ color: 'primary.main' }}>
         <PlayButton player={player} id={item.id}></PlayButton>
         <CommentButton item={item} saveWatchable={saveWatchable}></CommentButton>
-        <Button
+        <IconButton
           id="basic-button"
+          color="primary"
           aria-controls={open ? 'basic-menu' : undefined}
           aria-haspopup="true"
           aria-expanded={open ? 'true' : undefined}
           onClick={handleClick}
         >
           <MenuIcon />
-        </Button>
+        </IconButton>
         <Menu
           id="basic-menu"
           anchorEl={anchorEl}

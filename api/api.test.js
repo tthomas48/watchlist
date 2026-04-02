@@ -1,11 +1,16 @@
-const { Description } = require('@mui/icons-material');
 const Api = require('./api');
 
 describe('api', () => {
   describe('createWatchable', () => {
     it.each([
       [{
-        type: 'movie', movie: { ids: { imdb: 'tt1234', tmdb: '2343', trakt: '1111' }, title: 'A Movie', homepage: 'https://example.com', year: 2021 },
+        type: 'movie',
+        movie: {
+          ids: { imdb: 'tt1234', tmdb: '2343', trakt: '1111' },
+          title: 'A Movie',
+          homepage: 'https://example.com',
+          year: 2021,
+        },
       }, {
         homepage: 'https://example.com',
         image: undefined,
@@ -15,9 +20,10 @@ describe('api', () => {
         tmdb_id: '2343',
         trakt_id: '1111',
         trakt_list_id: '1234',
+        web_url: undefined,
       }],
-      [{
-      }, {
+      [{}, {
+        homepage: undefined,
         image: undefined,
         imdb_id: undefined,
         media_type: undefined,
@@ -25,6 +31,7 @@ describe('api', () => {
         tmdb_id: undefined,
         trakt_id: undefined,
         trakt_list_id: '1234',
+        web_url: undefined,
       }],
     ])('should return a promise for creating the watchable', (input, toSave) => {
       const api = new Api();
