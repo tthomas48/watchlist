@@ -1,6 +1,7 @@
 import {
   useState, useContext, useEffect, useMemo,
 } from 'react';
+import { Link } from 'react-router-dom';
 import { styled, alpha } from '@mui/material/styles';
 import {
   Button, Menu, MenuItem, Dialog, DialogTitle, DialogContent, TextField, DialogActions,
@@ -35,23 +36,50 @@ function streamingAvailabilityLines(data) {
   return [...new Set(lines)].slice(0, 12);
 }
 
-function StreamingAvailabilityBlock({ query }) {
+function StreamingAvailabilityBlock({
+  query, streamMode, onStreamModeChange, providerPick, onProviderPick,
+}) {
+  const modeToggle = (
+    <ToggleButtonGroup
+      exclusive
+      fullWidth
+      size="small"
+      value={streamMode}
+      onChange={(_, v) => {
+        if (v != null) {
+          onStreamModeChange(v);
+          onProviderPick(null);
+        }
+      }}
+      sx={{ mt: 2, mb: 1 }}
+    >
+      <ToggleButton value="subscription">Subscription</ToggleButton>
+      <ToggleButton value="rent">Rent</ToggleButton>
+    </ToggleButtonGroup>
+  );
+
   if (!query.isFetched && !query.isFetching) {
     return null;
   }
   if (query.isFetching) {
     return (
-      <Box sx={{ mt: 2, display: 'flex', alignItems: 'center', gap: 1 }}>
-        <CircularProgress size={20} />
-        <Typography variant="caption" color="text.secondary">Streaming availability…</Typography>
+      <Box sx={{ mt: 2 }}>
+        {modeToggle}
+        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+          <CircularProgress size={20} />
+          <Typography variant="caption" color="text.secondary">Streaming availability…</Typography>
+        </Box>
       </Box>
     );
   }
   if (query.isError) {
     return (
-      <Typography variant="caption" color="error" sx={{ mt: 2, display: 'block' }}>
-        {query.error?.message || 'Streaming lookup failed'}
-      </Typography>
+      <Box sx={{ mt: 2 }}>
+        {modeToggle}
+        <Typography variant="caption" color="error" sx={{ display: 'block' }}>
+          {query.error?.message || 'Streaming lookup failed'}
+        </Typography>
+      </Box>
     );
   }
   const d = query.data;
@@ -65,22 +93,52 @@ function StreamingAvailabilityBlock({ query }) {
       msg = 'No IMDB/TMDB id on this row for lookup.';
     }
     return (
-      <Typography variant="caption" color="text.secondary" sx={{ mt: 2, display: 'block' }}>
-        {msg}
-      </Typography>
+      <Box sx={{ mt: 2 }}>
+        {modeToggle}
+        <Typography variant="caption" color="text.secondary" sx={{ display: 'block' }}>
+          {msg}
+        </Typography>
+      </Box>
     );
   }
+
+  if (d.subscriptionProfileEmpty && streamMode === 'subscription') {
+    return (
+      <Box sx={{ mt: 2 }}>
+        {modeToggle}
+        <Typography variant="body2" color="text.secondary" sx={{ mb: 1 }}>
+          Configure which services you use to see matching links here.
+        </Typography>
+        <Button variant="outlined" size="small" component={Link} to="/streaming-access">
+          Streaming access settings
+        </Button>
+      </Box>
+    );
+  }
+
   const lines = streamingAvailabilityLines(d);
   const matchedProviders = Array.isArray(d?.matchedProviders) ? d.matchedProviders : [];
+  const selectValue = providerPick
+    ? JSON.stringify({
+      link: providerPick.link,
+      serviceId: providerPick.serviceId ?? null,
+      addonId: providerPick.addonId ?? null,
+    })
+    : '';
+
   if (!lines.length) {
     return (
-      <Typography variant="caption" color="text.secondary" sx={{ mt: 2, display: 'block' }}>
-        No known streaming options for this region (third-party data; may be incomplete).
-      </Typography>
+      <Box sx={{ mt: 2 }}>
+        {modeToggle}
+        <Typography variant="caption" color="text.secondary" sx={{ display: 'block' }}>
+          No known streaming options for this region (third-party data; may be incomplete).
+        </Typography>
+      </Box>
     );
   }
   return (
     <Box sx={{ mt: 2 }}>
+      {modeToggle}
       <Typography variant="caption" sx={{ display: 'block', mb: 0.5, color: 'text.secondary' }}>
         Where to stream (informational; third-party)
       </Typography>
@@ -93,8 +151,24 @@ function StreamingAvailabilityBlock({ query }) {
           fullWidth
           size="small"
           label="Choose provider link"
-          value={query.selectedProviderLink || ''}
-          onChange={(e) => query.onSelectProviderLink?.(e.target.value)}
+          value={selectValue}
+          onChange={(e) => {
+            const { value } = e.target;
+            if (!value) {
+              onProviderPick(null);
+              return;
+            }
+            try {
+              const o = JSON.parse(value);
+              onProviderPick({
+                link: o.link,
+                serviceId: o.serviceId,
+                addonId: o.addonId,
+              });
+            } catch {
+              onProviderPick(null);
+            }
+          }}
           sx={{
             mt: 1,
             '& .MuiInputBase-input': { color: 'text.secondary' },
@@ -107,8 +181,13 @@ function StreamingAvailabilityBlock({ query }) {
           {matchedProviders.map((m) => {
             const label = `${m.serviceName || 'Service'}${m.addonName ? ` via ${m.addonName}` : ''}${m.type ? ` (${m.type})` : ''}`;
             const key = `${m.link}|${m.serviceId || ''}|${m.addonId || ''}|${m.type || ''}|${m.country || ''}`;
+            const optVal = JSON.stringify({
+              link: m.link,
+              serviceId: m.serviceId,
+              addonId: m.addonId,
+            });
             return (
-              <MenuItem key={key} value={m.link} sx={{ color: 'text.secondary' }}>
+              <MenuItem key={key} value={optVal} sx={{ color: 'text.secondary' }}>
                 {label}
               </MenuItem>
             );
@@ -197,7 +276,8 @@ const AddItem = ({ list }) => {
   const [searchScope, setSearchScope] = useState('movie,show');
   const [searchQuery, setSearchQuery] = useState('');
   const [pickedRow, setPickedRow] = useState(null);
-  const [providerLink, setProviderLink] = useState('');
+  const [streamMode, setStreamMode] = useState('subscription');
+  const [providerPick, setProviderPick] = useState(null);
   const debouncedSearch = useDebounced(searchQuery, 800);
   const open = Boolean(anchorEl);
   const listReady = Boolean(list?.user?.username && list?.ids?.trakt != null);
@@ -228,8 +308,8 @@ const AddItem = ({ list }) => {
   }, [traktDialogOpen, pickedRow, streamingEnabled]);
 
   const streamingQuery = useQuery({
-    queryKey: ['streaming-availability', 'trakt-add', streamParams],
-    queryFn: () => api.getStreamingAvailability(streamParams),
+    queryKey: ['streaming-availability', 'trakt-add', streamParams, streamMode],
+    queryFn: () => api.getStreamingAvailability({ ...streamParams, mode: streamMode }),
     enabled: Boolean(streamParams),
   });
 
@@ -251,7 +331,8 @@ const AddItem = ({ list }) => {
     setSearchQuery('');
     setSearchScope('movie,show');
     setPickedRow(null);
-    setProviderLink('');
+    setStreamMode('subscription');
+    setProviderPick(null);
     handleClose();
   };
 
@@ -272,18 +353,18 @@ const AddItem = ({ list }) => {
         throw new Error('Invalid selection');
       }
       const addRes = await api.traktAddToList(list, type, id);
-      if (providerLink) {
-        const rows = Array.isArray(addRes?.watchables) ? addRes.watchables : [];
-        const added = rows.find((w) => String(w.trakt_id) === String(id)
-          && w.media_type === type);
-        if (added?.id) {
-          await api.saveWatchable(added.id, {
-            hidden: added.hidden,
-            comment: added.comment,
-            noautoadvance: added.noautoadvance,
-            webUrl: providerLink,
-          });
-        }
+      const rows = Array.isArray(addRes?.watchables) ? addRes.watchables : [];
+      const added = rows.find((w) => String(w.trakt_id) === String(id)
+        && w.media_type === type);
+      if (added?.id) {
+        await api.saveWatchable(added.id, {
+          hidden: added.hidden,
+          comment: added.comment,
+          noautoadvance: added.noautoadvance,
+          webUrl: providerPick?.link ?? '',
+          streamingServiceId: providerPick?.serviceId ?? null,
+          streamingAddonId: providerPick?.addonId ?? null,
+        });
       }
       return addRes;
     },
@@ -292,7 +373,7 @@ const AddItem = ({ list }) => {
       setTraktDialogOpen(false);
       setSearchQuery('');
       setPickedRow(null);
-      setProviderLink('');
+      setProviderPick(null);
       handleClose();
     },
   });
@@ -355,7 +436,7 @@ const AddItem = ({ list }) => {
             if (v != null) {
               setSearchScope(v);
               setPickedRow(null);
-              setProviderLink('');
+              setProviderPick(null);
             }
           }}
           sx={{ mb: 2 }}
@@ -371,7 +452,7 @@ const AddItem = ({ list }) => {
           onChange={(e) => {
             setSearchQuery(e.target.value);
             setPickedRow(null);
-            setProviderLink('');
+            setProviderPick(null);
           }}
           sx={{ mb: 2 }}
         />
@@ -395,7 +476,7 @@ const AddItem = ({ list }) => {
                 selected={Boolean(selected)}
                 onClick={() => {
                   setPickedRow(row);
-                  setProviderLink('');
+                  setProviderPick(null);
                 }}
               >
                 <ListItemAvatar sx={{ minWidth: 56 }}>
@@ -423,12 +504,15 @@ const AddItem = ({ list }) => {
             );
           })}
         </List>
-        <StreamingAvailabilityBlock query={{
-          ...streamingQuery,
-          selectedProviderLink: providerLink,
-          onSelectProviderLink: setProviderLink,
-        }}
-        />
+        {streamingEnabled && streamParams && (
+          <StreamingAvailabilityBlock
+            query={streamingQuery}
+            streamMode={streamMode}
+            onStreamModeChange={setStreamMode}
+            providerPick={providerPick}
+            onProviderPick={setProviderPick}
+          />
+        )}
       </DialogContent>
       <DialogActions>
         <Button onClick={() => setTraktDialogOpen(false)}>Close</Button>

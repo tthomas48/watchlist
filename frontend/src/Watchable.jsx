@@ -4,13 +4,10 @@ import { useForm } from 'react-hook-form';
 import { useParams, useNavigate } from 'react-router-dom';
 import {
   Typography, Paper, Button, TextField, Stack, FormControl, Checkbox,
-  FormHelperText, IconButton, InputLabel, NativeSelect, ListItemText,
+  FormHelperText, IconButton, ListItemText,
   Tabs, Box, Tab, List, ListItem, ListItemButton, ListItemIcon,
   FormControlLabel,
 } from '@mui/material';
-// import Accordion from '@mui/material/Accordion';
-// import AccordionDetails from '@mui/material/AccordionDetails';
-// import AccordionSummary from '@mui/material/AccordionSummary';
 import SearchIcon from '@mui/icons-material/Search';
 import DownloadIcon from '@mui/icons-material/Download';
 import LinkIcon from '@mui/icons-material/Link';
@@ -23,6 +20,20 @@ function a11yProps(index) {
     id: `simple-tab-${index}`,
     'aria-controls': `simple-tabpanel-${index}`,
   };
+}
+
+function canDeleteWatchable(item) {
+  if (!item) {
+    return false;
+  }
+  if (item.local) {
+    return true;
+  }
+  return Boolean(
+    item.trakt_list_id
+    && item.trakt_id
+    && (item.media_type === 'movie' || item.media_type === 'show'),
+  );
 }
 
 function CustomTabPanel(props) {
@@ -52,7 +63,6 @@ function Watchable() {
   const api = new Api(messageContext);
 
   const { id } = useParams();
-  const [provider, setProvider] = useState('');
   const [tabIndex, setTabIndex] = useState(0);
   const [checked, setChecked] = useState([]);
   const navigate = useNavigate();
@@ -69,7 +79,7 @@ function Watchable() {
         navigate('/');
         return true;
       } catch (e) {
-        this.messageContext.sendMessage({
+        messageContext.sendMessage({
           message: e.message,
           severity: 'error',
           open: true,
@@ -87,12 +97,6 @@ function Watchable() {
     staleTime: Infinity, // do not refresh data
   });
 
-  const providerQuery = useQuery({
-    queryKey: ['providers'],
-    queryFn: async () => api.getProviders(),
-    staleTime: Infinity,
-  });
-
   const episodesQuery = useQuery({
     queryKey: ['episodes', id],
     queryFn: async () => api.getEpisodes(id),
@@ -107,18 +111,6 @@ function Watchable() {
       setChecked(checkedEpisodes);
     },
   });
-
-  const providers = providerQuery.data;
-  const doSearch = () => {
-    if (!providers) {
-      return;
-    }
-    if (!provider) {
-      setProvider(providers[0].url);
-    }
-    const url = provider.replace('%s', encodeURIComponent(data.watchable.title));
-    window.open(url, '_watchlist', 'noreferrer');
-  };
 
   const visitHomePage = (homepage) => {
     if (homepage) {
@@ -137,10 +129,15 @@ function Watchable() {
   };
 
   const doDelete = async (item) => {
-    await api.deleteWatchable(item.id);
-    queryClient.invalidateQueries({ queryKey: ['watchlist'] });
-    queryClient.invalidateQueries({ queryKey: ['watchable', id] });
-    navigate('/');
+    try {
+      await api.deleteWatchable(item.id);
+      queryClient.removeQueries({ queryKey: ['watchable', id] });
+      queryClient.removeQueries({ queryKey: ['episodes', id] });
+      queryClient.invalidateQueries({ queryKey: ['watchlist'] });
+      navigate('/');
+    } catch {
+      // Api.handleResponse already surfaced the error
+    }
   };
 
   const setWatched = async (item, watched) => {
@@ -168,7 +165,7 @@ function Watchable() {
     setTabIndex(newValue);
   };
 
-  if (isLoading || providerQuery.isLoading) {
+  if (isLoading) {
     return (<h5>Loading...</h5>);
   }
 
@@ -184,7 +181,7 @@ function Watchable() {
       <Box sx={{ borderBottom: 1, borderColor: 'divider' }}>
         <Tabs value={tabIndex} onChange={handleTabChange} aria-label="watchable edit tabs">
           <Tab label="General" {...a11yProps(0)} />
-          {data.watchable.media_type === 'show' && <Tab label="Episodes" {...a11yProps(2)} />}
+          {data.watchable.media_type === 'show' && <Tab label="Episodes" {...a11yProps(1)} />}
         </Tabs>
       </Box>
       <CustomTabPanel value={tabIndex} index={0}>
@@ -202,19 +199,11 @@ function Watchable() {
               spacing={1}
             >
               <FormControl>
-                <InputLabel variant="standard" htmlFor="uncontrolled-native">
-                  Provider
-                </InputLabel>
-                <NativeSelect onChange={(e) => setProvider(e.target.value)}>
-                  {providers.map((item) => (<option key={item.url}
-                    value={String(item.url)}>{item.name}</option>))}
-                </NativeSelect>
-                <FormHelperText sx={{ overflow: 'hidden', maxWidth: '126px' }}>
-                  The search icon will open a new tab to find the URL for this item.
-                  Copy the link, swipe backwards, and paste the url into the field below.
+                <FormHelperText sx={{ overflow: 'hidden', maxWidth: '220px' }}>
+                  Open Trakt or your streaming app to find a playable URL, then paste it below.
                 </FormHelperText>
               </FormControl>
-              <IconButton aria-label="search" onClick={doSearch}>
+              <IconButton aria-label="search trakt" onClick={() => visitHomePage('https://trakt.tv/search')}>
                 <SearchIcon />
               </IconButton>
             </Stack>
@@ -271,7 +260,7 @@ function Watchable() {
             >
               <Button variant="outlined" type="submit">Save</Button>
               <Button variant="outlined" onClick={() => navigate('/')}>Cancel</Button>
-              <Button variant="outlined" onClick={() => doDelete(data.watchable)} disabled={!data.watchable.local}>Delete</Button>
+              <Button variant="outlined" onClick={() => doDelete(data.watchable)} disabled={!canDeleteWatchable(data.watchable)}>Delete</Button>
             </Stack>
           </Stack>
         </form>

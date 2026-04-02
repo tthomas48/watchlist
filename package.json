@@ -10,7 +10,8 @@
     "start-dev": "DEBUG=watchlist:* BROWSER=none REACT_DEV_SERVER=true TUNNEL=true WATCH=true npm run start",
     "migrate": "npx sequelize-cli db:migrate",
     "lint": "npx eslint migrations/**/*.js api/**/*.js models/**/*.js receiver/**/*.js index.js",
-    "test": "jest"
+    "test": "jest",
+    "streaming:manifest": "node scripts/gen-streaming-manifest.js"
   },
   "dependencies": {
     "@babel/plugin-proposal-private-property-in-object": "^7.21.11",

@@ -15,7 +15,7 @@ import greenTheme from './theme';
 import './index.css';
 import App from './App';
 import Settings from './Settings';
-import Providers from './Providers';
+import StreamingAccess from './StreamingAccess';
 import Watchlist from './Watchlist';
 import Watchable from './Watchable';
 
@@ -38,8 +38,8 @@ const router = createBrowserRouter([
         element: <Settings />,
       },
       {
-        path: '/providers',
-        element: <Providers />,
+        path: '/streaming-access',
+        element: <StreamingAccess />,
       },
       {
         path: '/watchable/:id',

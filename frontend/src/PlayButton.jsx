@@ -4,7 +4,9 @@ import PlayArrow from '@mui/icons-material/PlayArrow';
 import Api from './service/api';
 import { MessageContext } from './context/MessageContext';
 
-function PlayButton({ player, id }) {
+function PlayButton({
+  player, id, disabled = false,
+}) {
   const messageContext = useContext(MessageContext);
   const api = new Api(messageContext);
   const playAction = async () => {
@@ -18,6 +20,7 @@ function PlayButton({ player, id }) {
   return (
     <Button
       onClick={playAction}
+      disabled={disabled}
       variant="outlined"
       color="primary"
       startIcon={<PlayArrow />}

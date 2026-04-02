@@ -17,6 +17,17 @@ const {
 } = require('./trakt_search_rank');
 const { getCapabilities } = require('./capabilities');
 const { fetchShowStreaming } = require('./streaming_availability_client');
+const {
+  parseUserStreamingAccess,
+  filterStreamingOptionsByMode,
+  logCountryMismatch,
+} = require('./streaming_options_filter');
+const { loadStreamingManifest } = require('./streaming_manifest');
+const {
+  getOrCreateUserStreamingAccess,
+  parseAccessResponse,
+  serializePutBody,
+} = require('./streaming_access_service');
 const { posterUrlForCandidate, normalizePosterValue } = require('./poster_helper');
 const {
   traktPosterDiskPath,
@@ -69,130 +80,6 @@ function parseOptionalIntQuery(value, bounds = {}) {
   return Math.min(max, Math.max(min, n));
 }
 
-function normalizeHost(host) {
-  if (!host) {
-    return null;
-  }
-  return String(host).trim().toLowerCase().replace(/^www\./, '');
-}
-
-function hostFromMaybeUrl(value) {
-  if (!value || typeof value !== 'string') {
-    return null;
-  }
-  const raw = value.trim();
-  if (!raw) {
-    return null;
-  }
-  try {
-    return normalizeHost(new URL(raw).hostname);
-  } catch {
-    try {
-      return normalizeHost(new URL(`https://${raw}`).hostname);
-    } catch {
-      return null;
-    }
-  }
-}
-
-function isRentalOption(type) {
-  const t = String(type || '').trim().toLowerCase();
-  return t === 'rent' || t === 'buy';
-}
-
-function optionMatchesProviders(option, providerHosts, providerNames) {
-  if (!Array.isArray(providerHosts) || providerHosts.length === 0) {
-    return false;
-  }
-  const hosts = [
-    hostFromMaybeUrl(option?.link),
-    hostFromMaybeUrl(option?.service?.homePage),
-    hostFromMaybeUrl(option?.addon?.homePage),
-  ].filter(Boolean);
-  for (let i = 0; i < hosts.length; i += 1) {
-    const h = hosts[i];
-    if (providerHosts.some((ph) => h === ph || h.endsWith(`.${ph}`))) {
-      return true;
-    }
-  }
-
-  const serviceName = String(option?.service?.name || '').toLowerCase();
-  const addonName = String(option?.addon?.name || '').toLowerCase();
-  if (serviceName || addonName) {
-    return providerNames.some((n) => (serviceName && serviceName.includes(n))
-      || (addonName && addonName.includes(n)));
-  }
-  return false;
-}
-
-function filterStreamingOptionsForProviders(result, providers, opts = {}) {
-  if (!result?.ok || !result.show?.streamingOptions) {
-    return result;
-  }
-  const includeRentals = Boolean(opts.includeRentals);
-  const providerHosts = (providers || [])
-    .map((p) => hostFromMaybeUrl(p?.url))
-    .filter(Boolean);
-  const providerNames = (providers || [])
-    .map((p) => String(p?.name || '').trim().toLowerCase())
-    .filter(Boolean);
-
-  const outByCountry = {};
-  const matchedProviders = [];
-  Object.entries(result.show.streamingOptions).forEach(([country, arr]) => {
-    if (!Array.isArray(arr)) {
-      outByCountry[country] = [];
-      return;
-    }
-    const filtered = arr.filter((opt) => {
-      if (!includeRentals && isRentalOption(opt?.type)) {
-        return false;
-      }
-      if (providerHosts.length === 0 && providerNames.length === 0) {
-        return true;
-      }
-      return optionMatchesProviders(opt, providerHosts, providerNames);
-    });
-    outByCountry[country] = filtered;
-    for (let i = 0; i < filtered.length; i += 1) {
-      const opt = filtered[i];
-      matchedProviders.push({
-        country,
-        serviceId: opt?.service?.id || null,
-        serviceName: opt?.service?.name || null,
-        type: opt?.type || null,
-        addonId: opt?.addon?.id || null,
-        addonName: opt?.addon?.name || null,
-        link: opt?.link || null,
-      });
-    }
-  });
-
-  const seen = new Set();
-  const compactMatchedProviders = matchedProviders.filter((m) => {
-    const key = `${m.link || ''}|${m.serviceId || ''}|${m.addonId || ''}|${m.type || ''}|${m.country || ''}`;
-    if (seen.has(key)) {
-      return false;
-    }
-    seen.add(key);
-    return Boolean(m.link);
-  });
-
-  return {
-    ...result,
-    show: {
-      ...result.show,
-      streamingOptions: outByCountry,
-    },
-    matchedProviders: compactMatchedProviders,
-    filters: {
-      includeRentals,
-      providerCount: (providers || []).length,
-      providerFiltering: providerHosts.length > 0 || providerNames.length > 0,
-    },
-  };
-}
-
 class Api {
   constructor(authProvider, receiverFactory) {
     this.authProvider = authProvider;
@@ -213,7 +100,7 @@ class Api {
     res.status(500).send(msg);
   }
 
-  async createWatchable(models, traktListId, traktItem) {
+  async createWatchable(models, traktListId, traktItem, traktListUserSlug) {
     const ids = getTraktIds(traktItem);
     const props = {
       title: getTitle(traktItem),
@@ -223,18 +110,23 @@ class Api {
       imdb_id: ids?.imdb,
       tmdb_id: ids?.tmdb,
       homepage: traktItem[traktItem.type]?.homepage,
-      web_url: this.receiverFactory?.getStreamingUrl(traktItem[traktItem.type]?.homepage),
+      web_url: null,
+      streaming_service_id: null,
+      streaming_addon_id: null,
     };
+    if (traktListUserSlug != null && String(traktListUserSlug).trim() !== '') {
+      props.trakt_list_user_slug = traktListUserSlug;
+    }
     return models.Watchable.create(props);
   }
 
-  async updateWatchable(traktItem, watchable) {
+  async updateWatchable(traktItem, watchable, traktListUserSlug) {
     watchable.media_type = traktItem.type;
     watchable.homepage = traktItem[traktItem.type].homepage;
     watchable.imdb_id = traktItem[traktItem.type].ids?.imdb;
     watchable.tmdb_id = traktItem[traktItem.type].ids?.tmdb;
-    if (!watchable.web_url) {
-      watchable.web_url = this.receiverFactory?.getStreamingUrl(watchable.homepage);
+    if (traktListUserSlug != null && String(traktListUserSlug).trim() !== '') {
+      watchable.trakt_list_user_slug = traktListUserSlug;
     }
     return watchable.save();
   }
@@ -441,11 +333,11 @@ class Api {
           const existingWatchable = existingWatchables.find(
             (ew) => getTraktId(traktItem) === ew.trakt_id,
           );
-          tasks.push(this.updateWatchable(traktItem, existingWatchable));
+          tasks.push(this.updateWatchable(traktItem, existingWatchable, traktListUserId));
         });
 
         newItems.forEach((traktItem) => {
-          tasks.push(this.createWatchable(req.models, traktListId, traktItem));
+          tasks.push(this.createWatchable(req.models, traktListId, traktItem, traktListUserId));
         });
         await Promise.all(tasks);
         await this.refreshEpisodes(req.models, traktListId);
@@ -555,14 +447,21 @@ class Api {
         }
         const country = (req.query.country || '').trim() || undefined;
         const includeRentals = parseBoolQuery(req.query.includeRentals, false);
+        const modeRaw = (req.query.mode || 'subscription').trim().toLowerCase();
+        const mode = modeRaw === 'rent' ? 'rent' : 'subscription';
         const raw = await fetchShowStreaming({
           imdbId,
           tmdbId,
           mediaType: type,
           country,
         });
-        const providers = await req.models.Provider.findAll();
-        const filtered = filterStreamingOptionsForProviders(raw, providers, { includeRentals });
+        const accessRow = await getOrCreateUserStreamingAccess(req.models, req.user.id);
+        logCountryMismatch(
+          accessRow.country,
+          process.env.STREAMING_AVAILABILITY_COUNTRY || 'us',
+        );
+        const access = parseUserStreamingAccess(accessRow);
+        const filtered = filterStreamingOptionsByMode(raw, { mode, access, includeRentals });
         res.json(filtered);
       } catch (e) {
         this.handleError(res, e);
@@ -834,6 +733,10 @@ class Api {
         const watchable = await req.models.Watchable.findOne({
           where: { id: req.params.id },
         });
+        if (!watchable) {
+          res.status(404).json({ message: 'not found' });
+          return;
+        }
         watchable.providers = [];
         // const providers = await sourceApi.getProviders(watchable);
         const providers = [];
@@ -844,19 +747,46 @@ class Api {
     });
 
     apiRouter.delete('/watchables/:id', this.authProvider.requireLogin, async (req, res) => {
-      const watchable = await req.models.Watchable.findOne({
-        where: { id: req.params.id },
-      });
-      if (!watchable) {
-        res.status(404).json({ error: 'not found' });
-        return;
+      try {
+        const watchable = await req.models.Watchable.findOne({
+          where: { id: req.params.id },
+        });
+        if (!watchable) {
+          res.status(404).json({ message: 'not found' });
+          return;
+        }
+        if (watchable.local) {
+          await watchable.destroy();
+          res.status(204).send();
+          return;
+        }
+        if (!watchable.trakt_list_id || !watchable.trakt_id
+            || (watchable.media_type !== 'movie' && watchable.media_type !== 'show')) {
+          res.status(400).json({
+            message: 'cannot delete this synced item (missing Trakt list data); refresh the watchlist or remove it on Trakt',
+          });
+          return;
+        }
+        const slug = watchable.trakt_list_user_slug != null
+          ? String(watchable.trakt_list_user_slug).trim()
+          : '';
+        const listOwner = slug || (req.user.username != null ? String(req.user.username).trim() : '');
+        if (!listOwner) {
+          res.status(400).json({
+            message: 'cannot determine Trakt list owner; refresh the watchlist once or log in again',
+          });
+          return;
+        }
+        await this.traktClient.importToken(req.user.access_token);
+        const body = watchable.media_type === 'show'
+          ? { shows: [{ ids: { trakt: Number(watchable.trakt_id) } }] }
+          : { movies: [{ ids: { trakt: Number(watchable.trakt_id) } }] };
+        await this.traktClient.removeListItems(listOwner, watchable.trakt_list_id, body);
+        await watchable.destroy();
+        res.status(204).send();
+      } catch (e) {
+        this.handleError(res, e);
       }
-      if (!watchable.local) {
-        res.status(400).json({ error: 'only local watchables can be deleted' });
-        return;
-      }
-      await watchable.destroy();
-      res.status(204).send();
     });
 
     apiRouter.post('/watchables/:id', this.authProvider.requireLogin, async (req, res) => {
@@ -871,6 +801,12 @@ class Api {
       watchable.hidden = watchableUpdate.hidden;
       watchable.comment = watchableUpdate.comment;
       watchable.web_url = watchableUpdate.webUrl;
+      if (Object.prototype.hasOwnProperty.call(watchableUpdate, 'streamingServiceId')) {
+        watchable.streaming_service_id = watchableUpdate.streamingServiceId;
+      }
+      if (Object.prototype.hasOwnProperty.call(watchableUpdate, 'streamingAddonId')) {
+        watchable.streaming_addon_id = watchableUpdate.streamingAddonId;
+      }
       watchable.noautoadvance = watchableUpdate.noautoadvance;
 
       await watchable.save();
@@ -911,48 +847,43 @@ class Api {
       }
     });
 
-    apiRouter.get('/providers', this.authProvider.requireLogin, async (req, res) => {
-      const providers = await req.models.Provider.findAll();
-      res.json(providers);
-    });
-
-    apiRouter.post('/providers', this.authProvider.requireLogin, async (req, res) => {
-      const providerCreate = req.body;
-      debug(providerCreate);
-      const provider = await req.models.Provider.create(
-        {
-          url: providerCreate.url,
-          name: providerCreate.name,
-        },
-      );
-      res.json(provider);
-    });
-
-    apiRouter.put('/providers/:id', this.authProvider.requireLogin, async (req, res) => {
-      const providerUpdate = req.body;
-      const provider = await req.models.Provider.findOne({
-        where: { id: req.params.id },
-      });
-      if (!provider) {
-        res.status(404).json({ error: 'not found' });
-        return;
+    apiRouter.get('/streaming/catalog', this.authProvider.requireLogin, (req, res) => {
+      try {
+        const manifest = loadStreamingManifest();
+        const { RECEIVER_KEYS } = require('../receiver/receiver_keys');
+        res.json({
+          country: manifest.country,
+          services: manifest.services || [],
+          receiverToServiceId: manifest.receiverToServiceId || {},
+          receiverKeys: RECEIVER_KEYS,
+        });
+      } catch (e) {
+        this.handleError(res, e);
       }
-      provider.name = providerUpdate.name;
-      provider.url = providerUpdate.url;
-      await provider.save();
-      res.json(provider);
     });
 
-    apiRouter.delete('/providers/:id', this.authProvider.requireLogin, async (req, res) => {
-      const provider = await req.models.Provider.findOne({
-        where: { id: req.params.id },
-      });
-      if (!provider) {
-        res.status(404).json({ error: 'not found' });
-        return;
+    apiRouter.get('/streaming/access', this.authProvider.requireLogin, async (req, res) => {
+      try {
+        const row = await getOrCreateUserStreamingAccess(req.models, req.user.id);
+        res.json(parseAccessResponse(row));
+      } catch (e) {
+        this.handleError(res, e);
       }
-      await provider.destroy();
-      res.json({});
+    });
+
+    apiRouter.put('/streaming/access', this.authProvider.requireLogin, async (req, res) => {
+      try {
+        const row = await getOrCreateUserStreamingAccess(req.models, req.user.id);
+        const serialized = serializePutBody(req.body || {});
+        row.country = serialized.country;
+        row.directServiceIds = serialized.directServiceIds;
+        row.addonsByHost = serialized.addonsByHost;
+        row.receiversEnabled = serialized.receiversEnabled;
+        await row.save();
+        res.json(parseAccessResponse(row));
+      } catch (e) {
+        this.handleError(res, e);
+      }
     });
 
     apiRouter.post('/remote/:service_type/:button', this.authProvider.requireLogin, async (req, res) => {

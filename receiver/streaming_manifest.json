@@ -1,0 +1,1056 @@
+{
+  "country": "us",
+  "generatedAt": "2026-04-02T01:25:29.475Z",
+  "receiverToServiceId": {
+    "amazonprime": "prime",
+    "appletv": "apple",
+    "britbox": "britbox",
+    "disneyplus": "disney",
+    "hulu": "hulu",
+    "max": "hbo",
+    "netflix": "netflix",
+    "peacocktv": "peacock",
+    "starz": "starz"
+  },
+  "services": [
+    {
+      "id": "netflix",
+      "name": "Netflix",
+      "addons": []
+    },
+    {
+      "id": "prime",
+      "name": "Prime Video",
+      "addons": [
+        {
+          "id": "epix",
+          "name": "MGM+"
+        },
+        {
+          "id": "insideoutside",
+          "name": "Inside Outside"
+        },
+        {
+          "id": "minnokidsus",
+          "name": "Minno Kids"
+        },
+        {
+          "id": "pbo",
+          "name": "Pinoy Box Office"
+        },
+        {
+          "id": "stingrayclassica",
+          "name": "Stingray Classica"
+        },
+        {
+          "id": "strandreleasing",
+          "name": "Strand Releasing"
+        },
+        {
+          "id": "kidstream",
+          "name": "Kidstream"
+        },
+        {
+          "id": "historyvault",
+          "name": "HISTORY Vault"
+        },
+        {
+          "id": "foxoneus",
+          "name": "FOX One"
+        },
+        {
+          "id": "filmbox",
+          "name": "FilmBox+ Now"
+        },
+        {
+          "id": "bfiplayer",
+          "name": "BFI Player Classics"
+        },
+        {
+          "id": "dove",
+          "name": "Dove Channel"
+        },
+        {
+          "id": "indieflix",
+          "name": "iNDIEFLIX"
+        },
+        {
+          "id": "reelz",
+          "name": "REELZ+"
+        },
+        {
+          "id": "thegreatcourses",
+          "name": "The Great Courses Signature Collection"
+        },
+        {
+          "id": "discoveryplus",
+          "name": "discovery+"
+        },
+        {
+          "id": "betplus",
+          "name": "BET+"
+        },
+        {
+          "id": "screambox",
+          "name": "Screambox"
+        },
+        {
+          "id": "stingrayzenlifeus",
+          "name": "ZenLIFE by Stingray"
+        },
+        {
+          "id": "vixplusus",
+          "name": "ViX Premium"
+        },
+        {
+          "id": "screenpix",
+          "name": "ScreenPix"
+        },
+        {
+          "id": "broadwayhd",
+          "name": "BroadwayHD"
+        },
+        {
+          "id": "starzSub",
+          "name": "STARZ"
+        },
+        {
+          "id": "elgourmet",
+          "name": "Cocina ON"
+        },
+        {
+          "id": "amcplus",
+          "name": "AMC+"
+        },
+        {
+          "id": "stingraydjazz",
+          "name": "Stingray Djazz"
+        },
+        {
+          "id": "kidgenius",
+          "name": "Kartoon Channel"
+        },
+        {
+          "id": "wag",
+          "name": "Warriors & Gangsters"
+        },
+        {
+          "id": "newdocclub",
+          "name": "Doc Club"
+        },
+        {
+          "id": "gaia",
+          "name": "Gaia"
+        },
+        {
+          "id": "amebatv",
+          "name": "Ameba"
+        },
+        {
+          "id": "foxnationus",
+          "name": "Fox Nation"
+        },
+        {
+          "id": "befit",
+          "name": "BeFiT"
+        },
+        {
+          "id": "vaporvue",
+          "name": "FUEL TV+"
+        },
+        {
+          "id": "pureflixus1",
+          "name": "Great American Pure Flix"
+        },
+        {
+          "id": "hbomaxus",
+          "name": "HBO Max"
+        },
+        {
+          "id": "shortstvus",
+          "name": "Shorts TV"
+        },
+        {
+          "id": "paramountpremium",
+          "name": "Paramount+"
+        },
+        {
+          "id": "dailyburn",
+          "name": "Daily Burn"
+        },
+        {
+          "id": "foodmatters",
+          "name": "Food Matters TV"
+        },
+        {
+          "id": "hallmark",
+          "name": "Hallmark+"
+        },
+        {
+          "id": "trueroyalty",
+          "name": "True Royalty"
+        },
+        {
+          "id": "curiositystreamstandard",
+          "name": "Curiosity Stream"
+        },
+        {
+          "id": "fandor",
+          "name": "Fandor"
+        },
+        {
+          "id": "spcoreus",
+          "name": "Sony Pictures Core"
+        },
+        {
+          "id": "aspireTVus",
+          "name": "aspireTV+"
+        },
+        {
+          "id": "vdpaerus0y42p3p9a56",
+          "name": "AeroCinema"
+        },
+        {
+          "id": "shuddertv",
+          "name": "Shudder"
+        },
+        {
+          "id": "cohen",
+          "name": "Cohen Media Channel"
+        },
+        {
+          "id": "lifetimemovieclub",
+          "name": "Lifetime Movie Club"
+        },
+        {
+          "id": "vdppokuspdzypnep15k",
+          "name": "Pokémon"
+        },
+        {
+          "id": "fullmoon",
+          "name": "Full Moon"
+        },
+        {
+          "id": "kinofilmcollectionus",
+          "name": "Kino Film Collection"
+        },
+        {
+          "id": "cbsaacf",
+          "name": "Paramount+"
+        },
+        {
+          "id": "erosnow",
+          "name": "Eros Now"
+        },
+        {
+          "id": "thegreatcourseslivingus",
+          "name": "The Great Courses Living"
+        },
+        {
+          "id": "theafricachannelus",
+          "name": "Demand Africa"
+        },
+        {
+          "id": "magnoliaselects",
+          "name": "Magnolia Selects"
+        },
+        {
+          "id": "carnegiehallplusus",
+          "name": "Carnegie Hall+"
+        },
+        {
+          "id": "cineverseus",
+          "name": "Cineverse"
+        },
+        {
+          "id": "qelloconcerts",
+          "name": "Qello Concerts"
+        },
+        {
+          "id": "fitfusion",
+          "name": "Fitfusion by Jillian Michaels"
+        },
+        {
+          "id": "bestofbritish",
+          "name": "Best of British Television"
+        },
+        {
+          "id": "shoutfactory",
+          "name": "Shout! TV"
+        },
+        {
+          "id": "hopsterus",
+          "name": "PlayKids Learning"
+        },
+        {
+          "id": "motv",
+          "name": "MyOutdoorTV"
+        },
+        {
+          "id": "passionflix",
+          "name": "Passionflix"
+        },
+        {
+          "id": "sensicalus",
+          "name": "Sensical"
+        },
+        {
+          "id": "cinemax",
+          "name": "Cinemax"
+        },
+        {
+          "id": "pbskids",
+          "name": "PBS KIDS"
+        },
+        {
+          "id": "outside",
+          "name": "Outside TV Features"
+        },
+        {
+          "id": "flixlatino",
+          "name": "FlixLatino"
+        },
+        {
+          "id": "hiyah",
+          "name": "Hi-YAH!"
+        },
+        {
+          "id": "tastemade",
+          "name": "Tastemade"
+        },
+        {
+          "id": "fuse",
+          "name": "Fuse+"
+        },
+        {
+          "id": "xivetv",
+          "name": "XiveTV Documentaries"
+        },
+        {
+          "id": "howdyus",
+          "name": "Howdy"
+        },
+        {
+          "id": "codacollection",
+          "name": "The Coda Collection"
+        },
+        {
+          "id": "acaciatv",
+          "name": "AcaciaTV"
+        },
+        {
+          "id": "dekkoo",
+          "name": "Dekkoo"
+        },
+        {
+          "id": "marqueetvus",
+          "name": "Marquee TV"
+        },
+        {
+          "id": "britbox",
+          "name": "BritBox"
+        },
+        {
+          "id": "peacockus",
+          "name": "Peacock Premium Plus"
+        },
+        {
+          "id": "lionsgateplusus",
+          "name": "Lionsgate+"
+        },
+        {
+          "id": "docubay",
+          "name": "Docubay"
+        },
+        {
+          "id": "tribecashortlist",
+          "name": "MovieSphere+"
+        },
+        {
+          "id": "mubi",
+          "name": "MUBI"
+        },
+        {
+          "id": "bbcselect",
+          "name": "BBC Select"
+        },
+        {
+          "id": "boomerang",
+          "name": "Boomerang"
+        },
+        {
+          "id": "thesurfnetwork",
+          "name": "The Surf Network"
+        },
+        {
+          "id": "maxliveeventsus",
+          "name": "HBO Max"
+        },
+        {
+          "id": "curiosityuniversityus",
+          "name": "Curiosity University"
+        },
+        {
+          "id": "filmmovementus",
+          "name": "Film Movement Plus"
+        },
+        {
+          "id": "kcpglobalus",
+          "name": "KOCOWA"
+        },
+        {
+          "id": "vemoxcine",
+          "name": "Vemox Cine"
+        },
+        {
+          "id": "upfaithfamily",
+          "name": "UP Faith & Family"
+        },
+        {
+          "id": "acorn",
+          "name": "Acorn TV"
+        },
+        {
+          "id": "indiepix",
+          "name": "IndiePix Unlimited"
+        },
+        {
+          "id": "france_channel",
+          "name": "France Channel"
+        },
+        {
+          "id": "appletvus",
+          "name": "Apple TV"
+        },
+        {
+          "id": "fearfactory",
+          "name": "Fear Factory"
+        },
+        {
+          "id": "docclub",
+          "name": "Sundance Now"
+        },
+        {
+          "id": "pbsdoc",
+          "name": "PBS Documentaries"
+        },
+        {
+          "id": "mhzchoice",
+          "name": "MHz Choice"
+        },
+        {
+          "id": "echoboom",
+          "name": "Echoboom Sports"
+        },
+        {
+          "id": "allrealityus",
+          "name": "All Reality"
+        },
+        {
+          "id": "hidiveus",
+          "name": "HIDIVE"
+        },
+        {
+          "id": "masterpiece",
+          "name": "PBS Masterpiece"
+        },
+        {
+          "id": "pixl",
+          "name": "PixL"
+        },
+        {
+          "id": "xltv",
+          "name": "XLTV"
+        },
+        {
+          "id": "viewster",
+          "name": "RetroCrush"
+        },
+        {
+          "id": "toku",
+          "name": "Toku"
+        },
+        {
+          "id": "cjus",
+          "name": "CJ ENM Selects"
+        },
+        {
+          "id": "amzn1.dv.spid.8cc2a36e-cd1b-d2cb-0e3b-b9ddce868f1d",
+          "name": "FOX One"
+        },
+        {
+          "id": "bestevertv",
+          "name": "Best TV Ever"
+        },
+        {
+          "id": "ifcunlimited",
+          "name": "IFC Films Unlimited"
+        },
+        {
+          "id": "bestwesternsever",
+          "name": "Best Westerns Ever"
+        },
+        {
+          "id": "yippeetvus",
+          "name": "Yippee Kids TV"
+        },
+        {
+          "id": "wonderprojectus",
+          "name": "Wonder Project"
+        },
+        {
+          "id": "gaiamtv",
+          "name": "Gaiam TV Fit & Yoga"
+        },
+        {
+          "id": "contv",
+          "name": "MIDNIGHT PULP"
+        },
+        {
+          "id": "viaplayus",
+          "name": "Viaplay"
+        },
+        {
+          "id": "jedge",
+          "name": "Doki"
+        },
+        {
+          "id": "indieclub",
+          "name": "Indie Club"
+        },
+        {
+          "id": "heretv",
+          "name": "Here TV"
+        },
+        {
+          "id": "brownsugar",
+          "name": "Brown Sugar"
+        },
+        {
+          "id": "revry",
+          "name": "Revry"
+        },
+        {
+          "id": "mandn",
+          "name": "Monsters and Nightmares"
+        },
+        {
+          "id": "crunchyrollus",
+          "name": "Crunchyroll"
+        },
+        {
+          "id": "dox",
+          "name": "Dox"
+        },
+        {
+          "id": "aetncrimecentral",
+          "name": "A&E Crime Central"
+        },
+        {
+          "id": "grokker",
+          "name": "Grokker Yoga & Fitness"
+        },
+        {
+          "id": "daringdocs",
+          "name": "Daring Docs"
+        },
+        {
+          "id": "pongalo",
+          "name": "Pongalo Next"
+        },
+        {
+          "id": "vixus",
+          "name": "ViX Gratis"
+        },
+        {
+          "id": "stingraykaraoke",
+          "name": "Stingray Karaoke"
+        },
+        {
+          "id": "docuramaFilms",
+          "name": "Docurama"
+        },
+        {
+          "id": "ryanfriends",
+          "name": "Ryan and Friends Plus"
+        },
+        {
+          "id": "umc",
+          "name": "ALLBLK"
+        },
+        {
+          "id": "pbsliving",
+          "name": "PBS Living"
+        },
+        {
+          "id": "outtvus",
+          "name": "OUTtv"
+        }
+      ]
+    },
+    {
+      "id": "disney",
+      "name": "Disney+",
+      "addons": [
+        {
+          "id": "hulu",
+          "name": "Hulu"
+        }
+      ]
+    },
+    {
+      "id": "hbo",
+      "name": "HBO Max",
+      "addons": []
+    },
+    {
+      "id": "hulu",
+      "name": "Hulu",
+      "addons": [
+        {
+          "id": "showtime",
+          "name": "Paramount+ with Showtime"
+        },
+        {
+          "id": "cinemax",
+          "name": "Cinemax"
+        },
+        {
+          "id": "max",
+          "name": "HBO Max"
+        },
+        {
+          "id": "starz",
+          "name": "Starz"
+        }
+      ]
+    },
+    {
+      "id": "apple",
+      "name": "Apple TV",
+      "addons": [
+        {
+          "id": "tvs.sbd.1000301",
+          "name": "Eros Now Select"
+        },
+        {
+          "id": "tvs.sbd.1000395",
+          "name": "Hallmark Movies Now"
+        },
+        {
+          "id": "tvs.sbd.1000272",
+          "name": "MGM+"
+        },
+        {
+          "id": "tvs.sbd.1000299",
+          "name": "BET+"
+        },
+        {
+          "id": "tvs.sbd.1000229",
+          "name": "Lifetime Movie Club"
+        },
+        {
+          "id": "tvs.sbd.11180",
+          "name": "Hallmark TV"
+        },
+        {
+          "id": "tvs.sbd.10680",
+          "name": "USA"
+        },
+        {
+          "id": "tvs.sbd.10300",
+          "name": "Lifetime"
+        },
+        {
+          "id": "tvs.sbd.10620",
+          "name": "Bravo"
+        },
+        {
+          "id": "tvs.sbd.10260",
+          "name": "HISTORY"
+        },
+        {
+          "id": "tvs.sbd.1000566",
+          "name": "Max"
+        },
+        {
+          "id": "tvs.sbd.1000547",
+          "name": "CJ ENM Selects"
+        },
+        {
+          "id": "tvs.sbd.1000631",
+          "name": "Crunchyroll"
+        },
+        {
+          "id": "tvs.sbd.1000030",
+          "name": "Philo"
+        },
+        {
+          "id": "tvs.sbd.10200",
+          "name": "STARZ"
+        },
+        {
+          "id": "tvs.sbd.12880",
+          "name": "FlixLatino"
+        },
+        {
+          "id": "tvs.sbd.10664",
+          "name": "Syfy"
+        },
+        {
+          "id": "tvs.sbd.1000204",
+          "name": "PBS Living"
+        },
+        {
+          "id": "tvs.sbd.1000185",
+          "name": "MGM+"
+        },
+        {
+          "id": "tvs.sbd.1000503",
+          "name": "Amazon Freevee"
+        },
+        {
+          "id": "tvs.sbd.1000231",
+          "name": "STARZ"
+        },
+        {
+          "id": "tvs.sbd.10920",
+          "name": "HISTORY Vault"
+        },
+        {
+          "id": "tvs.sbd.11221",
+          "name": "TBS"
+        },
+        {
+          "id": "tvs.sbd.1000368",
+          "name": "BFI Player Classics"
+        },
+        {
+          "id": "tvs.sbd.1000332",
+          "name": "A&E Crime Central"
+        },
+        {
+          "id": "tvs.sbd.1000234",
+          "name": "Noggin"
+        },
+        {
+          "id": "tvs.sbd.1000230",
+          "name": "Paramount+"
+        },
+        {
+          "id": "tvs.sbd.11220",
+          "name": "TNT"
+        },
+        {
+          "id": "tvs.sbd.1000355",
+          "name": "MHz Choice"
+        },
+        {
+          "id": "tvs.sbd.1000464",
+          "name": "ScreenPix"
+        },
+        {
+          "id": "tvs.sbd.1000362",
+          "name": "Hallmark+"
+        },
+        {
+          "id": "tvs.sbd.3000",
+          "name": "Apple TV"
+        },
+        {
+          "id": "tvs.sbd.10642",
+          "name": "Telemundo"
+        },
+        {
+          "id": "tvs.sbd.1000371",
+          "name": "Peacock"
+        },
+        {
+          "id": "tvs.sbd.1000511",
+          "name": "Smithsonian Channel"
+        },
+        {
+          "id": "tvs.sbd.11360",
+          "name": "BET"
+        },
+        {
+          "id": "tvs.sbd.10120",
+          "name": "Paramount+"
+        },
+        {
+          "id": "tvs.sbd.1000383",
+          "name": "AMC+"
+        },
+        {
+          "id": "tvs.sbd.10600",
+          "name": "Shudder"
+        },
+        {
+          "id": "tvs.sbd.1000379",
+          "name": "Plex"
+        },
+        {
+          "id": "tvs.sbd.1000473",
+          "name": "Carnegie Hall+"
+        },
+        {
+          "id": "tvs.sbd.1000393",
+          "name": "BET+"
+        },
+        {
+          "id": "tvs.sbd.1000496",
+          "name": "Up Faith and Family"
+        },
+        {
+          "id": "tvs.sbd.1000206",
+          "name": "Shudder"
+        },
+        {
+          "id": "tvs.sbd.1000288",
+          "name": "IFC Films"
+        },
+        {
+          "id": "tvs.sbd.1000529",
+          "name": "Gaia"
+        },
+        {
+          "id": "tvs.sbd.1000415",
+          "name": "BBC Select"
+        },
+        {
+          "id": "tvs.sbd.10060",
+          "name": "FXNOW"
+        },
+        {
+          "id": "tvs.sbd.12521",
+          "name": "Oxygen"
+        },
+        {
+          "id": "tvs.sbd.11860",
+          "name": "Freeform"
+        },
+        {
+          "id": "tvs.sbd.30061",
+          "name": "ESPN"
+        },
+        {
+          "id": "tvs.sbd.10020",
+          "name": "SHOWTIME"
+        },
+        {
+          "id": "tvs.sbd.11880",
+          "name": "truTV"
+        },
+        {
+          "id": "tvs.sbd.1000397",
+          "name": "adult swim"
+        },
+        {
+          "id": "tvs.sbd.10080",
+          "name": "PBS Video"
+        },
+        {
+          "id": "tvs.sbd.1000408",
+          "name": "discovery+"
+        },
+        {
+          "id": "tvs.sbd.1000214",
+          "name": "ALLBLK"
+        },
+        {
+          "id": "tvs.sbd.10800",
+          "name": "VH1"
+        },
+        {
+          "id": "tvs.sbd.1000384",
+          "name": "NFL"
+        },
+        {
+          "id": "tvs.sbd.10180",
+          "name": "ABC"
+        },
+        {
+          "id": "tvs.sbd.1000294",
+          "name": "BritBox"
+        },
+        {
+          "id": "tvs.sbd.11120",
+          "name": "The CW"
+        },
+        {
+          "id": "tvs.sbd.12741",
+          "name": "ALLBLK"
+        },
+        {
+          "id": "tvs.sbd.1000249",
+          "name": "MUBI"
+        },
+        {
+          "id": "tvs.sbd.10000",
+          "name": "Hulu"
+        },
+        {
+          "id": "tvs.sbd.10100",
+          "name": "DisneyNOW"
+        },
+        {
+          "id": "tvs.sbd.1000228",
+          "name": "HISTORY Vault"
+        },
+        {
+          "id": "tvs.sbd.11900",
+          "name": "Lifetime Movie Club"
+        },
+        {
+          "id": "tvs.sbd.1000266",
+          "name": "OUTtv"
+        },
+        {
+          "id": "tvs.sbd.1000569",
+          "name": "Marquee TV"
+        },
+        {
+          "id": "tvs.sbd.10400",
+          "name": "Comedy Central"
+        },
+        {
+          "id": "tvs.sbd.1000435",
+          "name": "The Great Courses Signature Collection"
+        },
+        {
+          "id": "tvs.sbd.1000120",
+          "name": "FilmRise"
+        },
+        {
+          "id": "tvs.sbd.1000244",
+          "name": "Cinemax"
+        },
+        {
+          "id": "tvs.sbd.1000303",
+          "name": "NAT GEO TV"
+        },
+        {
+          "id": "tvs.sbd.10220",
+          "name": "NBC"
+        },
+        {
+          "id": "tvs.sbd.10420",
+          "name": "MTV"
+        },
+        {
+          "id": "tvs.sbd.1000003",
+          "name": "Boomerang"
+        },
+        {
+          "id": "tvs.sbd.11000",
+          "name": "AMC"
+        },
+        {
+          "id": "tvs.sbd.10302",
+          "name": "FYI TV"
+        },
+        {
+          "id": "tvs.sbd.1000257",
+          "name": "UP Faith & Family"
+        },
+        {
+          "id": "tvs.sbd.12381",
+          "name": "Sling TV"
+        },
+        {
+          "id": "tvs.sbd.12442",
+          "name": "Pluto TV"
+        },
+        {
+          "id": "tvs.sbd.1000227",
+          "name": "Curiosity Stream"
+        },
+        {
+          "id": "tvs.sbd.1000498",
+          "name": "AMC+"
+        },
+        {
+          "id": "tvs.sbd.1000211",
+          "name": "Tastemade"
+        },
+        {
+          "id": "tvs.sbd.1000208",
+          "name": "Sundance Now"
+        },
+        {
+          "id": "tvs.sbd.1000212",
+          "name": "Acorn TV"
+        },
+        {
+          "id": "tvs.sbd.10640",
+          "name": "E!"
+        }
+      ]
+    },
+    {
+      "id": "peacock",
+      "name": "Peacock",
+      "addons": []
+    },
+    {
+      "id": "paramount",
+      "name": "Paramount+",
+      "addons": [
+        {
+          "id": "showtime",
+          "name": "Showtime"
+        }
+      ]
+    },
+    {
+      "id": "starz",
+      "name": "Starz",
+      "addons": []
+    },
+    {
+      "id": "mubi",
+      "name": "Mubi",
+      "addons": []
+    },
+    {
+      "id": "britbox",
+      "name": "BritBox",
+      "addons": []
+    },
+    {
+      "id": "curiosity",
+      "name": "Curiosity Stream",
+      "addons": []
+    },
+    {
+      "id": "discovery",
+      "name": "Discovery+",
+      "addons": []
+    },
+    {
+      "id": "plutotv",
+      "name": "Pluto TV",
+      "addons": []
+    },
+    {
+      "id": "tubi",
+      "name": "Tubi",
+      "addons": []
+    },
+    {
+      "id": "crunchyroll",
+      "name": "Crunchyroll",
+      "addons": []
+    },
+    {
+      "id": "criterion",
+      "name": "The Criterion Channel",
+      "addons": []
+    },
+    {
+      "id": "zee5",
+      "name": "Zee5",
+      "addons": []
+    }
+  ]
+}

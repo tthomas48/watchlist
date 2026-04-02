@@ -5,8 +5,8 @@ import { useNavigate } from 'react-router-dom';
 function ProvidersButton() {
   const navigate = useNavigate();
   return (
-    <Button aria-label="providers" volot="secondary" onClick={() => navigate('/providers')} startIcon={<StreamIcon />}>
-      Providers
+    <Button aria-label="streaming access" color="secondary" onClick={() => navigate('/streaming-access')} startIcon={<StreamIcon />}>
+      Streaming
     </Button>
   );
 }

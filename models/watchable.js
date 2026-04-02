@@ -21,6 +21,7 @@ module.exports = (sequelize, DataTypes) => {
     sortable_title: DataTypes.STRING,
     trakt_id: DataTypes.STRING,
     trakt_list_id: DataTypes.STRING,
+    trakt_list_user_slug: DataTypes.STRING,
     justwatch_id: DataTypes.STRING,
     imdb_id: DataTypes.INTEGER,
     tmdb_id: DataTypes.INTEGER,
@@ -32,6 +33,8 @@ module.exports = (sequelize, DataTypes) => {
     local: DataTypes.BOOLEAN,
     web_url: DataTypes.STRING,
     homepage: DataTypes.STRING,
+    streaming_service_id: DataTypes.STRING,
+    streaming_addon_id: DataTypes.STRING,
     noautoadvance: DataTypes.BOOLEAN,
   }, {
     sequelize,

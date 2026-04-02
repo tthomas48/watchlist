@@ -116,7 +116,7 @@ function WatchlistItem({
       </CardActionArea>
       {showNotification(notification)}
       <CardActions disableSpacing sx={{ color: 'primary.main' }}>
-        <PlayButton player={player} id={item.id}></PlayButton>
+        <PlayButton player={player} id={item.id} disabled={!item.web_url} />
         <CommentButton item={item} saveWatchable={saveWatchable}></CommentButton>
         <IconButton
           id="basic-button"

@@ -75,7 +75,7 @@ class Api {
   }
 
   async getStreamingAvailability({
-    type, imdbId, tmdbId, country, includeRentals = false,
+    type, imdbId, tmdbId, country, includeRentals = false, mode = 'subscription',
   }) {
     const params = new URLSearchParams({ type });
     if (imdbId != null && String(imdbId).trim() !== '') {
@@ -89,6 +89,9 @@ class Api {
     }
     if (includeRentals) {
       params.set('includeRentals', 'true');
+    }
+    if (mode) {
+      params.set('mode', mode);
     }
     const res = await fetch(`/api/streaming/availability?${params.toString()}`, {
       withCredentials: true,
@@ -270,44 +273,28 @@ class Api {
     return this.handleResponse(res);
   }
 
-  async getProviders() {
-    const res = await fetch('/api/providers', {
+  async getStreamingCatalog() {
+    const res = await fetch('/api/streaming/catalog', {
       withCredentials: true,
     });
     return this.handleResponse(res);
   }
 
-  async createProvider(provider) {
-    const res = await fetch('/api/providers', {
-      method: 'POST',
+  async getStreamingAccess() {
+    const res = await fetch('/api/streaming/access', {
       withCredentials: true,
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify(provider),
     });
     return this.handleResponse(res);
   }
 
-  async updateProvider(id, provider) {
-    const res = await fetch(`/api/providers/${id}/`, {
+  async putStreamingAccess(body) {
+    const res = await fetch('/api/streaming/access', {
       method: 'PUT',
       withCredentials: true,
       headers: {
         'Content-Type': 'application/json',
       },
-      body: JSON.stringify(provider),
-    });
-    return this.handleResponse(res);
-  }
-
-  async deleteProvider(id) {
-    const res = await fetch(`/api/providers/${id}/`, {
-      method: 'DELETE',
-      withCredentials: true,
-      headers: {
-        'Content-Type': 'application/json',
-      },
+      body: JSON.stringify(body),
     });
     return this.handleResponse(res);
   }
