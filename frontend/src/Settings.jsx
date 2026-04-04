@@ -11,14 +11,15 @@ import {
 } from '@mui/material';
 import { MessageContext } from './context/MessageContext';
 import Api from './service/api';
-import './Settings.css';
 
-function Settings() {
+function Settings({ onClose, embedded }) {
   const messageContext = useContext(MessageContext);
   const api = new Api(messageContext);
 
   const navigate = useNavigate();
   const queryClient = useQueryClient();
+
+  const leave = onClose ?? (() => navigate('/'));
 
   const { data, isLoading } = useQuery({
     queryKey: ['settings'],
@@ -31,7 +32,7 @@ function Settings() {
       const res = await api.saveSettings(newSettings);
       if (res) {
         queryClient.invalidateQueries({ queryKey: ['settings'] });
-        navigate('/');
+        leave();
         return true;
       }
       return false;
@@ -44,9 +45,10 @@ function Settings() {
   }
   const formData = data || {};
   return (
-    <Paper variant="outlined" sx={{
-      padding: 4,
-    }}>
+    <Paper
+      variant="outlined"
+      sx={embedded ? { p: 2, boxShadow: 'none' } : { padding: 4 }}
+    >
       <form onSubmit={handleSubmit(mutate)}>
         <Stack
             direction="column"
@@ -54,11 +56,13 @@ function Settings() {
             alignItems="center"
             spacing={2}
         >
+          {!embedded && (
           <Typography variant="h6" sx={{
             color: 'text.paper',
           }}>
             Settings
           </Typography>
+          )}
           <TextField {...register('googletv_host')} label="Google TV Host" variant="outlined" sx={{
             color: 'text.paper',
           }} defaultValue={formData.googletv_host} />
@@ -72,7 +76,7 @@ function Settings() {
             spacing={1}
           >
             <Button variant="outlined" type="submit">Save</Button>
-            <Button variant="outlined" onClick={() => navigate('/')}>Cancel</Button>
+            <Button variant="outlined" onClick={leave}>Cancel</Button>
           </Stack>
         </Stack>
       </form>

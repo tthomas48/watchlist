@@ -28,6 +28,7 @@ const {
   parseAccessResponse,
   serializePutBody,
 } = require('./streaming_access_service');
+const ProviderFactory = require('../receiver/providers/factory');
 const { posterUrlForCandidate, normalizePosterValue } = require('./poster_helper');
 const {
   traktPosterDiskPath,
@@ -300,6 +301,22 @@ class Api {
     return Promise.all(tasks);
   }
 
+  async syncStreamingServiceIds(models, traktListId) {
+    const watchables = await models.Watchable.findAll({ where: { trakt_list_id: traktListId } });
+    const saves = [];
+    for (let i = 0; i < watchables.length; i += 1) {
+      const w = watchables[i];
+      const resolved = ProviderFactory.resolveStreamingServiceIdFromUrl(w.web_url);
+      if (resolved !== w.streaming_service_id) {
+        w.streaming_service_id = resolved;
+        saves.push(w.save());
+      }
+    }
+    if (saves.length > 0) {
+      await Promise.all(saves);
+    }
+  }
+
   async refresh(req, traktListUserId, traktListId, existingWatchables) {
     let error = null;
     await singleflight.Do(traktListId, async () => {
@@ -342,6 +359,7 @@ class Api {
         await Promise.all(tasks);
         await this.refreshEpisodes(req.models, traktListId);
         await this.prefetchMissingPosters(req, traktListId);
+        await this.syncStreamingServiceIds(req.models, traktListId);
       } catch (e) {
         Sentry.captureException(e);
         error = e;
@@ -801,9 +819,9 @@ class Api {
       watchable.hidden = watchableUpdate.hidden;
       watchable.comment = watchableUpdate.comment;
       watchable.web_url = watchableUpdate.webUrl;
-      if (Object.prototype.hasOwnProperty.call(watchableUpdate, 'streamingServiceId')) {
-        watchable.streaming_service_id = watchableUpdate.streamingServiceId;
-      }
+      watchable.streaming_service_id = ProviderFactory.resolveStreamingServiceIdFromUrl(
+        watchable.web_url,
+      );
       if (Object.prototype.hasOwnProperty.call(watchableUpdate, 'streamingAddonId')) {
         watchable.streaming_addon_id = watchableUpdate.streamingAddonId;
       }

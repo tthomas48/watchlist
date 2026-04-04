@@ -1,3 +1,4 @@
+const { loadStreamingManifest } = require('../../api/streaming_manifest');
 const AmazonPrime = require('./amazonprime');
 const AMCPlus = require('./amcplus');
 const AppleTV = require('./appletv');
@@ -48,6 +49,30 @@ class ProviderFactory {
         const data = provider.getData(uri);
         const component = provider.getComponent(uri);
         return { data, component };
+      }
+    }
+    return null;
+  }
+
+  /**
+   * Maps web_url to DB streaming_service_id: uses streaming_manifest receiverToServiceId when present,
+   * otherwise the provider getReceiverKey() (e.g. youtube, pbs) so icons work without catalog entries.
+   */
+  resolveStreamingServiceIdFromUrl(webUrl) {
+    if (webUrl == null || String(webUrl).trim() === '') {
+      return null;
+    }
+    const url = String(webUrl).trim();
+    for (let i = 0; i < this.providers.length; i += 1) {
+      const provider = this.providers[i];
+      if (provider.provides(url)) {
+        const receiverKey = provider.getReceiverKey();
+        const { receiverToServiceId = {} } = loadStreamingManifest();
+        const mapped = receiverToServiceId[receiverKey];
+        if (mapped != null && String(mapped).trim() !== '') {
+          return mapped;
+        }
+        return receiverKey;
       }
     }
     return null;

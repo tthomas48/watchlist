@@ -1,5 +1,9 @@
 /* eslint-disable class-methods-use-this */
 class Hulu {
+  getReceiverKey() {
+    return 'hulu';
+  }
+
   provides(uri) {
     return uri.includes('package=com.hulu.livingroomplus') || uri.includes('www.hulu.com');
   }

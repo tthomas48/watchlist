@@ -1,5 +1,9 @@
 /* eslint-disable class-methods-use-this */
 class AppleTV {
+  getReceiverKey() {
+    return 'appletv';
+  }
+
   provides(uri) {
     return uri.includes('tv.apple.com');
   }

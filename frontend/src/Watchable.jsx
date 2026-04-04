@@ -1,12 +1,11 @@
-import { useState, useContext } from 'react';
+import { useState, useContext, useEffect } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useForm } from 'react-hook-form';
-import { useParams, useNavigate } from 'react-router-dom';
 import {
-  Typography, Paper, Button, TextField, Stack, FormControl, Checkbox,
+  Typography, Button, TextField, Stack, FormControl, Checkbox,
   FormHelperText, IconButton, ListItemText,
   Tabs, Box, Tab, List, ListItem, ListItemButton, ListItemIcon,
-  FormControlLabel,
+  FormControlLabel, DialogTitle, DialogContent, CircularProgress,
 } from '@mui/material';
 import SearchIcon from '@mui/icons-material/Search';
 import DownloadIcon from '@mui/icons-material/Download';
@@ -58,25 +57,28 @@ function CustomTabPanel(props) {
   );
 }
 
-function Watchable() {
+export function WatchableEditor({ id, onClose }) {
   const messageContext = useContext(MessageContext);
   const api = new Api(messageContext);
 
-  const { id } = useParams();
   const [tabIndex, setTabIndex] = useState(0);
   const [checked, setChecked] = useState([]);
-  const navigate = useNavigate();
   const queryClient = useQueryClient();
   const {
     register, handleSubmit, getValues, setValue,
   } = useForm();
+
+  useEffect(() => {
+    setTabIndex(0);
+    setChecked([]);
+  }, [id]);
 
   const { mutate } = useMutation({
     mutationFn: async (watchable) => {
       try {
         await api.saveWatchable(id, watchable);
         queryClient.invalidateQueries({ queryKey: ['watchable', id] });
-        navigate('/');
+        onClose();
         return true;
       } catch (e) {
         messageContext.sendMessage({
@@ -134,7 +136,7 @@ function Watchable() {
       queryClient.removeQueries({ queryKey: ['watchable', id] });
       queryClient.removeQueries({ queryKey: ['episodes', id] });
       queryClient.invalidateQueries({ queryKey: ['watchlist'] });
-      navigate('/');
+      onClose();
     } catch {
       // Api.handleResponse already surfaced the error
     }
@@ -166,127 +168,158 @@ function Watchable() {
   };
 
   if (isLoading) {
-    return (<h5>Loading...</h5>);
+    return (
+      <>
+        <DialogTitle id="watchable-edit-dialog-title">Edit</DialogTitle>
+        <DialogContent>
+          <Box sx={{ display: 'flex', justifyContent: 'center', py: 4 }}>
+            <CircularProgress />
+          </Box>
+        </DialogContent>
+      </>
+    );
   }
 
   return (
-    <Paper variant="outlined" sx={{
-      padding: 4,
-    }}>
-      <Typography variant="h6" sx={{
-        color: 'text.paper',
-      }}>
+    <>
+      <DialogTitle id="watchable-edit-dialog-title">
         Edit {data.watchable.title}
-      </Typography>
-      <Box sx={{ borderBottom: 1, borderColor: 'divider' }}>
-        <Tabs value={tabIndex} onChange={handleTabChange} aria-label="watchable edit tabs">
-          <Tab label="General" {...a11yProps(0)} />
-          {data.watchable.media_type === 'show' && <Tab label="Episodes" {...a11yProps(1)} />}
-        </Tabs>
-      </Box>
-      <CustomTabPanel value={tabIndex} index={0}>
-        <form onSubmit={handleSubmit(mutate)}>
-          <Stack
-            direction="column"
-            justifyContent="flex-start"
-            alignItems="flex-start"
-            spacing={2}
-          >
+      </DialogTitle>
+      <DialogContent
+        dividers
+        sx={{
+          maxHeight: 'min(85vh, 720px)',
+          overflow: 'auto',
+        }}
+      >
+        <Box sx={{ borderBottom: 1, borderColor: 'divider', mb: 2 }}>
+          <Tabs value={tabIndex} onChange={handleTabChange} aria-label="watchable edit tabs">
+            <Tab label="General" {...a11yProps(0)} />
+            {data.watchable.media_type === 'show' && <Tab label="Episodes" {...a11yProps(1)} />}
+          </Tabs>
+        </Box>
+        <CustomTabPanel value={tabIndex} index={0}>
+          <form onSubmit={handleSubmit(mutate)}>
             <Stack
-              direction="row"
-              justifyContent="center"
+              direction="column"
+              justifyContent="flex-start"
               alignItems="flex-start"
-              spacing={1}
+              spacing={2}
             >
-              <FormControl>
-                <FormHelperText sx={{ overflow: 'hidden', maxWidth: '220px' }}>
-                  Open Trakt or your streaming app to find a playable URL, then paste it below.
-                </FormHelperText>
-              </FormControl>
-              <IconButton aria-label="search trakt" onClick={() => visitHomePage('https://trakt.tv/search')}>
-                <SearchIcon />
-              </IconButton>
-            </Stack>
-            <Stack
-              direction="row"
-              justifyContent="center"
-              alignItems="flex-start"
-              spacing={1}
-            >
-            <TextField label="Home Page" variant="outlined" sx={{
-              color: 'text.paper',
-            }} defaultValue={data.watchable.homepage}
-            InputLabelProps={{ shrink: true, readOnly: true }} />
-              <IconButton aria-label="copy to web url"
-                onClick={() => copyDown(data.watchable.homepage)}>
-                <ContentCopyIcon />
-              </IconButton>
-              <IconButton aria-label="visit home page"
-                onClick={() => visitHomePage(data.watchable.homepage)}>
-                <LinkIcon />
-              </IconButton>
-            </Stack>
-            <TextField {...register('webUrl')} label="Web URL" variant="outlined" sx={{
-              color: 'text.paper',
-            }} defaultValue={data.watchable.web_url} InputLabelProps={{ shrink: true }} />
-            <FormControlLabel control={
-              <Checkbox {...register('noautoadvance')} label="Disable Auto Advance" variant="outlined" sx={{
-                color: 'text.paper',
-              }} defaultChecked={data.watchable.noautoadvance} />
-            } label="Disable Auto Advance" />
-            <Stack
-              direction="row"
-              justifyContent="center"
-              alignItems="flex-start"
-              spacing={1}
-            >
-              <FormControl>
-                <TextField {...register('image_url')} label="Image URL" variant="outlined" sx={{
-                  color: 'text.paper',
-                  overflow: 'hidden',
-                  maxWidth: '162px',
-                }} InputLabelProps={{ shrink: true }} />
-              </FormControl>
-              <IconButton aria-label="download" onClick={() => doDownload(data.watchable)}>
-                <DownloadIcon />
-              </IconButton>
-            </Stack>
-            <Stack
-              direction="row"
-              justifyContent="center"
-              alignItems="center"
-              spacing={1}
-              sx={{ flexGrow: 1 }}
-            >
-              <Button variant="outlined" type="submit">Save</Button>
-              <Button variant="outlined" onClick={() => navigate('/')}>Cancel</Button>
-              <Button variant="outlined" onClick={() => doDelete(data.watchable)} disabled={!canDeleteWatchable(data.watchable)}>Delete</Button>
-            </Stack>
-          </Stack>
-        </form>
-      </CustomTabPanel>
-      <CustomTabPanel value={tabIndex} index={1}>
-        {episodesQuery.isLoading && <h5>Loading...</h5>}
-        <List>
-        {episodesQuery.data?.map((item) => (
-          <ListItem key={item.id} className="hiddenOverflow">
-            <ListItemButton role={undefined} onClick={handleToggle(item)} dense>
-            <ListItemIcon>
-              <Checkbox
-                edge="start"
-                checked={checked.includes(item.id)}
-                tabIndex={-1}
-                disableRipple
-                inputProps={{ 'aria-labelledby': `episode-list-label-${item.id}` }}
+              <Stack
+                direction="row"
+                justifyContent="center"
+                alignItems="flex-start"
+                spacing={1}
+              >
+                <FormControl>
+                  <FormHelperText sx={{ overflow: 'hidden', maxWidth: '220px' }}>
+                    Open Trakt or your streaming app to find a playable URL, then paste it below.
+                  </FormHelperText>
+                </FormControl>
+                <IconButton aria-label="search trakt" onClick={() => visitHomePage('https://trakt.tv/search')}>
+                  <SearchIcon />
+                </IconButton>
+              </Stack>
+              <Stack
+                direction="row"
+                justifyContent="center"
+                alignItems="flex-start"
+                spacing={1}
+              >
+                <TextField
+                  label="Home Page"
+                  variant="outlined"
+                  defaultValue={data.watchable.homepage}
+                  InputLabelProps={{ shrink: true, readOnly: true }}
+                />
+                <IconButton
+                  aria-label="copy to web url"
+                  onClick={() => copyDown(data.watchable.homepage)}
+                >
+                  <ContentCopyIcon />
+                </IconButton>
+                <IconButton
+                  aria-label="visit home page"
+                  onClick={() => visitHomePage(data.watchable.homepage)}
+                >
+                  <LinkIcon />
+                </IconButton>
+              </Stack>
+              <TextField
+                {...register('webUrl')}
+                label="Web URL"
+                variant="outlined"
+                defaultValue={data.watchable.web_url}
               />
-            </ListItemIcon>
-            <ListItemText id={`episode-list-label-${item.id}`} primary={`[${item.season}:${item.episode}] ${item.title}`} />
-            </ListItemButton>
-          </ListItem>
-        ))}
-        </List>
-      </CustomTabPanel>
-    </Paper>
+              <FormControlLabel
+                control={(
+                  <Checkbox
+                    {...register('noautoadvance')}
+                    defaultChecked={data.watchable.noautoadvance}
+                  />
+                )}
+                label="Disable Auto Advance"
+              />
+              <Stack
+                direction="row"
+                justifyContent="center"
+                alignItems="flex-start"
+                spacing={1}
+              >
+                <FormControl>
+                  <TextField
+                    {...register('image_url')}
+                    label="Image URL"
+                    variant="outlined"
+                  />
+                </FormControl>
+                <IconButton aria-label="download" onClick={() => doDownload(data.watchable)}>
+                  <DownloadIcon />
+                </IconButton>
+              </Stack>
+              <Stack
+                direction="row"
+                justifyContent="center"
+                alignItems="center"
+                spacing={1}
+                sx={{ flexGrow: 1 }}
+              >
+                <Button variant="outlined" type="submit">Save</Button>
+                <Button variant="outlined" onClick={onClose}>Cancel</Button>
+                <Button
+                  variant="outlined"
+                  onClick={() => doDelete(data.watchable)}
+                  disabled={!canDeleteWatchable(data.watchable)}
+                >
+                  Delete
+                </Button>
+              </Stack>
+            </Stack>
+          </form>
+        </CustomTabPanel>
+        <CustomTabPanel value={tabIndex} index={1}>
+          {episodesQuery.isLoading && <Typography sx={{ py: 2 }}>Loading…</Typography>}
+          <List>
+            {episodesQuery.data?.map((item) => (
+              <ListItem key={item.id} className="hiddenOverflow">
+                <ListItemButton role={undefined} onClick={handleToggle(item)} dense>
+                  <ListItemIcon>
+                    <Checkbox
+                      edge="start"
+                      checked={checked.includes(item.id)}
+                      tabIndex={-1}
+                      disableRipple
+                      inputProps={{ 'aria-labelledby': `episode-list-label-${item.id}` }}
+                    />
+                  </ListItemIcon>
+                  <ListItemText id={`episode-list-label-${item.id}`} primary={`[${item.season}:${item.episode}] ${item.title}`} />
+                </ListItemButton>
+              </ListItem>
+            ))}
+          </List>
+        </CustomTabPanel>
+      </DialogContent>
+    </>
   );
 }
-export default Watchable;

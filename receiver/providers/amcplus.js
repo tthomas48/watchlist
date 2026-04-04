@@ -1,5 +1,9 @@
 /* eslint-disable class-methods-use-this */
 class AMCPlus {
+  getReceiverKey() {
+    return 'amcplus';
+  }
+
   provides(uri) {
     return uri.includes('www.amcplus.com');
   }

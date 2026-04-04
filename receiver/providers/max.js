@@ -1,5 +1,9 @@
 /* eslint-disable class-methods-use-this */
 class Max {
+  getReceiverKey() {
+    return 'max';
+  }
+
   provides(uri) {
     return uri.includes('play.max.com') || uri.includes('www.max.com');
   }

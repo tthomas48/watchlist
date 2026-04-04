@@ -1,14 +1,12 @@
 import {
   useState, useContext, useEffect, useMemo,
 } from 'react';
-import { Link } from 'react-router-dom';
 import { styled, alpha } from '@mui/material/styles';
 import {
   Button, Menu, MenuItem, Dialog, DialogTitle, DialogContent, TextField, DialogActions,
   List, ListItemButton, ListItemAvatar, Typography, Box, CircularProgress,
-  ToggleButton, ToggleButtonGroup,
+  ToggleButton, ToggleButtonGroup, Tab, Tabs,
 } from '@mui/material';
-import AddCircleIcon from '@mui/icons-material/AddCircle';
 import SearchIcon from '@mui/icons-material/Search';
 import OpenInNewIcon from '@mui/icons-material/OpenInNew';
 import KeyboardArrowDownIcon from '@mui/icons-material/KeyboardArrowDown';
@@ -17,6 +15,7 @@ import { useForm } from 'react-hook-form';
 import { MessageContext } from './context/MessageContext';
 import Api from './service/api';
 import { getTraktId, getTitle, getTraktIds } from './traktDisplay';
+import { useStreamingSettingsDialog } from './StreamingSettingsDialog';
 
 function streamingAvailabilityLines(data) {
   if (!data?.ok || !data.show?.streamingOptions) {
@@ -39,6 +38,7 @@ function streamingAvailabilityLines(data) {
 function StreamingAvailabilityBlock({
   query, streamMode, onStreamModeChange, providerPick, onProviderPick,
 }) {
+  const { openDialog } = useStreamingSettingsDialog();
   const modeToggle = (
     <ToggleButtonGroup
       exclusive
@@ -109,7 +109,7 @@ function StreamingAvailabilityBlock({
         <Typography variant="body2" color="text.secondary" sx={{ mb: 1 }}>
           Configure which services you use to see matching links here.
         </Typography>
-        <Button variant="outlined" size="small" component={Link} to="/streaming-access">
+        <Button variant="outlined" size="small" onClick={() => openDialog(0)}>
           Streaming access settings
         </Button>
       </Box>
@@ -265,14 +265,30 @@ function rowYear(row) {
   return '';
 }
 
+const ADD_TAB_TRAKT = 0;
+const ADD_TAB_LOCAL = 1;
+
+function AddDialogTabPanel({ children, value, index }) {
+  return (
+    <div
+      role="tabpanel"
+      hidden={value !== index}
+      id={`add-item-tabpanel-${index}`}
+    >
+      {value === index ? <Box sx={{ pt: 1 }}>{children}</Box> : null}
+    </div>
+  );
+}
+
 const AddItem = ({ list }) => {
   const messageContext = useContext(MessageContext);
   const api = new Api(messageContext);
   const queryClient = useQueryClient();
-  const { register, getValues } = useForm();
+  const { register, getValues, reset, watch } = useForm();
+  const localTitleValue = watch('title');
   const [anchorEl, setAnchorEl] = useState(null);
-  const [localDialogOpen, setLocalDialogOpen] = useState(false);
-  const [traktDialogOpen, setTraktDialogOpen] = useState(false);
+  const [addDialogOpen, setAddDialogOpen] = useState(false);
+  const [addTab, setAddTab] = useState(ADD_TAB_TRAKT);
   const [searchScope, setSearchScope] = useState('movie,show');
   const [searchQuery, setSearchQuery] = useState('');
   const [pickedRow, setPickedRow] = useState(null);
@@ -291,7 +307,7 @@ const AddItem = ({ list }) => {
   const streamingEnabled = capabilitiesQuery.data?.streamingEnabled === true;
 
   const streamParams = useMemo(() => {
-    if (!traktDialogOpen || !streamingEnabled || !pickedRow) {
+    if (!addDialogOpen || addTab !== ADD_TAB_TRAKT || !streamingEnabled || !pickedRow) {
       return null;
     }
     const type = pickedRow.type;
@@ -305,7 +321,7 @@ const AddItem = ({ list }) => {
       return null;
     }
     return { type, imdbId, tmdbId };
-  }, [traktDialogOpen, pickedRow, streamingEnabled]);
+  }, [addDialogOpen, addTab, pickedRow, streamingEnabled]);
 
   const streamingQuery = useQuery({
     queryKey: ['streaming-availability', 'trakt-add', streamParams, streamMode],
@@ -326,20 +342,32 @@ const AddItem = ({ list }) => {
     setAnchorEl(event.currentTarget);
   };
 
-  const openTraktDialog = () => {
-    setTraktDialogOpen(true);
+  const resetAddDialogForm = () => {
     setSearchQuery('');
     setSearchScope('movie,show');
     setPickedRow(null);
     setStreamMode('subscription');
     setProviderPick(null);
+    reset({ title: '' });
+  };
+
+  const closeAddDialog = () => {
+    setAddDialogOpen(false);
+    setAddTab(ADD_TAB_TRAKT);
+    resetAddDialogForm();
+  };
+
+  const openAddDialog = () => {
+    setAddDialogOpen(true);
+    setAddTab(ADD_TAB_TRAKT);
+    resetAddDialogForm();
     handleClose();
   };
 
   const traktSearchQuery = useQuery({
     queryKey: ['trakt-search', debouncedSearch, searchScope],
     queryFn: () => api.traktSearch(debouncedSearch, searchScope),
-    enabled: traktDialogOpen && debouncedSearch.trim().length >= 2,
+    enabled: addDialogOpen && addTab === ADD_TAB_TRAKT && debouncedSearch.trim().length >= 2,
   });
 
   const addTraktMutation = useMutation({
@@ -370,10 +398,7 @@ const AddItem = ({ list }) => {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['watchlist'] });
-      setTraktDialogOpen(false);
-      setSearchQuery('');
-      setPickedRow(null);
-      setProviderPick(null);
+      closeAddDialog();
       handleClose();
     },
   });
@@ -381,49 +406,46 @@ const AddItem = ({ list }) => {
   const createMutation = useMutation({
     mutationFn: async () => {
       const values = getValues();
+      const title = String(values.title || '').trim();
+      if (!title) {
+        throw new Error('Enter a title');
+      }
       const watchable = {
         local: true,
-        title: values.title,
+        title,
         trakt_list_id: list.ids.trakt,
         noautoadvance: true,
       };
       await api.createWatchable(watchable);
+    },
+    onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['watchlist'] });
-      setLocalDialogOpen(false);
+      closeAddDialog();
       handleClose();
     },
   });
 
-  const localDialog = (
-    <Dialog open={localDialogOpen} onClose={() => setLocalDialogOpen(false)}>
-      <DialogTitle>Add Watchable</DialogTitle>
-      <DialogContent>
-        <TextField
-          autoFocus
-          variant="standard"
-          id="title"
-          label="Title"
-          multiline
-          maxRows={4}
-          {...register('title')}
-        />
-      </DialogContent>
-      <DialogActions>
-        <Button onClick={() => setLocalDialogOpen(false)}>Close</Button>
-        <Button onClick={() => createMutation.mutate()}>Save</Button>
-      </DialogActions>
-    </Dialog>
-  );
-
-  const traktDialog = (
+  const addDialog = (
     <Dialog
-      open={traktDialogOpen}
-      onClose={() => setTraktDialogOpen(false)}
+      open={addDialogOpen}
+      onClose={closeAddDialog}
       maxWidth="sm"
       fullWidth
+      scroll="paper"
+      aria-labelledby="add-item-dialog-tabs"
     >
-      <DialogTitle>Add title</DialogTitle>
-      <DialogContent>
+      <DialogTitle id="add-item-dialog-tabs" sx={{ pb: 0 }}>
+        <Tabs
+          value={addTab}
+          onChange={(_, v) => setAddTab(v)}
+          aria-label="How to add a title"
+        >
+          <Tab label="Trakt" id="add-item-tab-0" aria-controls="add-item-tabpanel-0" />
+          <Tab label="Local only" id="add-item-tab-1" aria-controls="add-item-tabpanel-1" />
+        </Tabs>
+      </DialogTitle>
+      <DialogContent dividers>
+        <AddDialogTabPanel value={addTab} index={ADD_TAB_TRAKT}>
         <Typography variant="body2" color="text.secondary" sx={{ mb: 1.5 }}>
           Choose movies, TV shows, or both, then search Trakt.
         </Typography>
@@ -513,9 +535,27 @@ const AddItem = ({ list }) => {
             onProviderPick={setProviderPick}
           />
         )}
+        </AddDialogTabPanel>
+        <AddDialogTabPanel value={addTab} index={ADD_TAB_LOCAL}>
+        <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
+          Add a title that is not linked to Trakt (manual entry only). This is generally
+          used for things like YouTube or Kanopy videos.
+        </Typography>
+        <TextField
+          autoFocus
+          fullWidth
+          variant="standard"
+          id="add-local-title"
+          label="Title"
+          multiline
+          maxRows={4}
+          {...register('title')}
+        />
+        </AddDialogTabPanel>
       </DialogContent>
       <DialogActions>
-        <Button onClick={() => setTraktDialogOpen(false)}>Close</Button>
+        <Button onClick={closeAddDialog}>Close</Button>
+        {addTab === ADD_TAB_TRAKT && (
         <Button
           variant="contained"
           disabled={!pickedRow || addTraktMutation.isPending}
@@ -523,6 +563,19 @@ const AddItem = ({ list }) => {
         >
           Add to list
         </Button>
+        )}
+        {addTab === ADD_TAB_LOCAL && (
+        <Button
+          variant="contained"
+          disabled={
+            createMutation.isPending
+            || !String(localTitleValue || '').trim()
+          }
+          onClick={() => createMutation.mutate()}
+        >
+          Save
+        </Button>
+        )}
       </DialogActions>
     </Dialog>
   );
@@ -551,7 +604,7 @@ const AddItem = ({ list }) => {
         onClose={handleClose}
       >
         <MenuItem
-          onClick={openTraktDialog}
+          onClick={openAddDialog}
           disabled={!listReady}
           disableRipple
         >
@@ -562,17 +615,8 @@ const AddItem = ({ list }) => {
           <OpenInNewIcon />
           Open Trakt search
         </MenuItem>
-        <MenuItem
-          onClick={() => { setLocalDialogOpen(true); handleClose(); }}
-          disabled={!listReady}
-          disableRipple
-        >
-          <AddCircleIcon />
-          Add local only
-        </MenuItem>
       </StyledMenu>
-      {localDialog}
-      {traktDialog}
+      {addDialog}
     </div>
   );
 };

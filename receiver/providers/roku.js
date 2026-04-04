@@ -1,5 +1,9 @@
 /* eslint-disable class-methods-use-this */
 class Roku {
+  getReceiverKey() {
+    return 'roku';
+  }
+
   provides(uri) {
     return uri.includes('roku.com');
   }

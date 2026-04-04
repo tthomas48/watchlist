@@ -1,5 +1,9 @@
 /* eslint-disable class-methods-use-this */
 class AmazonPrime {
+  getReceiverKey() {
+    return 'amazonprime';
+  }
+
   provides(uri) {
     return uri?.includes('intent://watch.amazon.com') || uri?.includes('amazon.com');
   }

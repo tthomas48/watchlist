@@ -2,6 +2,7 @@ import React from 'react';
 import ReactDOM from 'react-dom/client';
 import {
   createBrowserRouter,
+  Navigate,
   RouterProvider,
 } from 'react-router-dom';
 import {
@@ -14,10 +15,8 @@ import { ThemeProvider } from '@mui/material/styles';
 import greenTheme from './theme';
 import './index.css';
 import App from './App';
-import Settings from './Settings';
-import StreamingAccess from './StreamingAccess';
 import Watchlist from './Watchlist';
-import Watchable from './Watchable';
+import { WatchableDeepLink } from './WatchableEditDialog';
 
 //const greenTheme = createTheme(themeOptions);
 
@@ -35,15 +34,15 @@ const router = createBrowserRouter([
       },
       {
         path: '/settings',
-        element: <Settings />,
+        element: <Navigate to="/" replace />,
       },
       {
         path: '/streaming-access',
-        element: <StreamingAccess />,
+        element: <Navigate to="/" replace />,
       },
       {
         path: '/watchable/:id',
-        element: <Watchable />,
+        element: <WatchableDeepLink />,
       },
     ],
   },

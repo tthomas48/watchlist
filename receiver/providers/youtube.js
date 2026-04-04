@@ -1,5 +1,9 @@
 /* eslint-disable class-methods-use-this */
 class YouTube {
+  getReceiverKey() {
+    return 'youtube';
+  }
+
   provides(uri) {
     // this probably no longer works
     return uri.includes('youtube');

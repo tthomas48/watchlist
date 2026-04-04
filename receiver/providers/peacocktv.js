@@ -1,5 +1,9 @@
 /* eslint-disable class-methods-use-this */
 class PeacockTV {
+  getReceiverKey() {
+    return 'peacocktv';
+  }
+
   provides(uri) {
     return uri.includes('www.peacocktv.com');
   }

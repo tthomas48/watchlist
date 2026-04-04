@@ -1,5 +1,9 @@
 /* eslint-disable class-methods-use-this */
 class DisneyPlus {
+  getReceiverKey() {
+    return 'disneyplus';
+  }
+
   provides(uri) {
     return uri.includes('www.disneyplus.com');
   }

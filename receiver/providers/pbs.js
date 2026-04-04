@@ -1,5 +1,9 @@
 /* eslint-disable class-methods-use-this */
 class PBS {
+  getReceiverKey() {
+    return 'pbs';
+  }
+
   provides(uri) {
     // this probably no longer works
     return uri.includes('www.pbs.org');

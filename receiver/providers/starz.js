@@ -1,5 +1,9 @@
 /* eslint-disable class-methods-use-this */
 class Starz {
+  getReceiverKey() {
+    return 'starz';
+  }
+
   provides(uri) {
     // this probably no longer works
     return uri.includes('starz');

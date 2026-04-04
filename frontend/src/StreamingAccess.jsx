@@ -8,10 +8,11 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { MessageContext } from './context/MessageContext';
 import Api from './service/api';
 
-function StreamingAccess() {
+function StreamingAccess({ onClose, embedded }) {
   const messageContext = React.useContext(MessageContext);
   const api = new Api(messageContext);
   const navigate = useNavigate();
+  const leave = onClose ?? (() => navigate('/'));
   const queryClient = useQueryClient();
 
   const catalogQuery = useQuery({
@@ -47,6 +48,7 @@ function StreamingAccess() {
     mutationFn: (body) => api.putStreamingAccess(body),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['streaming-access'] });
+      onClose?.();
     },
   });
 
@@ -115,8 +117,13 @@ function StreamingAccess() {
   };
 
   return (
-    <Paper variant="outlined" sx={{ p: 2, m: 2, maxWidth: 720 }}>
+    <Paper
+      variant="outlined"
+      sx={embedded ? { p: 2, m: 0, maxWidth: 'none', boxShadow: 'none' } : { p: 2, m: 2, maxWidth: 720 }}
+    >
+      {!embedded && (
       <Typography variant="h6" gutterBottom>Streaming access</Typography>
+      )}
       <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
         Catalog region:
         {' '}
@@ -195,7 +202,9 @@ function StreamingAccess() {
         >
           Save
         </Button>
-        <Button variant="outlined" onClick={() => navigate('/')}>Back</Button>
+        <Button variant="outlined" onClick={leave}>
+          {onClose ? 'Close' : 'Back'}
+        </Button>
       </Stack>
     </Paper>
   );

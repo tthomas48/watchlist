@@ -1,5 +1,9 @@
 /* eslint-disable class-methods-use-this */
 class BritBox {
+  getReceiverKey() {
+    return 'britbox';
+  }
+
   provides(uri) {
     // this probably no longer works
     return uri.includes('component=com.britbox.us');
