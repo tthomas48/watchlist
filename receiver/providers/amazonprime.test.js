@@ -15,5 +15,5 @@ test('AmazonPrime transforms url', () => {
   expect(new AmazonPrime().getData(uri)).toBe(expected);
 
   uri = 'http://www.amazon.com/dp/B0B8QRH6YG';
-  expect(new AmazonPrime().getStreamingUrl(uri)).toBe('https://www.amazon.com/dp/B0B8QRH6YG')
+  expect(new AmazonPrime().getStreamingUrl(uri)).toBe('https://www.amazon.com/dp/B0B8QRH6YG');
 });

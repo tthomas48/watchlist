@@ -55,8 +55,10 @@ class ProviderFactory {
   }
 
   /**
-   * Maps web_url to DB streaming_service_id: uses streaming_manifest receiverToServiceId when present,
-   * otherwise the provider getReceiverKey() (e.g. youtube, pbs) so icons work without catalog entries.
+   * Maps web_url to DB streaming_service_id: uses
+   * streaming_manifest receiverToServiceId when present,
+   * otherwise the provider getReceiverKey() (e.g. youtube,
+   * pbs) so icons work without catalog entries.
    */
   resolveStreamingServiceIdFromUrl(webUrl) {
     if (webUrl == null || String(webUrl).trim() === '') {

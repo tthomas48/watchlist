@@ -9,7 +9,7 @@ class BritBox {
     return uri.includes('component=com.britbox.us');
   }
 
-  getStreamingUrl(homepageUrl) {
+  getStreamingUrl() {
     return '';
   }
 
