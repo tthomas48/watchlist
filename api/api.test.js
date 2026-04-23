@@ -66,4 +66,47 @@ describe('api', () => {
       );
     });
   });
+
+  describe('refresh', () => {
+    it('creates watchables that are only present in later Trakt pages', async () => {
+      const api = new Api();
+      api.touchRefresh = jest.fn().mockResolvedValue(undefined);
+      api.refreshEpisodes = jest.fn().mockResolvedValue(undefined);
+      api.prefetchMissingPosters = jest.fn().mockResolvedValue(undefined);
+      api.syncStreamingServiceIds = jest.fn().mockResolvedValue(undefined);
+      api.updateWatchable = jest.fn().mockResolvedValue(undefined);
+      api.createWatchable = jest.fn().mockResolvedValue(undefined);
+      api.traktClient = {
+        importToken: jest.fn().mockResolvedValue(undefined),
+        getListItems: jest.fn().mockResolvedValue([
+          {
+            type: 'movie',
+            movie: { ids: { trakt: 111 }, title: 'Existing Item' },
+          },
+          {
+            type: 'show',
+            show: { ids: { trakt: 222 }, title: 'Page 2 Item' },
+          },
+        ]),
+      };
+      const req = {
+        user: { access_token: 'token' },
+        models: {},
+      };
+      const existingWatchables = [
+        { trakt_id: '111', local: false, destroy: jest.fn() },
+      ];
+
+      await api.refresh(req, 'alice', 'list-1', existingWatchables);
+
+      expect(api.createWatchable).toHaveBeenCalledWith(
+        req.models,
+        'list-1',
+        expect.objectContaining({
+          type: 'show',
+        }),
+        'alice',
+      );
+    });
+  });
 });
