@@ -33,11 +33,65 @@ class TraktClient {
   }
 
   async getListItems(traktListId, traktUserId) {
-    return this.traktClient.users.list.items.get({
-      id: traktListId,
-      username: traktUserId,
-      extended: 'full',
-    });
+    const limit = 100;
+    const out = [];
+    let page = 1;
+    let totalPages = null;
+    while (true) {
+      // Explicit pagination avoids default page-size drift on Trakt endpoints.
+      // Keep `limit` conservative for compatibility across deployments.
+      // eslint-disable-next-line no-await-in-loop
+      const response = await this.traktClient.users.list.items.get({
+        id: traktListId,
+        username: traktUserId,
+        extended: 'full',
+        page,
+        limit,
+      });
+      const items = this.extractPagedItems(response);
+      out.push(...items);
+      totalPages = this.extractTotalPages(response, totalPages);
+      if (items.length === 0) {
+        break;
+      }
+      if (totalPages != null && page >= totalPages) {
+        break;
+      }
+      if (items.length < limit) {
+        break;
+      }
+      page += 1;
+    }
+    return out;
+  }
+
+  extractPagedItems(response) {
+    if (Array.isArray(response)) {
+      return response;
+    }
+    if (Array.isArray(response?.data)) {
+      return response.data;
+    }
+    if (Array.isArray(response?.results)) {
+      return response.results;
+    }
+    return [];
+  }
+
+  extractTotalPages(response, fallback) {
+    if (Number.isFinite(response?.pagination?.page_count)) {
+      return Number(response.pagination.page_count);
+    }
+    if (Number.isFinite(response?.pagination?.pageCount)) {
+      return Number(response.pagination.pageCount);
+    }
+    if (Number.isFinite(response?.page_count)) {
+      return Number(response.page_count);
+    }
+    if (Number.isFinite(response?.pageCount)) {
+      return Number(response.pageCount);
+    }
+    return fallback ?? null;
   }
 
   async findWatchable(watchable) {
