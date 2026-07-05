@@ -62,17 +62,21 @@ function WatchlistItem({
     }
   }
 
-  const { mutate } = useMutation({
+  const { mutate: dismissNotification } = useMutation({
     mutationFn: async (n) => {
-      // FIXME: this is not deleting fast enough
       setClosedNotification(true);
       await api.deleteNotification(list, n.id);
       return true;
     },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['notifications', list] });
-    },
   });
+
+  const handleDismissNotification = (n) => {
+    dismissNotification(n, {
+      onSuccess: () => {
+        queryClient.invalidateQueries({ queryKey: ['notifications', list] });
+      },
+    });
+  };
 
   const handleClick = (event) => {
     setAnchorEl(event.currentTarget);
@@ -241,7 +245,7 @@ function WatchlistItem({
                   severity="info"
                   onClose={(e) => {
                     e.stopPropagation();
-                    mutate(notification);
+                    handleDismissNotification(notification);
                   }}
                 >
                   {notification.message}

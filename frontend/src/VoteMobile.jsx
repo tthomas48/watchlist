@@ -33,24 +33,10 @@ function VoteMobile() {
 
   const joinMutation = useMutation({
     mutationFn: () => joinVoteSession(code, displayName),
-    onSuccess: (data) => {
-      saveParticipantId(code, data.participantId);
-      setParticipantId(data.participantId);
-      setJoinError(null);
-    },
-    onError: (e) => setJoinError(e.message),
   });
 
   const voteMutation = useMutation({
     mutationFn: (payload) => castVote(code, { participantId, ...payload }),
-    onSuccess: (_data, variables) => {
-      if (variables.vote === 'pick') {
-        setRound2Picked(true);
-      } else if (variables.watchableId != null) {
-        setRound1VotedFor(variables.watchableId);
-      }
-      sessionQuery.refetch();
-    },
   });
 
   const session = sessionQuery.data;
@@ -64,13 +50,38 @@ function VoteMobile() {
       setRound2Picked(false);
     }
   }, [session?.phase]);
-  const voting = voteMutation.isLoading;
+
+  const voting = voteMutation.isPending;
+
+  const handleJoin = () => {
+    joinMutation.mutate(undefined, {
+      onSuccess: (data) => {
+        saveParticipantId(code, data.participantId);
+        setParticipantId(data.participantId);
+        setJoinError(null);
+      },
+      onError: (e) => setJoinError(e.message),
+    });
+  };
+
+  const submitVote = (payload) => {
+    voteMutation.mutate(payload, {
+      onSuccess: (_data, variables) => {
+        if (variables.vote === 'pick') {
+          setRound2Picked(true);
+        } else if (variables.watchableId != null) {
+          setRound1VotedFor(variables.watchableId);
+        }
+        sessionQuery.refetch();
+      },
+    });
+  };
 
   const submitSwipe = (vote) => {
     if (!session?.currentCandidate || voting) {
       return;
     }
-    voteMutation.mutate({ vote, watchableId: session.currentCandidate.id });
+    submitVote({ vote, watchableId: session.currentCandidate.id });
   };
 
   const swipeHandlers = useSwipeable({
@@ -94,8 +105,8 @@ function VoteMobile() {
           {joinError && <Typography color="error">{joinError}</Typography>}
           <Button
             variant="contained"
-            disabled={!displayName.trim() || joinMutation.isLoading}
-            onClick={() => joinMutation.mutate()}
+            disabled={!displayName.trim() || joinMutation.isPending}
+            onClick={handleJoin}
           >
             Join
           </Button>
@@ -186,7 +197,7 @@ function VoteMobile() {
                   <Button
                     variant="contained"
                     disabled={voting || myPickSubmitted}
-                    onClick={() => voteMutation.mutate({ vote: 'pick', watchableId: f.id })}
+                    onClick={() => submitVote({ vote: 'pick', watchableId: f.id })}
                     sx={{ mt: 1 }}
                   >
                     Vote

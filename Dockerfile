@@ -2,8 +2,12 @@ FROM node:22-alpine
 
 WORKDIR /usr/src/watchlist
 
-COPY . .
-RUN npm ci --omit=dev
-RUN npm run build-ui
+RUN corepack enable
 
-CMD [ "npm", "run", "start" ]
+COPY package.json pnpm-lock.yaml pnpm-workspace.yaml .npmrc ./
+RUN pnpm install --frozen-lockfile --prod
+
+COPY . .
+RUN pnpm run build-ui
+
+CMD ["pnpm", "run", "start"]

@@ -1,0 +1,28 @@
+packages:
+  - '.'
+
+autoInstallPeers: true
+strictPeerDependencies: false
+
+allowBuilds:
+  esbuild: true
+  sqlite3: true
+  unrs-resolver: true
+
+minimumReleaseAgeExclude:
+  - got@11.8.5
+  - ip-address@10.1.1
+  - uuid@11.1.1
+  - qs@6.15.2
+  - brace-expansion@5.0.6
+  - js-cookie@3.0.6
+  - form-data@4.0.6
+  - tar@7.5.16
+  - '@babel/core@7.29.1'
+  - js-yaml@3.15.0 || 4.1.2
+
+overrides:
+  got@<11.8.5: ^11.8.5
+  ip-address@<=10.1.0: ^10.1.1
+  tar@<=7.5.15: ^7.5.16
+  uuid@<11.1.1: ^11.1.1

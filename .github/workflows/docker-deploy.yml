@@ -1,4 +1,5 @@
 name: Create and publish a Docker image
+# Image build uses pnpm via Corepack in the Dockerfile.
 on:
   release:
     types: [published]

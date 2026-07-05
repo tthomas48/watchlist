@@ -3,7 +3,7 @@
  * Fetch /countries/{country} and emit receiver/streaming_manifest.json.
  * Requires RAPIDAPI_KEY. Optional: RAPIDAPI_HOST.
  *
- * Run: npm run streaming:manifest
+ * Run: pnpm run streaming:manifest
  */
 require('dotenv').config();
 const fs = require('fs');

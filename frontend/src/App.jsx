@@ -157,7 +157,7 @@ function App() {
         </AppBar>
         <Box sx={{ bgcolor: 'background.default', p: 1 }}>
           <Grid container spacing={2} className="App">
-            <Grid xs={12}>
+            <Grid size={12}>
               <Outlet context={[list, player, showHidden, sort]}></Outlet>
             </Grid>
           </Grid>

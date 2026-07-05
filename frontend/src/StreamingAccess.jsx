@@ -46,10 +46,6 @@ function StreamingAccess({ onClose, embedded }) {
 
   const saveMutation = useMutation({
     mutationFn: (body) => api.putStreamingAccess(body),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['streaming-access'] });
-      onClose?.();
-    },
   });
 
   if (catalogQuery.isLoading || accessQuery.isLoading) {
@@ -113,6 +109,11 @@ function StreamingAccess({ onClose, embedded }) {
       directServiceIds: [...direct],
       addonsByHost: addObj,
       receiversEnabled: receivers,
+    }, {
+      onSuccess: () => {
+        queryClient.invalidateQueries({ queryKey: ['streaming-access'] });
+        onClose?.();
+      },
     });
   };
 

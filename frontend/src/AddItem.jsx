@@ -396,11 +396,6 @@ const AddItem = ({ list }) => {
       }
       return addRes;
     },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['watchlist'] });
-      closeAddDialog();
-      handleClose();
-    },
   });
 
   const createMutation = useMutation({
@@ -418,12 +413,13 @@ const AddItem = ({ list }) => {
       };
       await api.createWatchable(watchable);
     },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['watchlist'] });
-      closeAddDialog();
-      handleClose();
-    },
   });
+
+  const afterAddSuccess = () => {
+    queryClient.invalidateQueries({ queryKey: ['watchlist'] });
+    closeAddDialog();
+    handleClose();
+  };
 
   const addDialog = (
     <Dialog
@@ -559,7 +555,7 @@ const AddItem = ({ list }) => {
         <Button
           variant="contained"
           disabled={!pickedRow || addTraktMutation.isPending}
-          onClick={() => addTraktMutation.mutate()}
+          onClick={() => addTraktMutation.mutate(undefined, { onSuccess: afterAddSuccess })}
         >
           Add to list
         </Button>
@@ -571,7 +567,7 @@ const AddItem = ({ list }) => {
             createMutation.isPending
             || !String(localTitleValue || '').trim()
           }
-          onClick={() => createMutation.mutate()}
+          onClick={() => createMutation.mutate(undefined, { onSuccess: afterAddSuccess })}
         >
           Save
         </Button>

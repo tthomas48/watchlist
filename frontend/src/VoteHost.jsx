@@ -54,20 +54,23 @@ function VoteHost() {
 
   const startMutation = useMutation({
     mutationFn: () => api.startVoteSession(code),
-    onSuccess: () => sessionQuery.refetch(),
-    onError: (e) => {
-      messageContext.sendMessage({ message: e.message, severity: 'error', open: true });
-    },
   });
 
   const playMutation = useMutation({
     mutationFn: () => api.playVoteWinner(code),
-    onError: (e) => {
-      messageContext.sendMessage({ message: e.message, severity: 'error', open: true });
-    },
   });
 
   const session = sessionQuery.data;
+
+  useEffect(() => {
+    if (playMutation.isError && playMutation.error) {
+      messageContext.sendMessage({
+        message: playMutation.error.message,
+        severity: 'error',
+        open: true,
+      });
+    }
+  }, [playMutation.isError, playMutation.error, messageContext]);
 
   useEffect(() => {
     if (
@@ -122,8 +125,17 @@ function VoteHost() {
           <Button
             variant="contained"
             size="large"
-            onClick={() => startMutation.mutate()}
-            disabled={!session.participants.length || startMutation.isLoading}
+            onClick={() => startMutation.mutate(undefined, {
+              onSuccess: () => sessionQuery.refetch(),
+              onError: (e) => {
+                messageContext.sendMessage({
+                  message: e.message,
+                  severity: 'error',
+                  open: true,
+                });
+              },
+            })}
+            disabled={!session.participants.length || startMutation.isPending}
           >
             Start voting
           </Button>
@@ -169,7 +181,7 @@ function VoteHost() {
         <Stack spacing={2} alignItems="center">
           <Typography variant="h5">Winner</Typography>
           <CandidateCard candidate={session.winner} />
-          {playMutation.isLoading && <Typography>Launching…</Typography>}
+          {playMutation.isPending && <Typography>Launching…</Typography>}
         </Stack>
       )}
     </Container>

@@ -1,21 +1,10 @@
+require('./instrument');
+
 const debug = require('debug')('watchlist:proxy');
 const express = require('express');
-const Sentry = require('@sentry/node');
+const { Sentry, useSentry } = require('./instrument');
 const Server = require('./server');
 
-let useSentry = false;
-if (process.env.SENTRY_DSN) {
-  Sentry.init({ dsn: process.env.SENTRY_DSN });
-  useSentry = true;
-}
-
-// so it's host and port
-// setup a proxy in express for everything to this:
-// change port here to be an available port
-// wire up the proxy, and this will ensure that we start the dev server
-
-// I want to startup the react dev server from react-app-rewired
-// set the react port somewhere in here.
 (async () => {
   let remoteUrl = `http://${process.env.HOST}:${process.env.PORT}`;
   if (process.env.TUNNEL === 'true') {
@@ -27,14 +16,9 @@ if (process.env.SENTRY_DSN) {
       domain: process.env.NGROK_DOMAIN,
     });
 
-    // Output ngrok url to console
     remoteUrl = listener.url();
-    // process.env.PUBLIC_URL = remoteUrl;
     debug(`Your app will be hosted at ${remoteUrl}`);
   }
-  // eslint-disable-next-line global-require
-  // require('react-app-rewired/scripts/start');
-  // debug(`Your app will be hosted at ${remoteUrl}`);
 })();
 
 const app = express();

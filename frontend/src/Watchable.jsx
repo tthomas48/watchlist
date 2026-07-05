@@ -104,16 +104,21 @@ export function WatchableEditor({ id, onClose }) {
     queryKey: ['episodes', id],
     queryFn: async () => api.getEpisodes(id),
     staleTime: Infinity,
-    onSuccess: (episodes) => {
-      const checkedEpisodes = [];
-      for (let i = 0; i < episodes.length; i += 1) {
-        if (episodes[i].watched) {
-          checkedEpisodes.push(episodes[i].id);
-        }
-      }
-      setChecked(checkedEpisodes);
-    },
   });
+
+  useEffect(() => {
+    const episodes = episodesQuery.data;
+    if (!episodes) {
+      return;
+    }
+    const checkedEpisodes = [];
+    for (let i = 0; i < episodes.length; i += 1) {
+      if (episodes[i].watched) {
+        checkedEpisodes.push(episodes[i].id);
+      }
+    }
+    setChecked(checkedEpisodes);
+  }, [episodesQuery.data]);
 
   const visitHomePage = (homepage) => {
     if (homepage) {

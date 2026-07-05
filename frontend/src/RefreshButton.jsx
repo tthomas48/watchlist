@@ -21,14 +21,19 @@ function RefreshButton({ list, sort }) {
       }
       return false;
     },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['watchlist', list, sort] });
-      queryClient.invalidateQueries({ queryKey: ['notifications', list] });
-    },
   });
 
+  const refreshList = () => {
+    mutate(undefined, {
+      onSuccess: () => {
+        queryClient.invalidateQueries({ queryKey: ['watchlist', list, sort] });
+        queryClient.invalidateQueries({ queryKey: ['notifications', list] });
+      },
+    });
+  };
+
   return (
-    <Button aria-label="refresh list" volot="secondary" onClick={async () => mutate()} startIcon={<RefreshIcon />}>
+    <Button aria-label="refresh list" volot="secondary" onClick={refreshList} startIcon={<RefreshIcon />}>
       Refresh
     </Button>
   );

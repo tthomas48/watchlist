@@ -60,19 +60,20 @@ Structured routes for TV or automation clients (session cookie or **`Authorizati
 
 
 ### Install Code
-- $ npm i
+- $ corepack enable
+- $ pnpm install
 - $ cp .env.example .env
 - \# Add the Trakt secrets (found at https://trakt.tv/oauth/applications) to the .env file
 - \# Poster art comes from Trakt (including media.trakt.tv CDN URLs resolved by the app)
-- $ npm run start-dev
+- $ pnpm run start-dev
 
 ## Database Tasks
 
 ### Generate models
-- npx sequelize-cli model:generate --name User --attributes firstName:string,lastName:string,email:string --models-path=models --migrations-path=migrations
+- pnpm exec sequelize-cli model:generate --name User --attributes firstName:string,lastName:string,email:string --models-path=models --migrations-path=migrations
 
 ### Generate migration
-- npx sequelize-cli migration:create --migrations-path=migrations/ --name my_migration_name
+- pnpm exec sequelize-cli migration:create --migrations-path=migrations/ --name my_migration_name
 
 ### Running migrations
-- npx sequelize-cli db:migrate
+- pnpm exec sequelize-cli db:migrate

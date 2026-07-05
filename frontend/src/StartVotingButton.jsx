@@ -24,24 +24,29 @@ function StartVotingButton({ list, player }) {
         serviceType,
       });
     },
-    onSuccess: (data) => {
-      navigate(`/vote-host/${data.code}`);
-    },
-    onError: (e) => {
-      messageContext.sendMessage({
-        message: e.message,
-        severity: 'error',
-        open: true,
-      });
-    },
   });
+
+  const handleStart = () => {
+    createSession.mutate(undefined, {
+      onSuccess: (data) => {
+        navigate(`/vote-host/${data.code}`);
+      },
+      onError: (e) => {
+        messageContext.sendMessage({
+          message: e.message,
+          severity: 'error',
+          open: true,
+        });
+      },
+    });
+  };
 
   return (
     <Button
       variant="outlined"
       startIcon={<HowToVoteIcon />}
-      onClick={() => createSession.mutate()}
-      disabled={!list || createSession.isLoading}
+      onClick={handleStart}
+      disabled={!list || createSession.isPending}
     >
       Start voting
     </Button>
