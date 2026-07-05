@@ -17,6 +17,8 @@ import './index.css';
 import App from './App';
 import Watchlist from './Watchlist';
 import { WatchableDeepLink } from './WatchableEditDialog';
+import VoteHost from './VoteHost';
+import VoteMobile from './VoteMobile';
 
 //const greenTheme = createTheme(themeOptions);
 
@@ -43,6 +45,14 @@ const router = createBrowserRouter([
       {
         path: '/watchable/:id',
         element: <WatchableDeepLink />,
+      },
+      {
+        path: '/vote/:code',
+        element: <VoteMobile />,
+      },
+      {
+        path: '/vote-host/:code',
+        element: <VoteHost />,
       },
     ],
   },

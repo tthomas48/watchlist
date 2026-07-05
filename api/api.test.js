@@ -13,7 +13,8 @@ describe('api', () => {
         },
       }, {
         homepage: 'https://example.com',
-        image: undefined,
+        overview: null,
+        year: 2021,
         imdb_id: 'tt1234',
         media_type: 'movie',
         title: 'A Movie',
@@ -26,7 +27,8 @@ describe('api', () => {
       }],
       [{}, {
         homepage: undefined,
-        image: undefined,
+        overview: null,
+        year: null,
         imdb_id: undefined,
         media_type: undefined,
         title: null,

@@ -36,6 +36,9 @@ module.exports = (sequelize, DataTypes) => {
     streaming_service_id: DataTypes.STRING,
     streaming_addon_id: DataTypes.STRING,
     noautoadvance: DataTypes.BOOLEAN,
+    overview: DataTypes.TEXT,
+    year: DataTypes.INTEGER,
+    rogerebert_url: DataTypes.STRING,
   }, {
     sequelize,
     modelName: 'Watchable',

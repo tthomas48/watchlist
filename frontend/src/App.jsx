@@ -15,6 +15,7 @@ import ShowHiddenButton from './ShowHiddenButton';
 import ReconnectButton from './ReconnectButton';
 import SortPicker from './SortPicker';
 import AddItem from './AddItem';
+import StartVotingButton from './StartVotingButton';
 import useLocalStorage from './hooks/useLocalStorage';
 import MessageContextWrapper from './context/MessageContext';
 import { WatchableEditProvider } from './WatchableEditDialog';
@@ -147,6 +148,9 @@ function App() {
               </Box>
               <Box sx={{ flexShrink: 0 }}>
                 <AddItem list={list} />
+              </Box>
+              <Box sx={{ flexShrink: 0 }}>
+                <StartVotingButton list={list} player={player} />
               </Box>
             </Toolbar>
           </Container>

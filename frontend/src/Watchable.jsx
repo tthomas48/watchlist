@@ -11,6 +11,7 @@ import SearchIcon from '@mui/icons-material/Search';
 import DownloadIcon from '@mui/icons-material/Download';
 import LinkIcon from '@mui/icons-material/Link';
 import ContentCopyIcon from '@mui/icons-material/ContentCopy';
+import ManageSearchIcon from '@mui/icons-material/ManageSearch';
 import { MessageContext } from './context/MessageContext';
 import Api from './service/api';
 
@@ -128,6 +129,32 @@ export function WatchableEditor({ id, onClose }) {
 
   const copyDown = async (homepage) => {
     setValue('webUrl', homepage);
+  };
+
+  const lookupEbert = async () => {
+    try {
+      const result = await api.lookupRogerEbert(id);
+      if (result?.url) {
+        setValue('rogerebertUrl', result.url);
+        messageContext.sendMessage({
+          message: 'Roger Ebert review found',
+          severity: 'success',
+          open: true,
+        });
+      } else {
+        messageContext.sendMessage({
+          message: 'No Roger Ebert review found',
+          severity: 'warning',
+          open: true,
+        });
+      }
+    } catch (e) {
+      messageContext.sendMessage({
+        message: e.message,
+        severity: 'error',
+        open: true,
+      });
+    }
   };
 
   const doDelete = async (item) => {
@@ -252,6 +279,30 @@ export function WatchableEditor({ id, onClose }) {
                 variant="outlined"
                 defaultValue={data.watchable.web_url}
               />
+              <Stack
+                direction="row"
+                justifyContent="center"
+                alignItems="flex-start"
+                spacing={1}
+                sx={{ width: '100%' }}
+              >
+                <TextField
+                  {...register('rogerebertUrl')}
+                  label="Roger Ebert URL"
+                  variant="outlined"
+                  defaultValue={data.watchable.rogerebert_url || ''}
+                  sx={{ flexGrow: 1 }}
+                />
+                <IconButton aria-label="lookup roger ebert review" onClick={lookupEbert}>
+                  <ManageSearchIcon />
+                </IconButton>
+                <IconButton
+                  aria-label="open roger ebert review"
+                  onClick={() => visitHomePage(getValues('rogerebertUrl') || data.watchable.rogerebert_url)}
+                >
+                  <LinkIcon />
+                </IconButton>
+              </Stack>
               <FormControlLabel
                 control={(
                   <Checkbox

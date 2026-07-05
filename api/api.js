@@ -35,6 +35,8 @@ const {
   normalizeTraktPosterMediaType,
   parseTraktIdParam,
 } = require('./poster_trakt_cache');
+const mountVoteSessionRoutes = require('./routes/vote_sessions');
+const mountRogerEbertRoutes = require('./routes/rogerebert');
 
 const defaultPosterImagePath = path.join(__dirname, '../images/movie.jpg');
 let cachedDefaultPosterSha256 = null;
@@ -101,8 +103,67 @@ class Api {
     res.status(500).send(msg);
   }
 
+  async markWatched(req, watchable) {
+    try {
+      if (watchable.media_type === 'show') {
+        const nextUnwatchedId = await watchable.getNextUnwatchedId();
+        if (nextUnwatchedId) {
+          debug(`Auto-advancing ${watchable.title}`);
+          const episode = await req.models.Episode.findOne({
+            where: { watchable_id: watchable.id, id: nextUnwatchedId },
+          });
+          if (episode) {
+            episode.watched = true;
+            await episode.save();
+          }
+          await this.traktClient.setWatched(req.user.trakt_id, 'episode', nextUnwatchedId);
+        }
+      } else if (!watchable.local) {
+        debug(`Auto-advancing ${watchable.title}`);
+        await this.traktClient.setWatched(
+          req.user.trakt_id,
+          watchable.media_type,
+          watchable.trakt_id,
+        );
+      }
+    } catch (err) {
+      Sentry.captureException(err);
+    }
+  }
+
+  async playWatchable(req, serviceType, watchable) {
+    if (!watchable) {
+      const err = new Error('watchable not found');
+      err.status = 404;
+      throw err;
+    }
+    watchable.last_played = new Date();
+    if (watchable.noautoadvance !== true) {
+      await this.markWatched(req, watchable);
+    }
+    const uri = watchable.web_url;
+    if (!uri) {
+      const err = new Error(`no url specified for ${watchable.title}`);
+      err.status = 400;
+      throw err;
+    }
+    const receiver = this.receiverFactory.getReceiver(serviceType);
+    debug(`Playing ${uri} with ${serviceType}`);
+    const playResponse = await receiver.play(uri);
+    if (playResponse.result) {
+      await watchable.save();
+      return {
+        uri,
+        message: `Playing ${watchable.title} with ${serviceType}`,
+        ...playResponse,
+      };
+    }
+    throw new Error('unable to play');
+  }
+
   async createWatchable(models, traktListId, traktItem, traktListUserSlug) {
     const ids = getTraktIds(traktItem);
+    const media = traktItem[traktItem.type] || {};
     const props = {
       title: getTitle(traktItem),
       trakt_id: getTraktId(traktItem),
@@ -110,7 +171,9 @@ class Api {
       media_type: traktItem.type,
       imdb_id: ids?.imdb,
       tmdb_id: ids?.tmdb,
-      homepage: traktItem[traktItem.type]?.homepage,
+      homepage: media.homepage,
+      overview: media.overview || null,
+      year: media.year || null,
       web_url: null,
       streaming_service_id: null,
       streaming_addon_id: null,
@@ -122,10 +185,13 @@ class Api {
   }
 
   async updateWatchable(traktItem, watchable, traktListUserSlug) {
+    const media = traktItem[traktItem.type] || {};
     watchable.media_type = traktItem.type;
-    watchable.homepage = traktItem[traktItem.type].homepage;
-    watchable.imdb_id = traktItem[traktItem.type].ids?.imdb;
-    watchable.tmdb_id = traktItem[traktItem.type].ids?.tmdb;
+    watchable.homepage = media.homepage;
+    watchable.overview = media.overview || null;
+    watchable.year = media.year || null;
+    watchable.imdb_id = media.ids?.imdb;
+    watchable.tmdb_id = media.ids?.tmdb;
     if (traktListUserSlug != null && String(traktListUserSlug).trim() !== '') {
       watchable.trakt_list_user_slug = traktListUserSlug;
     }
@@ -650,59 +716,10 @@ class Api {
       }
     });
 
-    const markWatched = async function markWatched(traktClient, req, watchable) {
-      try {
-        if (watchable.media_type === 'show') {
-          const nextUnwatchedId = await watchable.getNextUnwatchedId();
-          if (nextUnwatchedId) {
-            debug(`Auto-advancing ${watchable.title}`);
-            const episode = await req.models.Episode.findOne({
-              where: { watchable_id: watchable.id, id: nextUnwatchedId },
-            });
-            if (episode) {
-              episode.watched = true;
-              await episode.save();
-            }
-            await traktClient.setWatched(req.user.trakt_id, 'episode', nextUnwatchedId);
-          }
-        } else if (!watchable.local) {
-          debug(`Auto-advancing ${watchable.title}`);
-          await traktClient.setWatched(
-            req.user.trakt_id,
-            watchable.media_type,
-            watchable.trakt_id,
-          );
-        }
-      } catch (err) {
-        // we log this, but don't want to actually stop playing if it doesn't work.
-        Sentry.captureException(err);
-      }
-    };
-
     apiRouter.post('/play/:service_type/:id/', this.authProvider.requireLogin, async (req, res) => {
       try {
-        const { id } = req.params;
-        const serviceType = req.params.service_type;
-        const watchable = await req.models.Watchable.findByPk(id);
-        watchable.last_played = new Date();
-        if (watchable.noautoadvance !== true) {
-          await markWatched(this.traktClient, req, watchable);
-        }
-
-        const uri = watchable.web_url;
-        if (!uri) {
-          throw new Error(`no url specified for ${watchable.title}`);
-        }
-        const receiver = this.receiverFactory.getReceiver(serviceType);
-        debug(`Playing ${uri} with ${serviceType}`);
-        const playResponse = await receiver.play(uri);
-        if (playResponse.result) {
-          await watchable.save();
-          // ok, so here, rather than just uri we want to be able to get all data from the receiver
-          res.json({ uri, message: `Playing ${watchable.title} with ${serviceType}`, ...playResponse });
-          return;
-        }
-        throw new Error('unable to play');
+        const result = await this.playWatchable(req, req.params.service_type, await req.models.Watchable.findByPk(req.params.id));
+        res.json(result);
       } catch (e) {
         this.handleError(res, e);
       }
@@ -826,6 +843,9 @@ class Api {
         watchable.streaming_addon_id = watchableUpdate.streamingAddonId;
       }
       watchable.noautoadvance = watchableUpdate.noautoadvance;
+      if (Object.prototype.hasOwnProperty.call(watchableUpdate, 'rogerebertUrl')) {
+        watchable.rogerebert_url = watchableUpdate.rogerebertUrl || null;
+      }
 
       await watchable.save();
       res.json(watchable);
@@ -1126,6 +1146,14 @@ class Api {
         Sentry.captureException(e);
       }
     });
+
+    mountVoteSessionRoutes(apiRouter, {
+      authProvider: this.authProvider,
+      receiverFactory: this.receiverFactory,
+      traktClient: this.traktClient,
+      playWatchable: (req, serviceType, watchable) => this.playWatchable(req, serviceType, watchable),
+    });
+    mountRogerEbertRoutes(apiRouter, { authProvider: this.authProvider });
 
     return apiRouter;
   }

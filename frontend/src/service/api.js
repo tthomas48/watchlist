@@ -298,5 +298,50 @@ class Api {
     });
     return this.handleResponse(res);
   }
+
+  async lookupRogerEbert(id) {
+    const res = await fetch(`/api/watchables/${id}/rogerebert-lookup`, {
+      method: 'POST',
+      withCredentials: true,
+    });
+    return this.handleResponse(res);
+  }
+
+  async createVoteSession({ traktListId, traktListUserSlug, serviceType }) {
+    const res = await fetch('/api/vote-sessions', {
+      method: 'POST',
+      withCredentials: true,
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        trakt_list_id: traktListId,
+        trakt_list_user_slug: traktListUserSlug,
+        service_type: serviceType,
+      }),
+    });
+    return this.handleResponse(res);
+  }
+
+  async startVoteSession(code) {
+    const res = await fetch(`/api/vote-sessions/${encodeURIComponent(code)}/start`, {
+      method: 'POST',
+      withCredentials: true,
+    });
+    return this.handleResponse(res);
+  }
+
+  async playVoteWinner(code) {
+    const res = await fetch(`/api/vote-sessions/${encodeURIComponent(code)}/play-winner`, {
+      method: 'POST',
+      withCredentials: true,
+    });
+    return this.handleResponse(res);
+  }
+
+  async getVoteSession(code) {
+    const res = await fetch(`/api/vote-sessions/${encodeURIComponent(code)}`, {
+      withCredentials: true,
+    });
+    return this.handleResponse(res);
+  }
 }
 export default Api;
