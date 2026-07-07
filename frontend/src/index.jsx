@@ -19,6 +19,7 @@ import Watchlist from './Watchlist';
 import { WatchableDeepLink } from './WatchableEditDialog';
 import VoteHost from './VoteHost';
 import VoteMobile from './VoteMobile';
+import VoteMobileShell from './VoteMobileShell';
 
 //const greenTheme = createTheme(themeOptions);
 
@@ -26,6 +27,16 @@ import VoteMobile from './VoteMobile';
 const queryClient = new QueryClient();
 
 const router = createBrowserRouter([
+  {
+    path: '/vote/:code',
+    element: <VoteMobileShell />,
+    children: [
+      {
+        index: true,
+        element: <VoteMobile />,
+      },
+    ],
+  },
   {
     path: '/',
     element: <App />,
@@ -45,10 +56,6 @@ const router = createBrowserRouter([
       {
         path: '/watchable/:id',
         element: <WatchableDeepLink />,
-      },
-      {
-        path: '/vote/:code',
-        element: <VoteMobile />,
       },
       {
         path: '/vote-host/:code',

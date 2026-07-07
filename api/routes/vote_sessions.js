@@ -1,6 +1,7 @@
 const { createRequireAuth } = require('../auth/require_auth');
-const { VoteSessionService } = require('../vote_session_service');
+const { VoteSessionService, sessionAllowsWatchable } = require('../vote_session_service');
 const { asyncHandler, sendError } = require('../route_helpers');
+const { serveWatchablePoster } = require('../poster_serve');
 
 function mountVoteSessionRoutes(apiRouter, deps) {
   const {
@@ -53,6 +54,26 @@ function mountVoteSessionRoutes(apiRouter, deps) {
     }),
   );
 
+  apiRouter.get(
+    '/vote-sessions/:code/img/:watchableId',
+    asyncHandler(async (req, res) => {
+      const service = getService(req);
+      const session = await service.findByCode(req.params.code);
+      if (!session) {
+        res.status(404).json({ message: 'Session not found' });
+        return;
+      }
+      if (!sessionAllowsWatchable(session, req.params.watchableId)) {
+        res.status(403).json({ message: 'Watchable not in this session' });
+        return;
+      }
+      await serveWatchablePoster(res, {
+        models: req.models,
+        watchableId: req.params.watchableId,
+      });
+    }),
+  );
+
   apiRouter.post(
     '/vote-sessions/:code/join',
     asyncHandler(async (req, res) => {
@@ -72,7 +93,6 @@ function mountVoteSessionRoutes(apiRouter, deps) {
 
   apiRouter.post(
     '/vote-sessions/:code/start',
-    requireAuth,
     asyncHandler(async (req, res) => {
       const service = getService(req);
       const session = await service.findByCode(req.params.code);
@@ -80,8 +100,16 @@ function mountVoteSessionRoutes(apiRouter, deps) {
         res.status(404).json({ message: 'Session not found' });
         return;
       }
-      if (session.host_user_id !== req.user.id) {
-        res.status(403).json({ message: 'Only the host can start this session' });
+      const { participantId } = req.body || {};
+      if (!participantId) {
+        res.status(400).json({ message: 'participantId is required' });
+        return;
+      }
+      const participant = await req.models.VoteParticipant.findOne({
+        where: { id: participantId, vote_session_id: session.id },
+      });
+      if (!participant) {
+        res.status(403).json({ message: 'Participant not in this session' });
         return;
       }
       try {

@@ -37,6 +37,7 @@ const {
 } = require('./poster_trakt_cache');
 const mountVoteSessionRoutes = require('./routes/vote_sessions');
 const mountRogerEbertRoutes = require('./routes/rogerebert');
+const { serveWatchablePoster } = require('./poster_serve');
 
 const defaultPosterImagePath = path.join(__dirname, '../images/movie.jpg');
 let cachedDefaultPosterSha256 = null;
@@ -998,117 +999,12 @@ class Api {
     });
 
     apiRouter.get('/img/:watchable_id', this.authProvider.requireLogin, async (req, res) => {
-      const imagePath = path.join(__dirname, '../data/img/local/');
-      const fullPath = path.join(imagePath, `${req.params.watchable_id}.jpg`);
-      let sres;
-      try {
-        if (fs.existsSync(fullPath) && !localPosterIsDefaultPlaceholder(fullPath)) {
-          await pipeline(fs.createReadStream(fullPath), res);
-          return;
-        }
-
-        const watchable = await req.models.Watchable.findOne({
-          where: { id: req.params.watchable_id },
-        });
-        debug(watchable);
-        if (!watchable) {
-          await pipeline(fs.createReadStream(defaultPosterImagePath), res);
-          return;
-        }
-
-        const traktDisk = traktPosterDiskPath(watchable.media_type, watchable.trakt_id);
-        if (traktDisk && fs.existsSync(traktDisk) && !localPosterIsDefaultPlaceholder(traktDisk)) {
-          if (!fs.existsSync(imagePath)) {
-            fs.mkdirSync(imagePath, { recursive: true });
-          }
-          await fs.promises.copyFile(traktDisk, fullPath);
-          await pipeline(fs.createReadStream(fullPath), res);
-          return;
-        }
-
-        const writeRemoteToCacheAndRes = async (readStream) => {
-          if (!fs.existsSync(imagePath)) {
-            fs.mkdirSync(imagePath, { recursive: true });
-          }
-          await pipeline(readStream, fs.createWriteStream(fullPath));
-          const tp = traktPosterDiskPath(watchable.media_type, watchable.trakt_id);
-          if (tp) {
-            const tdir = path.dirname(tp);
-            if (!fs.existsSync(tdir)) {
-              fs.mkdirSync(tdir, { recursive: true });
-            }
-            await fs.promises.copyFile(fullPath, tp);
-          }
-          await pipeline(fs.createReadStream(fullPath), res);
-        };
-
-        await this.traktClient.importToken(req.user.access_token);
-
-        let posterUrl = watchable.image || null;
-        if (!posterUrl && watchable.trakt_id && watchable.media_type) {
-          const minimal = {
-            type: watchable.media_type,
-            [watchable.media_type]: { ids: { trakt: Number(watchable.trakt_id) } },
-          };
-          posterUrl = await posterUrlForCandidate(this.traktClient, minimal);
-        }
-
-        if (posterUrl) {
-          const response = await axios({
-            method: 'get',
-            url: posterUrl,
-            responseType: 'stream',
-          });
-          await writeRemoteToCacheAndRes(response.data);
-          return;
-        }
-
-        if (watchable.trakt_id) {
-          sres = await this.traktClient.findWatchable(watchable);
-          if (sres.length > 0) {
-            for (let i = 0; i < sres.length; i += 1) {
-              debug(sres[i]);
-              const { ids } = sres[i][watchable.media_type];
-              ids.type = watchable.media_type;
-
-              // eslint-disable-next-line no-await-in-loop
-              const images = await this.traktClient.getImages(ids);
-              debug(images);
-              const fallbackPosterUrl = normalizePosterValue(images?.poster);
-              if (fallbackPosterUrl) {
-                // eslint-disable-next-line no-await-in-loop
-                const response = await axios({
-                  method: 'get',
-                  url: fallbackPosterUrl,
-                  responseType: 'stream',
-                });
-                // eslint-disable-next-line no-await-in-loop
-                await writeRemoteToCacheAndRes(response.data);
-                return;
-              }
-            }
-          }
-        }
-
-        if (!fs.existsSync(imagePath)) {
-          fs.mkdirSync(imagePath, { recursive: true });
-        }
-        await pipeline(fs.createReadStream(defaultPosterImagePath), fs.createWriteStream(fullPath));
-        await pipeline(fs.createReadStream(fullPath), res);
-      } catch (e) {
-        Sentry.captureException(e);
-        debug(sres, e);
-        try {
-          if (!res.headersSent) {
-            await pipeline(fs.createReadStream(defaultPosterImagePath), res);
-          }
-        } catch (e2) {
-          debug(e2);
-          if (!res.headersSent) {
-            res.status(500).end();
-          }
-        }
-      }
+      await serveWatchablePoster(res, {
+        models: req.models,
+        watchableId: req.params.watchable_id,
+        traktClient: this.traktClient,
+        user: req.user,
+      });
     });
 
     apiRouter.post('/img/:watchable_id', this.authProvider.requireLogin, async (req, res) => {

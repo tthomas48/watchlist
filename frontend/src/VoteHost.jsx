@@ -1,21 +1,22 @@
-import { useContext, useEffect, useRef, useState } from 'react';
+import { useContext, useEffect } from 'react';
 import { useParams } from 'react-router-dom';
 import { useMutation, useQuery } from '@tanstack/react-query';
 import {
   Box, Button, Container, Typography, Stack, List, ListItem, ListItemText,
   LinearProgress, Card, CardMedia, CardContent, Link, Paper,
 } from '@mui/material';
+import PlayArrowIcon from '@mui/icons-material/PlayArrow';
 import { QRCodeSVG } from 'qrcode.react';
 import Api from './service/api';
 import { MessageContext } from './context/MessageContext';
 import { fetchVoteSession } from './service/voteApi';
 
-function CandidateCard({ candidate }) {
+function CandidateCard({ candidate, footer }) {
   if (!candidate) {
     return null;
   }
   return (
-    <Card sx={{ maxWidth: 480, mx: 'auto' }}>
+    <Card sx={{ maxWidth: 480, width: '100%' }}>
       <CardMedia
         component="img"
         height="360"
@@ -30,10 +31,11 @@ function CandidateCard({ candidate }) {
           </Typography>
         )}
         {candidate.rogerebertUrl && (
-          <Link href={candidate.rogerebertUrl} target="_blank" rel="noreferrer">
+          <Link href={candidate.rogerebertUrl} target="_blank" rel="noreferrer" sx={{ display: 'inline-block', mb: footer ? 2 : 0 }}>
             Roger Ebert review
           </Link>
         )}
+        {footer}
       </CardContent>
     </Card>
   );
@@ -43,17 +45,11 @@ function VoteHost() {
   const { code } = useParams();
   const messageContext = useContext(MessageContext);
   const api = new Api(messageContext);
-  const [played, setPlayed] = useState(false);
-  const playStarted = useRef(false);
 
   const sessionQuery = useQuery({
     queryKey: ['vote-session-host', code],
     queryFn: () => fetchVoteSession(code),
     refetchInterval: 1000,
-  });
-
-  const startMutation = useMutation({
-    mutationFn: () => api.startVoteSession(code),
   });
 
   const playMutation = useMutation({
@@ -72,17 +68,15 @@ function VoteHost() {
     }
   }, [playMutation.isError, playMutation.error, messageContext]);
 
-  useEffect(() => {
-    if (
-      session?.status === 'complete'
-      && session.winner
-      && !playStarted.current
-    ) {
-      playStarted.current = true;
-      setPlayed(true);
-      playMutation.mutate();
-    }
-  }, [session?.status, session?.winner, playMutation]);
+  const handlePlayWinner = () => {
+    playMutation.mutate(undefined, {
+      onSuccess: (result) => {
+        if (session?.serviceType === 'browser' && result?.uri) {
+          window.open(result.uri, 'watchlist_view_window', 'noreferrer');
+        }
+      },
+    });
+  };
 
   if (sessionQuery.isLoading) {
     return <Container sx={{ py: 4 }}><Typography>Loading session…</Typography></Container>;
@@ -115,6 +109,9 @@ function VoteHost() {
             <Typography variant="body2" sx={{ wordBreak: 'break-all' }}>{session.joinUrl}</Typography>
           </Paper>
           <Typography variant="h6">Players ({session.participants.length})</Typography>
+          <Typography variant="body2" color="text.secondary" sx={{ mb: 1 }}>
+            Waiting for a player to start voting
+          </Typography>
           <List dense sx={{ width: '100%', maxWidth: 360 }}>
             {session.participants.map((p) => (
               <ListItem key={p.id}>
@@ -122,30 +119,15 @@ function VoteHost() {
               </ListItem>
             ))}
           </List>
-          <Button
-            variant="contained"
-            size="large"
-            onClick={() => startMutation.mutate(undefined, {
-              onSuccess: () => sessionQuery.refetch(),
-              onError: (e) => {
-                messageContext.sendMessage({
-                  message: e.message,
-                  severity: 'error',
-                  open: true,
-                });
-              },
-            })}
-            disabled={!session.participants.length || startMutation.isPending}
-          >
-            Start voting
-          </Button>
         </Stack>
       )}
 
       {session.status === 'active' && session.phase === 'round1' && (
-        <Stack spacing={2}>
+        <Stack spacing={2} alignItems="center" sx={{ width: '100%' }}>
           <Typography variant="h6" textAlign="center">Swipe round — do we watch this?</Typography>
-          <CandidateCard candidate={session.currentCandidate} />
+          <Box sx={{ width: '100%', maxWidth: 480, mx: 'auto' }}>
+            <CandidateCard candidate={session.currentCandidate} />
+          </Box>
           <Box sx={{ px: 2 }}>
             <Typography variant="body2" align="center" gutterBottom>
               Votes: {session.voteProgress.submitted} / {session.voteProgress.required}
@@ -178,10 +160,26 @@ function VoteHost() {
       )}
 
       {session.status === 'complete' && session.winner && (
-        <Stack spacing={2} alignItems="center">
+        <Stack spacing={2} alignItems="center" sx={{ width: '100%' }}>
           <Typography variant="h5">Winner</Typography>
-          <CandidateCard candidate={session.winner} />
-          {playMutation.isPending && <Typography>Launching…</Typography>}
+          <Box sx={{ width: '100%', maxWidth: 480, mx: 'auto' }}>
+            <CandidateCard
+              candidate={session.winner}
+              footer={(
+                <Button
+                  variant="contained"
+                  size="large"
+                  fullWidth
+                  startIcon={<PlayArrowIcon />}
+                  onClick={handlePlayWinner}
+                  disabled={playMutation.isPending}
+                  sx={{ mt: 1 }}
+                >
+                  {playMutation.isPending ? 'Launching…' : 'Play'}
+                </Button>
+              )}
+            />
+          </Box>
         </Stack>
       )}
     </Container>

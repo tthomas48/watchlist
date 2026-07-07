@@ -5,7 +5,10 @@ class Api {
 
   async handleResponse(res) {
     if (res.status === 401) {
-      window.location.href = '/api/login';
+      const returnTo = encodeURIComponent(
+        `${window.location.pathname}${window.location.search}`,
+      );
+      window.location.href = `/api/login?returnTo=${returnTo}`;
       return null;
     }
     if (res.status === 204) {
@@ -317,14 +320,6 @@ class Api {
         trakt_list_user_slug: traktListUserSlug,
         service_type: serviceType,
       }),
-    });
-    return this.handleResponse(res);
-  }
-
-  async startVoteSession(code) {
-    const res = await fetch(`/api/vote-sessions/${encodeURIComponent(code)}/start`, {
-      method: 'POST',
-      withCredentials: true,
     });
     return this.handleResponse(res);
   }

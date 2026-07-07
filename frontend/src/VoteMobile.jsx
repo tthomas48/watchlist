@@ -13,14 +13,18 @@ import {
   fetchVoteSession,
   joinVoteSession,
   loadParticipantId,
+  loadVoterDisplayName,
   saveParticipantId,
+  saveVoterDisplayName,
+  startVoteSession,
 } from './service/voteApi';
 
 function VoteMobile() {
   const { code } = useParams();
-  const [displayName, setDisplayName] = useState('');
+  const [displayName, setDisplayName] = useState(() => loadVoterDisplayName());
   const [participantId, setParticipantId] = useState(() => loadParticipantId(code));
   const [joinError, setJoinError] = useState(null);
+  const [startError, setStartError] = useState(null);
   const [round1VotedFor, setRound1VotedFor] = useState(null);
   const [round2Picked, setRound2Picked] = useState(false);
 
@@ -33,6 +37,10 @@ function VoteMobile() {
 
   const joinMutation = useMutation({
     mutationFn: () => joinVoteSession(code, displayName),
+  });
+
+  const startMutation = useMutation({
+    mutationFn: () => startVoteSession(code, participantId),
   });
 
   const voteMutation = useMutation({
@@ -56,6 +64,7 @@ function VoteMobile() {
   const handleJoin = () => {
     joinMutation.mutate(undefined, {
       onSuccess: (data) => {
+        saveVoterDisplayName(displayName);
         saveParticipantId(code, data.participantId);
         setParticipantId(data.participantId);
         setJoinError(null);
@@ -125,9 +134,36 @@ function VoteMobile() {
 
   if (session.status === 'lobby') {
     return (
-      <Container sx={{ py: 4, textAlign: 'center' }}>
-        <Typography variant="h6">Waiting for host to start…</Typography>
-        <Typography color="text.secondary">You joined as {displayName || 'player'}</Typography>
+      <Container maxWidth="sm" sx={{ py: 4, textAlign: 'center' }}>
+        <Typography variant="h6" gutterBottom>Waiting for everyone to join</Typography>
+        <Typography color="text.secondary" gutterBottom>
+          Players joined: {session.participants.length}
+        </Typography>
+        {session.participants.length > 0 && (
+          <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
+            {session.participants.map((p) => p.displayName).join(', ')}
+          </Typography>
+        )}
+        <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
+          You joined as {displayName || 'player'}
+        </Typography>
+        {startError && <Typography color="error" sx={{ mb: 2 }}>{startError}</Typography>}
+        <Button
+          variant="contained"
+          size="large"
+          disabled={session.participants.length < 1 || startMutation.isPending}
+          onClick={() => {
+            startMutation.mutate(undefined, {
+              onSuccess: () => {
+                setStartError(null);
+                sessionQuery.refetch();
+              },
+              onError: (e) => setStartError(e.message),
+            });
+          }}
+        >
+          Start voting
+        </Button>
       </Container>
     );
   }

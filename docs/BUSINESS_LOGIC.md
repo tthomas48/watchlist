@@ -24,6 +24,7 @@
 
 - No login for voters; `code` in `/vote/:code` is the secret.
 - `participantId` dedupes votes only; it is not authenticated.
+- Session start is participant-initiated from phones; the host display is read-only during lobby.
 
 ## Edge cases
 

@@ -101,14 +101,36 @@ function visibleWatchablesWhere(traktListId) {
   };
 }
 
-function serializeWatchable(w) {
+function sessionAllowsWatchable(session, watchableId) {
+  const id = Number(watchableId);
+  if (Number.isNaN(id)) {
+    return false;
+  }
+  if (session.current_watchable_id === id) {
+    return true;
+  }
+  if (session.winner_watchable_id === id) {
+    return true;
+  }
+  const poolIds = [
+    ...parseJsonIds(session.pool_ids),
+    ...parseJsonIds(session.finalist_ids),
+    ...parseJsonIds(session.excluded_ids),
+  ];
+  return poolIds.includes(id);
+}
+
+function serializeWatchable(w, sessionCode) {
   if (!w) {
     return null;
   }
+  const imageUrl = sessionCode
+    ? `/api/vote-sessions/${sessionCode}/img/${w.id}`
+    : `/api/img/${w.id}`;
   return {
     id: w.id,
     title: w.title,
-    imageUrl: `/api/img/${w.id}`,
+    imageUrl,
     overview: w.overview || null,
     rogerebertUrl: w.rogerebert_url || null,
     webUrl: w.web_url || null,
@@ -399,7 +421,7 @@ class VoteSessionService {
     let currentCandidate = null;
     if (session.current_watchable_id) {
       const w = await this.models.Watchable.findByPk(session.current_watchable_id);
-      currentCandidate = serializeWatchable(w);
+      currentCandidate = serializeWatchable(w, session.code);
     }
 
     const finalistIds = parseJsonIds(session.finalist_ids);
@@ -408,13 +430,13 @@ class VoteSessionService {
       : [];
     const finalistById = new Map(finalists.map((w) => [w.id, w]));
     const serializedFinalists = finalistIds
-      .map((id) => serializeWatchable(finalistById.get(id)))
+      .map((id) => serializeWatchable(finalistById.get(id), session.code))
       .filter(Boolean);
 
     let winner = null;
     if (session.winner_watchable_id) {
       const w = await this.models.Watchable.findByPk(session.winner_watchable_id);
-      winner = serializeWatchable(w);
+      winner = serializeWatchable(w, session.code);
     }
 
     let voteProgress = { submitted: 0, required: participants.length };
@@ -466,6 +488,7 @@ module.exports = {
   tallyRound1Votes,
   pickPluralityWinner,
   serializeWatchable,
+  sessionAllowsWatchable,
   visibleWatchablesWhere,
   STATUS,
   PHASE,

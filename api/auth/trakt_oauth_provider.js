@@ -4,6 +4,19 @@ const AccessTokenStrategy = require('passport-access-token').Strategy;
 const TraktClient = require('../traktclient');
 const ErrorWithStatus = require('../../ErrorWithStatus');
 
+function isSafeReturnTo(value) {
+  if (!value || typeof value !== 'string') {
+    return false;
+  }
+  if (!value.startsWith('/') || value.startsWith('//')) {
+    return false;
+  }
+  if (/^https?:/i.test(value)) {
+    return false;
+  }
+  return true;
+}
+
 class TraktOauthProvider {
   getClientId() {
     return this.clientId;
@@ -101,13 +114,19 @@ class TraktOauthProvider {
   }
 
   redirect(req, res) {
+    const { returnTo } = req.query || {};
+    if (isSafeReturnTo(returnTo)) {
+      req.session.returnTo = returnTo;
+    }
     res.redirect('/api/auth/trakt');
   }
 
   // eslint-disable-next-line class-methods-use-this
   callback(req, res) {
     if (req.session.returnTo) {
-      res.redirect(req.session.returnTo);
+      const destination = req.session.returnTo;
+      delete req.session.returnTo;
+      res.redirect(destination);
       return;
     }
     // go somewhere bogus
@@ -153,3 +172,4 @@ class TraktOauthProvider {
   }
 }
 module.exports = TraktOauthProvider;
+module.exports.isSafeReturnTo = isSafeReturnTo;

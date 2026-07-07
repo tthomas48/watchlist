@@ -55,7 +55,7 @@ Returns lobby, active, final, and complete state. Poll every ~1s during play.
   "currentCandidate": {
     "id": 42,
     "title": "Movie",
-    "imageUrl": "/api/img/42",
+    "imageUrl": "/api/vote-sessions/ABC123/img/42",
     "overview": "...",
     "rogerebertUrl": "https://www.rogerebert.com/reviews/...",
     "webUrl": "https://..."
@@ -76,11 +76,15 @@ Returns lobby, active, final, and complete state. Poll every ~1s during play.
 
 Store `participantId` in `sessionStorage` and send it on every vote.
 
-## Start (host)
+## Start (phones)
 
 `POST /api/vote-sessions/:code/start`
 
-**Auth:** host only (`host_user_id` must match)
+**Auth:** none
+
+**Body:** `{ "participantId": "uuid" }`
+
+Any joined participant may start the session when at least one player has joined. The host display (`/vote-host/:code`) is read-only during lobby.
 
 ## Vote (phones)
 
@@ -112,13 +116,19 @@ Requires `status === "complete"` and winner `web_url` set. Uses the session’s 
 
 Alternative: `POST /api/play/:service_type/:watchable_id` with the winner id.
 
-## Android flow
+## Android TV host
+
+Full integration guide for the separate Android repo: **[ANDROID_VOTING_HOST.md](./ANDROID_VOTING_HOST.md)**.
+
+Summary:
 
 1. Trakt OAuth → `access_token`
-2. `POST /api/vote-sessions` with Bearer → `code`, `joinUrl`
-3. Render QR from `joinUrl` on TV
-4. Poll `GET /api/vote-sessions/:code` until `status === "complete"`
-5. `POST /api/vote-sessions/:code/play-winner` (or `/api/play/adb-googletv/:id`)
+2. `GET /api/lists` → pick list (`ids.trakt`, `user.username`)
+3. **Start Voting** → `POST /api/vote-sessions` with Bearer → `code`, `joinUrl`
+4. Render QR from `joinUrl` on TV; poll `GET /api/vote-sessions/:code` every ~1s
+5. **Lobby:** show `participants` count/names; phones call `POST .../join` and `POST .../start` (TV does not start)
+6. **Round 1 / final:** display `currentCandidate` or `finalists` and `voteProgress` from poll
+7. **Complete:** show `winner`; user taps Play → `POST /api/vote-sessions/:code/play-winner` (Bearer)
 
 ## Roger Ebert lookup (watchable editor)
 

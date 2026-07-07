@@ -6,6 +6,8 @@ const {
   pickRandomId,
   generateSessionCode,
   VoteSessionService,
+  serializeWatchable,
+  sessionAllowsWatchable,
   visibleWatchablesWhere,
 } = require('./vote_session_service');
 const { Op } = require('sequelize');
@@ -49,6 +51,35 @@ describe('vote_session_service helpers', () => {
 
   it('pickRandomId returns null for empty', () => {
     expect(pickRandomId([])).toBeNull();
+  });
+
+  it('sessionAllowsWatchable permits pool and session watchables only', () => {
+    const session = {
+      pool_ids: [1, 2, 3],
+      finalist_ids: [4],
+      excluded_ids: [5],
+      current_watchable_id: 6,
+      winner_watchable_id: 7,
+    };
+    expect(sessionAllowsWatchable(session, 1)).toBe(true);
+    expect(sessionAllowsWatchable(session, 4)).toBe(true);
+    expect(sessionAllowsWatchable(session, 5)).toBe(true);
+    expect(sessionAllowsWatchable(session, 6)).toBe(true);
+    expect(sessionAllowsWatchable(session, 7)).toBe(true);
+    expect(sessionAllowsWatchable(session, 99)).toBe(false);
+  });
+
+  it('serializeWatchable uses vote-scoped image URLs when session code provided', () => {
+    const watchable = {
+      id: 42,
+      title: 'Test',
+      overview: null,
+      rogerebert_url: null,
+      web_url: null,
+    };
+    expect(serializeWatchable(watchable, 'ABC123').imageUrl)
+      .toBe('/api/vote-sessions/ABC123/img/42');
+    expect(serializeWatchable(watchable).imageUrl).toBe('/api/img/42');
   });
 });
 

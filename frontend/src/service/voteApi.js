@@ -28,6 +28,19 @@ export async function joinVoteSession(code, displayName) {
   return json;
 }
 
+export async function startVoteSession(code, participantId) {
+  const res = await fetch(`/api/vote-sessions/${encodeURIComponent(code)}/start`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ participantId }),
+  });
+  const json = await parseVoteJson(res);
+  if (!res.ok) {
+    throw new Error(json?.message || `HTTP ${res.status}`);
+  }
+  return json;
+}
+
 export async function castVote(code, { participantId, vote, watchableId }) {
   const res = await fetch(`/api/vote-sessions/${encodeURIComponent(code)}/vote`, {
     method: 'POST',
@@ -51,4 +64,26 @@ export function loadParticipantId(code) {
 
 export function saveParticipantId(code, participantId) {
   sessionStorage.setItem(participantStorageKey(code), participantId);
+}
+
+const voterDisplayNameKey = 'watchlist.vote.displayName';
+
+export function loadVoterDisplayName() {
+  try {
+    return localStorage.getItem(voterDisplayNameKey) || '';
+  } catch (e) {
+    return '';
+  }
+}
+
+export function saveVoterDisplayName(displayName) {
+  const name = String(displayName || '').trim();
+  if (!name) {
+    return;
+  }
+  try {
+    localStorage.setItem(voterDisplayNameKey, name);
+  } catch (e) {
+    // ignore quota / private mode errors
+  }
 }
