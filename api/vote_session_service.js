@@ -1,4 +1,5 @@
 const crypto = require('crypto');
+const { Op } = require('sequelize');
 
 const SESSION_CODE_CHARS = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
 const SESSION_TTL_MS = 4 * 60 * 60 * 1000;
@@ -93,6 +94,13 @@ function pickPluralityWinner(casts, finalistIds) {
   return pickRandomId(tied);
 }
 
+function visibleWatchablesWhere(traktListId) {
+  return {
+    trakt_list_id: String(traktListId),
+    [Op.or]: [{ hidden: false }, { hidden: null }],
+  };
+}
+
 function serializeWatchable(w) {
   if (!w) {
     return null;
@@ -134,10 +142,7 @@ class VoteSessionService {
     hostUserId, traktListId, traktListUserSlug, serviceType = 'adb-googletv',
   }) {
     const watchables = await this.models.Watchable.findAll({
-      where: {
-        trakt_list_id: traktListId,
-        hidden: false,
-      },
+      where: visibleWatchablesWhere(traktListId),
     });
     const poolIds = watchables.map((w) => w.id);
     if (!poolIds.length) {
@@ -461,6 +466,7 @@ module.exports = {
   tallyRound1Votes,
   pickPluralityWinner,
   serializeWatchable,
+  visibleWatchablesWhere,
   STATUS,
   PHASE,
 };

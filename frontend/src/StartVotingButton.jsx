@@ -43,7 +43,7 @@ function StartVotingButton({ list, player }) {
 
   return (
     <Button
-      variant="outlined"
+      aria-label="start voting session"
       startIcon={<HowToVoteIcon />}
       onClick={handleStart}
       disabled={!list || createSession.isPending}

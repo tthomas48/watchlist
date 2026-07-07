@@ -122,142 +122,147 @@ function WatchlistItem({
         },
       })}
     >
-      <CardActionArea
-        onClick={editAction}
+      <Box
         sx={{
+          position: 'relative',
           flex: 1,
           display: 'flex',
           flexDirection: 'column',
-          alignItems: 'stretch',
           minHeight: 0,
         }}
       >
-        <CardHeader
-          title={item.title}
-          titleTypographyProps={{
-            noWrap: true,
-            sx: {
-              color: 'primary.main',
-              fontSize: '1rem',
-              fontWeight: 600,
-            },
-          }}
+        <CardActionArea
+          onClick={editAction}
           sx={{
-            overflow: 'hidden',
-            flexShrink: 0,
-            '& .MuiCardHeader-content': { overflow: 'hidden' },
-          }}
-        />
-        <Box
-          sx={{
-            position: 'relative',
-            width: '100%',
-            aspectRatio: '2 / 3',
-            flexShrink: 0,
+            flex: 1,
+            display: 'flex',
+            flexDirection: 'column',
+            alignItems: 'stretch',
+            minHeight: 0,
           }}
         >
+          <CardHeader
+            title={item.title}
+            slotProps={{
+              title: {
+                noWrap: true,
+                sx: {
+                  color: 'primary.main',
+                  fontSize: '1rem',
+                  fontWeight: 600,
+                },
+              },
+            }}
+            sx={{
+              overflow: 'hidden',
+              flexShrink: 0,
+              '& .MuiCardHeader-content': { overflow: 'hidden' },
+            }}
+          />
           <Box
             sx={{
-              position: 'absolute',
-              inset: 0,
-              bgcolor: '#000',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              overflow: 'hidden',
+              position: 'relative',
+              width: '100%',
+              aspectRatio: '2 / 3',
+              flexShrink: 0,
             }}
           >
             <Box
-              className="watchlist-poster-img"
-              component="img"
-              src={`/api/img/${item.id}`}
-              alt={item.title}
-              sx={{
-                width: '100%',
-                height: '100%',
-                objectFit: 'contain',
-                objectPosition: 'center',
-                display: 'block',
-                transition: 'transform 0.25s ease',
-              }}
-            />
-          </Box>
-
-          {serviceIcon && (
-            <Box
               sx={{
                 position: 'absolute',
-                top: 8,
-                right: 8,
-                zIndex: 1,
-                pointerEvents: 'none',
-                width: 48,
-                height: 48,
-                borderRadius: '50%',
-                overflow: 'hidden',
-                bgcolor: 'primary.main',
+                inset: 0,
+                bgcolor: '#000',
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'center',
-                boxShadow: '0 2px 8px rgba(0,0,0,0.28)',
-                border: '2px solid rgba(255,255,255,0.35)',
+                overflow: 'hidden',
               }}
             >
-              {serviceIcon.type === 'img' ? (
-                <Box
-                  component="img"
-                  src={serviceIcon.src}
-                  alt={serviceIcon.alt}
-                  sx={{
-                    width: 44,
-                    height: 44,
-                    objectFit: 'contain',
-                    // Simple Icons / black SVGs read on accent; keep Netflix red etc. visible
-                    filter: 'drop-shadow(0 0 0.5px rgba(0,0,0,0.15))',
-                  }}
-                />
-              ) : (
-                <LiveTv
-                  sx={{ width: 44, height: 44, color: 'primary.contrastText' }}
-                  titleAccess={serviceIcon.alt}
-                />
-              )}
+              <Box
+                className="watchlist-poster-img"
+                component="img"
+                src={`/api/img/${item.id}`}
+                alt={item.title}
+                sx={{
+                  width: '100%',
+                  height: '100%',
+                  objectFit: 'contain',
+                  objectPosition: 'center',
+                  display: 'block',
+                  transition: 'transform 0.25s ease',
+                }}
+              />
             </Box>
-          )}
 
-          {(showInfoNotification || !item.web_url) && (
-            <Box
-              onClick={(e) => e.stopPropagation()}
-              onKeyDown={(e) => e.stopPropagation()}
-              sx={{
-                position: 'absolute',
-                bottom: 0,
-                left: 0,
-                right: 0,
-                zIndex: 2,
-                display: 'flex',
-                flexDirection: 'column',
-                ...overlayAlertSx,
-              }}
-            >
-              {showInfoNotification && (
-                <Alert
-                  severity="info"
-                  onClose={(e) => {
-                    e.stopPropagation();
-                    handleDismissNotification(notification);
-                  }}
-                >
-                  {notification.message}
-                </Alert>
-              )}
-              {!item.web_url && (
-                <Alert severity="warning">No url has been specified.</Alert>
-              )}
-            </Box>
-          )}
-        </Box>
-      </CardActionArea>
+            {serviceIcon && (
+              <Box
+                sx={{
+                  position: 'absolute',
+                  top: 8,
+                  right: 8,
+                  zIndex: 1,
+                  pointerEvents: 'none',
+                  width: 48,
+                  height: 48,
+                  borderRadius: '50%',
+                  overflow: 'hidden',
+                  bgcolor: 'primary.main',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  boxShadow: '0 2px 8px rgba(0,0,0,0.28)',
+                  border: '2px solid rgba(255,255,255,0.35)',
+                }}
+              >
+                {serviceIcon.type === 'img' ? (
+                  <Box
+                    component="img"
+                    src={serviceIcon.src}
+                    alt={serviceIcon.alt}
+                    sx={{
+                      width: 44,
+                      height: 44,
+                      objectFit: 'contain',
+                      filter: 'drop-shadow(0 0 0.5px rgba(0,0,0,0.15))',
+                    }}
+                  />
+                ) : (
+                  <LiveTv
+                    sx={{ width: 44, height: 44, color: 'primary.contrastText' }}
+                    titleAccess={serviceIcon.alt}
+                  />
+                )}
+              </Box>
+            )}
+          </Box>
+        </CardActionArea>
+        {(showInfoNotification || !item.web_url) && (
+          <Box
+            sx={{
+              position: 'absolute',
+              bottom: 0,
+              left: 0,
+              right: 0,
+              zIndex: 2,
+              display: 'flex',
+              flexDirection: 'column',
+              ...overlayAlertSx,
+            }}
+          >
+            {showInfoNotification && (
+              <Alert
+                severity="info"
+                onClose={() => handleDismissNotification(notification)}
+              >
+                {notification.message}
+              </Alert>
+            )}
+            {!item.web_url && (
+              <Alert severity="warning">No url has been specified.</Alert>
+            )}
+          </Box>
+        )}
+      </Box>
       <CardActions disableSpacing sx={{ color: 'primary.main', flexShrink: 0, mt: 'auto' }}>
         <PlayButton player={player} id={item.id} disabled={!item.web_url} />
         <CommentButton item={item} saveWatchable={saveWatchable}></CommentButton>

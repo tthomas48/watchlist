@@ -8,6 +8,11 @@ module.exports = (sequelize, DataTypes) => {
     }
   }
   VoteCast.init({
+    id: {
+      type: DataTypes.UUID,
+      defaultValue: DataTypes.UUIDV4,
+      primaryKey: true,
+    },
     vote_session_id: DataTypes.UUID,
     participant_id: DataTypes.UUID,
     phase: DataTypes.STRING,

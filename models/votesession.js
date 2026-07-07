@@ -11,6 +11,11 @@ module.exports = (sequelize, DataTypes) => {
     }
   }
   VoteSession.init({
+    id: {
+      type: DataTypes.UUID,
+      defaultValue: DataTypes.UUIDV4,
+      primaryKey: true,
+    },
     code: DataTypes.STRING(8),
     trakt_list_id: DataTypes.STRING,
     trakt_list_user_slug: DataTypes.STRING,

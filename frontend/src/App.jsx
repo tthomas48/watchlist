@@ -107,6 +107,9 @@ function App() {
                     <RefreshButton list={list} sort={sort}></RefreshButton>
                   </MenuItem>
                   <MenuItem onClick={handleClose}>
+                    <StartVotingButton list={list} player={player} />
+                  </MenuItem>
+                  <MenuItem onClick={handleClose}>
                     <ShowHiddenButton showHidden={showHidden}
                       setShowHidden={setShowHidden}></ShowHiddenButton>
                   </MenuItem>
@@ -146,11 +149,8 @@ function App() {
               <Box sx={{ minWidth: 160, maxWidth: 320, flexShrink: 0 }}>
                 <SortPicker sort={sort} setSort={setSort} />
               </Box>
-              <Box sx={{ flexShrink: 0 }}>
+              <Box sx={{ flexShrink: 0, ml: 'auto' }}>
                 <AddItem list={list} />
-              </Box>
-              <Box sx={{ flexShrink: 0 }}>
-                <StartVotingButton list={list} player={player} />
               </Box>
             </Toolbar>
           </Container>
