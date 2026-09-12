@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import {
+  Link as RouterLink,
   Outlet,
 } from 'react-router-dom';
 import {
@@ -18,7 +19,32 @@ import AddItem from './AddItem';
 import StartVotingButton from './StartVotingButton';
 import useLocalStorage from './hooks/useLocalStorage';
 import MessageContextWrapper from './context/MessageContext';
-import { WatchableEditProvider } from './WatchableEditDialog';
+import { WatchableEditProvider, useWatchableEdit } from './WatchableEditDialog';
+
+function AppTitle() {
+  const { closeEdit } = useWatchableEdit();
+
+  return (
+    <Typography
+      variant="h6"
+      noWrap
+      component={RouterLink}
+      to="/"
+      onClick={closeEdit}
+      sx={{
+        flexShrink: 0,
+        color: 'inherit',
+        textDecoration: 'none',
+        cursor: 'pointer',
+        '&:hover': {
+          opacity: 0.85,
+        },
+      }}
+    >
+      Watchlist
+    </Typography>
+  );
+}
 
 const listStorageKey = 'watchlist.trakt_list';
 const localStorageKey = 'watchlist.player';
@@ -64,9 +90,7 @@ function App() {
                 py: 1,
               }}
             >
-              <Typography variant="h6" noWrap component="div" sx={{ flexShrink: 0 }}>
-                Watchlist
-              </Typography>
+              <AppTitle />
               <Box
                 sx={{
                   display: 'flex',
