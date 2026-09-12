@@ -139,7 +139,6 @@ class TraktOauthProvider {
       return;
     }
     res.status(401).send('Unauthorized');
-    next('Unauthorized');
   }
 
   addRoutes(apiRouter) {

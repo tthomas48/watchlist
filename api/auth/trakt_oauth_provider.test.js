@@ -71,3 +71,25 @@ describe('callback', () => {
     expect(res.redirect).toHaveBeenCalledWith('/');
   });
 });
+
+describe('requireLogin', () => {
+  it('calls next when user is present', () => {
+    const req = { user: { id: 1 } };
+    const res = { status: jest.fn(() => res), send: jest.fn(() => res) };
+    const next = jest.fn();
+    new TraktOauthProvider().requireLogin(req, res, next);
+    expect(next).toHaveBeenCalledTimes(1);
+    expect(next).toHaveBeenCalledWith();
+    expect(res.status).not.toHaveBeenCalled();
+  });
+
+  it('sends 401 and does not call next when unauthenticated', () => {
+    const req = {};
+    const res = { status: jest.fn(() => res), send: jest.fn(() => res) };
+    const next = jest.fn();
+    new TraktOauthProvider().requireLogin(req, res, next);
+    expect(res.status).toHaveBeenCalledWith(401);
+    expect(res.send).toHaveBeenCalledWith('Unauthorized');
+    expect(next).not.toHaveBeenCalled();
+  });
+});

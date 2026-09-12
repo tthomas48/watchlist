@@ -98,10 +98,13 @@ class Api {
   }
 
   handleError(res, err) {
-    Sentry.captureException(err);
+    const status = err.status || 500;
+    if (status >= 500) {
+      Sentry.captureException(err);
+    }
     const msg = JSON.stringify(err, Object.getOwnPropertyNames(err));
     debug(msg);
-    res.status(500).send(msg);
+    res.status(status).send(msg);
   }
 
   async markWatched(req, watchable) {
