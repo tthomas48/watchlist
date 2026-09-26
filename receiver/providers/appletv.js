@@ -1,4 +1,3 @@
-/* eslint-disable class-methods-use-this */
 class AppleTV {
   getReceiverKey() {
     return 'appletv';

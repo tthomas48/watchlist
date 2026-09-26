@@ -8,7 +8,7 @@ const Server = require('./server');
 (async () => {
   let remoteUrl = `http://${process.env.HOST}:${process.env.PORT}`;
   if (process.env.TUNNEL === 'true') {
-    // eslint-disable-next-line import/no-extraneous-dependencies, global-require
+    // eslint-disable-next-line global-require
     const ngrok = require('@ngrok/ngrok');
     const listener = await ngrok.forward({
       addr: process.env.PORT,
