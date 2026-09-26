@@ -14,6 +14,7 @@ test('resolveStreamingServiceIdFromUrl: manifest-mapped catalog ids', () => {
   expect(ProviderFactory.resolveStreamingServiceIdFromUrl('https://www.disneyplus.com/movies/foo')).toBe('disney');
   expect(ProviderFactory.resolveStreamingServiceIdFromUrl('https://www.hulu.com/watch/123')).toBe('hulu');
   expect(ProviderFactory.resolveStreamingServiceIdFromUrl('https://play.max.com/show/abc')).toBe('hbo');
+  expect(ProviderFactory.resolveStreamingServiceIdFromUrl('https://play.hbomax.com/show/abc')).toBe('hbo');
   expect(ProviderFactory.resolveStreamingServiceIdFromUrl('https://www.peacocktv.com/watch/foo')).toBe('peacock');
 });
 

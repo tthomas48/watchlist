@@ -1,4 +1,3 @@
-/* eslint-disable class-methods-use-this */
 class AMCPlus {
   getReceiverKey() {
     return 'amcplus';

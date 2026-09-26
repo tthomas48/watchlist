@@ -5,6 +5,7 @@ autoInstallPeers: true
 strictPeerDependencies: false
 
 allowBuilds:
+  '@parcel/watcher': true
   esbuild: true
   sqlite3: true
   unrs-resolver: true
@@ -17,11 +18,13 @@ minimumReleaseAgeExclude:
   - brace-expansion@5.0.6
   - js-cookie@3.0.6
   - form-data@4.0.6
-  - tar@7.5.16
+  - tar@7.5.16 || 7.5.21
   - '@babel/core@7.29.1'
   - js-yaml@3.15.0 || 4.1.2
+  - browserslist@4.28.7
 
 overrides:
+  browserslist@<=4.28.6: ^4.28.7
   got@<11.8.5: ^11.8.5
   ip-address@<=10.1.0: ^10.1.1
   tar@<=7.5.15: ^7.5.16

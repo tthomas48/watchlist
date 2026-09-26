@@ -1,4 +1,3 @@
-/* eslint-disable class-methods-use-this */
 class YouTube {
   getReceiverKey() {
     return 'youtube';

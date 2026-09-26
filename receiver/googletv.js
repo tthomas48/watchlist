@@ -1,6 +1,6 @@
 const debug = require('debug')('watchlist:receiver:androidtv');
-const Sentry = require('@sentry/node');
 const ProviderFactory = require('./providers/factory');
+const { unsupportedStreamingUrlError } = require('./unsupported_streaming_url');
 
 class GoogleTV {
   async init() {
@@ -12,11 +12,13 @@ class GoogleTV {
   }
 
   async play(uri) {
-    Sentry.captureMessage(`Getting params for ${uri}`);
+    debug(`Getting params for ${uri}`);
     const params = ProviderFactory.getParams(uri);
+    if (params == null) {
+      throw unsupportedStreamingUrlError(uri);
+    }
     params.result = true;
-    Sentry.captureMessage(`Returning params ${JSON.stringify(params)}`);
-    debug(`Params: ${JSON.stringify(params)}`);
+    debug(`Returning params ${JSON.stringify(params)}`);
     return params;
   }
 

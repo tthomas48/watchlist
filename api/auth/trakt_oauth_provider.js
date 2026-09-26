@@ -121,7 +121,6 @@ class TraktOauthProvider {
     res.redirect('/api/auth/trakt');
   }
 
-  // eslint-disable-next-line class-methods-use-this
   callback(req, res) {
     if (req.session.returnTo) {
       const destination = req.session.returnTo;
@@ -139,7 +138,6 @@ class TraktOauthProvider {
       return;
     }
     res.status(401).send('Unauthorized');
-    next('Unauthorized');
   }
 
   addRoutes(apiRouter) {

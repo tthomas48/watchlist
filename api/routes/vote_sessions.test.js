@@ -13,6 +13,7 @@ jest.mock('../vote_session_service', () => {
     buildSessionResponse: jest.fn(),
   };
   const MockVoteSessionService = jest.fn(() => mocks);
+  // eslint-disable-next-line no-underscore-dangle
   MockVoteSessionService.__mocks = mocks;
   return {
     ...actual,
@@ -21,6 +22,8 @@ jest.mock('../vote_session_service', () => {
 });
 
 const { VoteSessionService } = require('../vote_session_service');
+
+// eslint-disable-next-line no-underscore-dangle
 const serviceMocks = VoteSessionService.__mocks;
 
 function captureRoutes() {

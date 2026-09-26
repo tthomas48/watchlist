@@ -1,3 +1,4 @@
+const Sentry = require('@sentry/node');
 const Api = require('./api');
 
 describe('api', () => {
@@ -109,6 +110,34 @@ describe('api', () => {
         }),
         'alice',
       );
+    });
+  });
+
+  describe('handleError', () => {
+    afterEach(() => {
+      jest.restoreAllMocks();
+    });
+
+    it('sends err.status and does not report 4xx to Sentry', () => {
+      jest.spyOn(Sentry, 'captureException').mockImplementation(() => {});
+      const api = new Api();
+      const res = { status: jest.fn(() => res), send: jest.fn(() => res) };
+      const err = new Error('Unsupported streaming URL: https://example.com/video');
+      err.status = 400;
+      api.handleError(res, err);
+      expect(res.status).toHaveBeenCalledWith(400);
+      expect(res.send).toHaveBeenCalled();
+      expect(Sentry.captureException).not.toHaveBeenCalled();
+    });
+
+    it('sends 500 and reports to Sentry when status is missing', () => {
+      jest.spyOn(Sentry, 'captureException').mockImplementation(() => {});
+      const api = new Api();
+      const res = { status: jest.fn(() => res), send: jest.fn(() => res) };
+      const err = new Error('boom');
+      api.handleError(res, err);
+      expect(res.status).toHaveBeenCalledWith(500);
+      expect(Sentry.captureException).toHaveBeenCalledWith(err);
     });
   });
 });

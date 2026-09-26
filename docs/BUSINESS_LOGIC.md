@@ -41,3 +41,10 @@
 
 - `overview` and `year` sync from Trakt on list refresh.
 - `rogerebert_url` is editable in the watchable editor; optional Lookup fills it via slug URL check.
+
+## Max / HBO Max play URLs
+
+- `play.max.com`, `www.max.com`, `play.hbomax.com`, and `www.hbomax.com` are the same Max provider.
+- Google TV / ADB play normalizes those hosts to `https://play.max.com` (HTTPS, no query string) and uses Android component `com.wbd.stream/com.wbd.beam.BeamActivity`.
+- Homepage paths like `www.max.com/shows/{slug}/{uuid}` become `play.max.com/show/{uuid}`.
+- Stored `web_url` values may still use legacy `hbomax.com` hosts; matching and rewrite happen at play time.
