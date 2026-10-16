@@ -25,17 +25,7 @@ Copy [.env.example](.env.example) to `.env` for local runs or for the `docker ru
 
 **Streaming availability (optional):** after you pick a Trakt row, the UI can show where to stream using the official [Streaming Availability API](https://docs.movieofthenight.com/) via the [`streaming-availability`](https://www.npmjs.com/package/streaming-availability) client ([client libraries guide](https://docs.movieofthenight.com/guide/client-libraries)). Set `RAPIDAPI_KEY` (and optionally `RAPIDAPI_HOST`, `STREAMING_AVAILABILITY_COUNTRY`) in `.env`. Use **`GET /api/streaming/availability`** (session or Bearer automation auth) with `type`, `imdb_id` or `tmdb_id`, and optional `country`. `GET /api/capabilities` (after login) exposes `{ streamingEnabled }`; omitting `RAPIDAPI_KEY` disables streaming lookups without breaking the app. See `.env.example`.
 
-### Agent / automation API (`/api/agent/*`)
-
-Structured routes for TV or automation clients (session cookie or **`Authorization: Bearer`** + `AUTOMATION_*`). Use numeric DB **`Watchable.id`** from list responses—do not trust free-text titles as ids without resolving them first.
-
-| Method | Path | Purpose |
-|--------|------|---------|
-| GET | `/api/agent/lists` | Trakt lists (owned + collaborations), `{ lists: [...] }`. |
-| GET | `/api/agent/watchables?trakt_list_id=&q=&include_hidden=` | Rows on one list (`include_hidden` defaults true; `q` filters title). |
-| POST | `/api/agent/watchables/:id/hidden` | Body `{ "hidden": true \| false }` (grid visibility, not Trakt delete). |
-| POST | `/api/agent/watchables/:id/move` | Body `{ "from": { "username", "traktListId" }, "to": { ... } }` — Trakt remove/add for movies/shows, then DB update + refresh both lists. |
-| GET | `/api/agent/refresh/:trakt_list_user_id/:trakt_list_id/` | Sync one list from Trakt (like web refresh). |
+**TV app (watchlisttv):** uses the same main JSON API — especially `GET /api/watchlist/...`, `GET /api/lists`, `POST /api/play/...`, vote-sessions, and `POST /api/auth/device`. Prefer numeric DB **`Watchable.id`**. Bearer `AUTOMATION_*` (when set) works on routes that accept Bearer auth; it is not a separate API family.
 
 ### Roadmap (from project plans)
 

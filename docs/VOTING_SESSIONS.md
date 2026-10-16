@@ -55,6 +55,7 @@ Returns lobby, active, final, and complete state. Poll every ~1s during play.
   "currentCandidate": {
     "id": 42,
     "title": "Movie",
+    "year": 2019,
     "imageUrl": "/api/vote-sessions/ABC123/img/42",
     "overview": "...",
     "rogerebertUrl": "https://www.rogerebert.com/reviews/...",

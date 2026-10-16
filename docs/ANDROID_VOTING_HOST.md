@@ -147,6 +147,7 @@ Poll approximately **every 1 second** from session create until `status` is `com
   "currentCandidate": {
     "id": 42,
     "title": "Movie Title",
+    "year": 2019,
     "imageUrl": "/api/vote-sessions/MUMT3B/img/42",
     "overview": "Synopsis text or null",
     "rogerebertUrl": "https://www.rogerebert.com/reviews/...",
