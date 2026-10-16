@@ -57,7 +57,7 @@ Related: [VOTING_SESSIONS.md](./VOTING_SESSIONS.md), [ANDROID_VOTING_HOST.md](./
 
 - `overview` and `year` sync from Trakt on list refresh.
 - `rogerebert_url` is editable in the watchable editor; optional Lookup fills it via slug URL check.
-- Vote serialize should include `year` (camelCase). Browse/TV use `/api/watchlist/...` snake_case rows. Planned additive fields (see design docs): `genres`, `moods`, subscription streaming snapshot, `recommenders`, `trailer_url` — [TV_BROWSE_METADATA.md](./TV_BROWSE_METADATA.md).
+- Vote serialize includes `year` (camelCase). Browse/TV use `/api/watchlist/...` snake_case rows (`overview`, `year`, `rogerebert_url` already returned). Planned additive fields (see design docs): `genres`, `moods`, subscription streaming snapshot, `recommenders`, `trailer_url` — [TV_BROWSE_METADATA.md](./TV_BROWSE_METADATA.md).
 - WebUI: poster opens a detail sheet (synopsis, year, Ebert link); Edit is an explicit action from detail or the card menu.
 
 ## Max / HBO Max play URLs

@@ -25,7 +25,7 @@ import CommentButton from './CommentButton';
 import { MessageContext } from './context/MessageContext';
 import Api from './service/api';
 import getStreamingServiceIcon from './streamingServiceIcon';
-import { useWatchableEdit } from './WatchableEditDialog';
+import { useWatchableDetail } from './WatchableDetailDialog';
 
 const overlayAlertSx = {
   '& .MuiAlert-root': {
@@ -48,7 +48,7 @@ function WatchlistItem({
   const [closedNotification, setClosedNotification] = useState(false);
   const queryClient = useQueryClient();
   const api = new Api(messageContext);
-  const { openEdit } = useWatchableEdit();
+  const { openDetail } = useWatchableDetail();
   const [anchorEl, setAnchorEl] = useState(null);
   const open = Boolean(anchorEl);
 
@@ -84,7 +84,7 @@ function WatchlistItem({
   const handleClose = () => {
     setAnchorEl(null);
   };
-  const editAction = () => openEdit(item.id);
+  const detailAction = () => openDetail(item, player);
 
   const showInfoNotification = notification != null && !closedNotification;
   const serviceIcon = getStreamingServiceIcon(item.streaming_service_id);
@@ -132,7 +132,7 @@ function WatchlistItem({
         }}
       >
         <CardActionArea
-          onClick={editAction}
+          onClick={detailAction}
           sx={{
             flex: 1,
             display: 'flex',

@@ -20,9 +20,11 @@ import StartVotingButton from './StartVotingButton';
 import useLocalStorage from './hooks/useLocalStorage';
 import MessageContextWrapper from './context/MessageContext';
 import { WatchableEditProvider, useWatchableEdit } from './WatchableEditDialog';
+import { WatchableDetailProvider, useWatchableDetail } from './WatchableDetailDialog';
 
 function AppTitle() {
   const { closeEdit } = useWatchableEdit();
+  const { closeDetail } = useWatchableDetail();
 
   return (
     <Typography
@@ -30,7 +32,10 @@ function AppTitle() {
       noWrap
       component={RouterLink}
       to="/"
-      onClick={closeEdit}
+      onClick={() => {
+        closeDetail();
+        closeEdit();
+      }}
       sx={{
         flexShrink: 0,
         color: 'inherit',
@@ -71,6 +76,7 @@ function App() {
       <WatchableEditProvider>
       <StreamingSettingsProvider>
       <MessageContextWrapper>
+      <WatchableDetailProvider>
         <AppBar
           position="static"
           sx={{
@@ -186,6 +192,7 @@ function App() {
             </Grid>
           </Grid>
         </Box>
+      </WatchableDetailProvider>
       </MessageContextWrapper>
       </StreamingSettingsProvider>
       </WatchableEditProvider>

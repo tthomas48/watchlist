@@ -1,7 +1,6 @@
 import {
-  createContext, useCallback, useContext, useEffect, useMemo, useState,
+  createContext, useCallback, useContext, useMemo, useState,
 } from 'react';
-import { useNavigate, useParams } from 'react-router-dom';
 import { Dialog } from '@mui/material';
 import { WatchableEditor } from './Watchable';
 
@@ -13,21 +12,6 @@ export function useWatchableEdit() {
     throw new Error('useWatchableEdit must be used within WatchableEditProvider');
   }
   return ctx;
-}
-
-export function WatchableDeepLink() {
-  const { id } = useParams();
-  const navigate = useNavigate();
-  const { openEdit } = useWatchableEdit();
-
-  useEffect(() => {
-    if (id) {
-      openEdit(id);
-    }
-    navigate('/', { replace: true });
-  }, [id, navigate, openEdit]);
-
-  return null;
 }
 
 export function WatchableEditProvider({ children }) {

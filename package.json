@@ -61,14 +61,22 @@
     "vite-express": "^0.22.1"
   },
   "devDependencies": {
+    "@babel/core": "8.0.7",
+    "@babel/preset-env": "8.0.7",
+    "@babel/preset-react": "8.0.1",
     "@eslint/eslintrc": "^3.3.7",
     "@eslint/js": "^9.39.5",
+    "@testing-library/jest-dom": "7.0.1",
+    "@testing-library/react": "16.3.3",
+    "babel-jest": "30.5.2",
     "dotenv-cli": "^11.0.0",
     "eslint": "^10.11.0",
     "eslint-config-airbnb-base": "^15.0.0",
     "eslint-plugin-import": "^2.32.0",
     "globals": "^16.5.0",
     "jest": "^30.5.2",
+    "jest-environment-jsdom": "30.5.2",
+    "jsdom": "30.1.3",
     "nodemon": "^3.1.14"
   },
   "browserslist": {
@@ -81,6 +89,35 @@
       "last 1 chrome version",
       "last 1 firefox version",
       "last 1 safari version"
+    ]
+  },
+  "jest": {
+    "projects": [
+      {
+        "displayName": "node",
+        "testEnvironment": "node",
+        "testMatch": [
+          "<rootDir>/api/**/*.test.js",
+          "<rootDir>/receiver/**/*.test.js",
+          "<rootDir>/models/**/*.test.js"
+        ]
+      },
+      {
+        "displayName": "frontend",
+        "testEnvironment": "jsdom",
+        "testMatch": [
+          "<rootDir>/frontend/**/*.test.jsx"
+        ],
+        "setupFilesAfterEnv": [
+          "<rootDir>/frontend/src/setupTests.js"
+        ],
+        "transform": {
+          "^.+\\.(js|jsx)$": "babel-jest"
+        },
+        "transformIgnorePatterns": [
+          "/node_modules/(?!(@mui|@babel|@emotion)/)"
+        ]
+      }
     ]
   }
 }

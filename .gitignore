@@ -4,3 +4,6 @@ data
 build
 frontend/build
 .vscode
+
+# Local pnpm store (do not commit)
+.pnpm-store/

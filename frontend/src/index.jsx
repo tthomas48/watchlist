@@ -16,7 +16,7 @@ import greenTheme from './theme';
 import './index.css';
 import App from './App';
 import Watchlist from './Watchlist';
-import { WatchableDeepLink } from './WatchableEditDialog';
+import { WatchableDeepLink } from './WatchableDetailDialog';
 import VoteHost from './VoteHost';
 import VoteMobile from './VoteMobile';
 import VoteMobileShell from './VoteMobileShell';
