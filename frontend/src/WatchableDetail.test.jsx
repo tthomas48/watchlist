@@ -44,6 +44,19 @@ describe('WatchableDetailContent', () => {
     expect(screen.getByText('Netflix')).toBeInTheDocument();
   });
 
+  it('renders genre and mood chips when present', () => {
+    render(
+      <WatchableDetailContent
+        item={{ ...baseItem, genres: ['comedy'], moods: ['light'] }}
+        player="browser"
+        onEdit={jest.fn()}
+        onClose={jest.fn()}
+      />,
+    );
+    expect(screen.getByText('Comedy')).toBeInTheDocument();
+    expect(screen.getByText('Light')).toBeInTheDocument();
+  });
+
   it('calls onEdit when Edit is clicked', () => {
     const onEdit = jest.fn();
     render(

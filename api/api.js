@@ -6,7 +6,6 @@ const { PassThrough } = require('stream');
 const { pipeline } = require('stream/promises');
 const axios = require('axios');
 const singleflight = require('node-singleflight');
-const { Op } = require('sequelize');
 const Sentry = require('@sentry/node');
 const TraktClient = require('./traktclient');
 const { getTitle, getTraktId, getTraktIds } = require('./helpers');
@@ -40,6 +39,8 @@ const mountRogerEbertRoutes = require('./routes/rogerebert');
 const mountTrailerRoutes = require('./routes/trailer');
 const { normalizeTrailerField } = require('./trailer');
 const { serveWatchablePoster } = require('./poster_serve');
+const { normalizeGenres, moodsFromGenres } = require('./mood_map');
+const { buildWatchlistWhere, parseListFilters } = require('./watchlist_filters');
 
 const defaultPosterImagePath = path.join(__dirname, '../images/movie.jpg');
 let cachedDefaultPosterSha256 = null;
@@ -170,6 +171,7 @@ class Api {
   async createWatchable(models, traktListId, traktItem, traktListUserSlug) {
     const ids = getTraktIds(traktItem);
     const media = traktItem[traktItem.type] || {};
+    const genres = normalizeGenres(media.genres);
     const props = {
       title: getTitle(traktItem),
       trakt_id: getTraktId(traktItem),
@@ -181,6 +183,11 @@ class Api {
       overview: media.overview || null,
       year: media.year || null,
       trailer_url: normalizeTrailerField(media.trailer),
+      genres: genres.length ? genres : null,
+      moods: (() => {
+        const moods = moodsFromGenres(genres);
+        return moods.length ? moods : null;
+      })(),
       web_url: null,
       streaming_service_id: null,
       streaming_addon_id: null,
@@ -193,11 +200,15 @@ class Api {
 
   async updateWatchable(traktItem, watchable, traktListUserSlug) {
     const media = traktItem[traktItem.type] || {};
+    const genres = normalizeGenres(media.genres);
+    const moods = moodsFromGenres(genres);
     watchable.media_type = traktItem.type;
     watchable.homepage = media.homepage;
     watchable.overview = media.overview || null;
     watchable.year = media.year || null;
     watchable.trailer_url = normalizeTrailerField(media.trailer);
+    watchable.genres = genres.length ? genres : null;
+    watchable.moods = moods.length ? moods : null;
     watchable.imdb_id = media.ids?.imdb;
     watchable.tmdb_id = media.ids?.tmdb;
     if (traktListUserSlug != null && String(traktListUserSlug).trim() !== '') {
@@ -690,12 +701,13 @@ class Api {
             break;
         }
         const showHidden = req.query.hidden === 'true';
-
-        const where = { [Op.and]: [{ trakt_list_id: traktListId }] };
-        if (!showHidden) {
-          // by using ne true we get nulls as well
-          where[Op.and].push({ [Op.or]: [{ hidden: false }, { hidden: null }] });
-        }
+        const filters = parseListFilters(req.query);
+        // personId is reserved for People recommenders — ignored for now
+        const where = buildWatchlistWhere({
+          traktListId,
+          showHidden,
+          ...filters,
+        });
 
         const findAllOptions = {
           where,

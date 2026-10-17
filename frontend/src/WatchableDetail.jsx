@@ -2,6 +2,7 @@ import { useState } from 'react';
 import {
   Box,
   Button,
+  Chip,
   DialogActions,
   DialogContent,
   DialogTitle,
@@ -14,8 +15,13 @@ import LiveTv from '@mui/icons-material/LiveTv';
 import PlayButton from './PlayButton';
 import TrailerButton from './TrailerButton';
 import getStreamingServiceIcon from './streamingServiceIcon';
+import { formatGenreLabel, MOOD_OPTIONS } from './browseFilters';
 
 const OVERVIEW_COLLAPSED_LINES = 4;
+
+function moodLabel(id) {
+  return MOOD_OPTIONS.find((m) => m.id === id)?.label || formatGenreLabel(id);
+}
 
 export function WatchableDetailContent({
   item,
@@ -26,6 +32,8 @@ export function WatchableDetailContent({
   const [overviewExpanded, setOverviewExpanded] = useState(false);
   const serviceIcon = getStreamingServiceIcon(item.streaming_service_id);
   const hasOverview = Boolean(item.overview);
+  const genres = Array.isArray(item.genres) ? item.genres : [];
+  const moods = Array.isArray(item.moods) ? item.moods : [];
 
   return (
     <>
@@ -73,6 +81,16 @@ export function WatchableDetailContent({
                 <Typography variant="body2" color="text.secondary">
                   {serviceIcon.alt}
                 </Typography>
+              </Stack>
+            )}
+            {(genres.length > 0 || moods.length > 0) && (
+              <Stack direction="row" flexWrap="wrap" useFlexGap spacing={0.75} sx={{ mb: 1.5 }}>
+                {genres.map((g) => (
+                  <Chip key={`g-${g}`} size="small" label={formatGenreLabel(g)} variant="outlined" />
+                ))}
+                {moods.map((m) => (
+                  <Chip key={`m-${m}`} size="small" label={moodLabel(m)} color="primary" variant="outlined" />
+                ))}
               </Stack>
             )}
             {hasOverview && (

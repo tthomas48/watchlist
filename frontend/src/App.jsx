@@ -1,10 +1,11 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import {
   Link as RouterLink,
   Outlet,
 } from 'react-router-dom';
 import {
   Typography, Toolbar, Container, AppBar, IconButton, Menu, MenuItem, Box,
+  ToggleButton, ToggleButtonGroup,
 } from '@mui/material';
 import Grid from '@mui/material/Grid';
 import MenuIcon from '@mui/icons-material/Menu';
@@ -15,12 +16,14 @@ import { StreamingSettingsProvider, StreamingSettingsMenuItem } from './Streamin
 import ShowHiddenButton from './ShowHiddenButton';
 import ReconnectButton from './ReconnectButton';
 import SortPicker from './SortPicker';
+import BrowseFilterSummary from './BrowseFilterSummary';
 import AddItem from './AddItem';
 import StartVotingButton from './StartVotingButton';
 import useLocalStorage from './hooks/useLocalStorage';
 import MessageContextWrapper from './context/MessageContext';
 import { WatchableEditProvider, useWatchableEdit } from './WatchableEditDialog';
 import { WatchableDetailProvider, useWatchableDetail } from './WatchableDetailDialog';
+import { defaultBrowseFilters } from './browseFilters';
 
 function AppTitle() {
   const { closeEdit } = useWatchableEdit();
@@ -55,6 +58,14 @@ const listStorageKey = 'watchlist.trakt_list';
 const localStorageKey = 'watchlist.player';
 const hiddenStorageKey = 'watchlist.hidden';
 const sortStorageKey = 'watchlist.sort';
+const filtersStorageKey = 'watchlist.browseFilters';
+const viewModeByListKey = 'watchlist.viewModeByList';
+
+function listIdFromList(list) {
+  if (list?.ids?.trakt == null) return null;
+  return String(list.ids.trakt);
+}
+
 function App() {
   const [anchorEl, setAnchorEl] = useState(null);
   const open = Boolean(anchorEl);
@@ -69,6 +80,41 @@ function App() {
   const [player, setPlayer] = useLocalStorage(localStorageKey, '');
   const [sort, setSort] = useLocalStorage(sortStorageKey, '');
   const [showHidden, setShowHidden] = useLocalStorage(hiddenStorageKey, false);
+  const [browseFilters, setBrowseFilters] = useLocalStorage(
+    filtersStorageKey,
+    defaultBrowseFilters(),
+  );
+  const [viewModeByList, setViewModeByList] = useLocalStorage(viewModeByListKey, {});
+
+  const listId = listIdFromList(list);
+
+  // Restore Flat/Shelves for the selected list (default flat)
+  useEffect(() => {
+    if (!listId) return;
+    const stored = viewModeByList?.[listId];
+    const nextMode = stored === 'shelves' ? 'shelves' : 'flat';
+    setBrowseFilters((prev) => {
+      const current = prev && typeof prev === 'object' ? prev : defaultBrowseFilters();
+      if (current.viewMode === nextMode) return current;
+      return { ...current, viewMode: nextMode };
+    });
+  // Only react to list changes; viewModeByList updates from the toggle handler
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [listId]);
+
+  const setViewMode = (nextMode) => {
+    if (!nextMode) return;
+    setBrowseFilters((prev) => {
+      const current = prev && typeof prev === 'object' ? prev : defaultBrowseFilters();
+      return { ...current, viewMode: nextMode };
+    });
+    if (listId) {
+      setViewModeByList((prev) => ({
+        ...(prev && typeof prev === 'object' ? prev : {}),
+        [listId]: nextMode,
+      }));
+    }
+  };
 
   // 80px margin is space for remote control
   return (
@@ -136,8 +182,18 @@ function App() {
                   <MenuItem onClick={handleClose}>
                     <RefreshButton list={list} sort={sort}></RefreshButton>
                   </MenuItem>
-                  <MenuItem onClick={handleClose}>
-                    <StartVotingButton list={list} player={player} />
+                  <MenuItem
+                    onClick={(e) => {
+                      // Keep menu open when toggling the vote-filter checkbox
+                      if (e.target.closest?.('input[type="checkbox"]')
+                        || e.target.closest?.('.MuiFormControlLabel-root')) {
+                        e.stopPropagation();
+                        return;
+                      }
+                      handleClose();
+                    }}
+                  >
+                    <StartVotingButton list={list} player={player} filters={browseFilters} />
                   </MenuItem>
                   <MenuItem onClick={handleClose}>
                     <ShowHiddenButton showHidden={showHidden}
@@ -169,17 +225,29 @@ function App() {
               variant="dense"
               sx={{
                 display: 'flex',
-                justifyContent: 'space-between',
-                alignItems: 'flex-end',
+                flexWrap: 'wrap',
+                alignItems: 'center',
                 gap: 2,
-                py: 1,
+                py: 1.5,
                 minHeight: { xs: 48, sm: 52 },
               }}
             >
-              <Box sx={{ minWidth: 160, maxWidth: 320, flexShrink: 0 }}>
+              <Box sx={{ minWidth: 140, maxWidth: 220, flexShrink: 0 }}>
                 <SortPicker sort={sort} setSort={setSort} />
               </Box>
-              <Box sx={{ flexShrink: 0, ml: 'auto' }}>
+              <BrowseFilterSummary filters={browseFilters} setFilters={setBrowseFilters} />
+              <ToggleButtonGroup
+                exclusive
+                size="small"
+                value={browseFilters?.viewMode || 'flat'}
+                onChange={(_e, next) => setViewMode(next)}
+                aria-label="view mode"
+                sx={{ flexShrink: 0 }}
+              >
+                <ToggleButton value="flat">Flat</ToggleButton>
+                <ToggleButton value="shelves">Shelves</ToggleButton>
+              </ToggleButtonGroup>
+              <Box sx={{ flexShrink: 0, ml: { xs: 0, sm: 'auto' } }}>
                 <AddItem list={list} />
               </Box>
             </Toolbar>
@@ -188,7 +256,10 @@ function App() {
         <Box sx={{ bgcolor: 'background.default', p: 1 }}>
           <Grid container spacing={2} className="App">
             <Grid size={12}>
-              <Outlet context={[list, player, showHidden, sort]}></Outlet>
+              <Outlet context={{
+                list, player, showHidden, sort, browseFilters, setBrowseFilters,
+              }}
+              />
             </Grid>
           </Grid>
         </Box>

@@ -48,16 +48,24 @@ class Api {
     }
   }
 
-  async getWatchlist(list, sort, showHidden) {
+  async getWatchlist(list, sort, showHidden, filters = {}) {
     if (!list) {
       return [];
     }
-    const query = [];
-    query.push(`sort=${sort}`);
-    if (showHidden) {
-      query.push('hidden=true');
+    const params = new URLSearchParams();
+    if (sort) {
+      params.set('sort', sort);
     }
-    const res = await fetch(`/api/watchlist/${list.user.username}/${list.ids.trakt}/?${query.join('&')}`, {
+    if (showHidden) {
+      params.set('hidden', 'true');
+    }
+    Object.entries(filters || {}).forEach(([key, value]) => {
+      if (value != null && String(value).trim() !== '') {
+        params.set(key, String(value));
+      }
+    });
+    const qs = params.toString();
+    const res = await fetch(`/api/watchlist/${list.user.username}/${list.ids.trakt}/?${qs}`, {
       withCredentials: true,
     });
     return this.handleResponse(res);
@@ -317,16 +325,27 @@ class Api {
     return this.handleResponse(res);
   }
 
-  async createVoteSession({ traktListId, traktListUserSlug, serviceType }) {
+  async createVoteSession({
+    traktListId, traktListUserSlug, serviceType, useListFilters = false, filters = {},
+  }) {
+    const body = {
+      trakt_list_id: traktListId,
+      trakt_list_user_slug: traktListUserSlug,
+      service_type: serviceType,
+    };
+    if (useListFilters) {
+      body.use_list_filters = true;
+      if (filters.genre) body.genre = filters.genre;
+      if (filters.mood) body.mood = filters.mood;
+      if (filters.decade) body.decade = Number(filters.decade);
+      if (filters.media_type) body.media_type = filters.media_type;
+      if (filters.q) body.q = filters.q;
+    }
     const res = await fetch('/api/vote-sessions', {
       method: 'POST',
       withCredentials: true,
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        trakt_list_id: traktListId,
-        trakt_list_user_slug: traktListUserSlug,
-        service_type: serviceType,
-      }),
+      body: JSON.stringify(body),
     });
     return this.handleResponse(res);
   }

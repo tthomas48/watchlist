@@ -40,6 +40,8 @@ module.exports = (sequelize, DataTypes) => {
     year: DataTypes.INTEGER,
     rogerebert_url: DataTypes.STRING,
     trailer_url: DataTypes.STRING,
+    genres: DataTypes.JSON,
+    moods: DataTypes.JSON,
   }, {
     sequelize,
     modelName: 'Watchable',
