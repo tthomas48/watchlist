@@ -1,4 +1,5 @@
-import { useState } from 'react';
+import { useContext, useState } from 'react';
+import { useQuery } from '@tanstack/react-query';
 import {
   Box,
   Button,
@@ -16,12 +17,10 @@ import PlayButton from './PlayButton';
 import TrailerButton from './TrailerButton';
 import getStreamingServiceIcon from './streamingServiceIcon';
 import { formatGenreLabel, MOOD_OPTIONS } from './browseFilters';
+import { MessageContext } from './context/MessageContext';
+import Api from './service/api';
 
 const OVERVIEW_COLLAPSED_LINES = 4;
-
-function moodLabel(id) {
-  return MOOD_OPTIONS.find((m) => m.id === id)?.label || formatGenreLabel(id);
-}
 
 export function WatchableDetailContent({
   item,
@@ -30,10 +29,32 @@ export function WatchableDetailContent({
   onClose,
 }) {
   const [overviewExpanded, setOverviewExpanded] = useState(false);
+  const messageContext = useContext(MessageContext);
+  const api = new Api(messageContext);
+  const moodsQuery = useQuery({
+    queryKey: ['moods'],
+    queryFn: async () => api.getMoods(),
+    staleTime: 60_000,
+  });
+  const genresQuery = useQuery({
+    queryKey: ['genres'],
+    queryFn: async () => api.getGenres(),
+    staleTime: 60_000,
+  });
   const serviceIcon = getStreamingServiceIcon(item.streaming_service_id);
   const hasOverview = Boolean(item.overview);
   const genres = Array.isArray(item.genres) ? item.genres : [];
   const moods = Array.isArray(item.moods) ? item.moods : [];
+
+  const moodLabel = (id) => (
+    moodsQuery.data?.moods?.find((m) => m.slug === id)?.label
+    || MOOD_OPTIONS.find((m) => m.id === id)?.label
+    || formatGenreLabel(id)
+  );
+  const genreLabel = (slug) => (
+    genresQuery.data?.find((g) => g.slug === slug)?.label
+    || formatGenreLabel(slug)
+  );
 
   return (
     <>
@@ -86,7 +107,7 @@ export function WatchableDetailContent({
             {(genres.length > 0 || moods.length > 0) && (
               <Stack direction="row" flexWrap="wrap" useFlexGap spacing={0.75} sx={{ mb: 1.5 }}>
                 {genres.map((g) => (
-                  <Chip key={`g-${g}`} size="small" label={formatGenreLabel(g)} variant="outlined" />
+                  <Chip key={`g-${g}`} size="small" label={genreLabel(g)} variant="outlined" />
                 ))}
                 {moods.map((m) => (
                   <Chip key={`m-${m}`} size="small" label={moodLabel(m)} color="primary" variant="outlined" />

@@ -19,6 +19,7 @@ describe('api', () => {
         trailer_url: null,
         genres: null,
         moods: null,
+        genres_locked: false,
         imdb_id: 'tt1234',
         media_type: 'movie',
         title: 'A Movie',
@@ -36,6 +37,7 @@ describe('api', () => {
         trailer_url: null,
         genres: null,
         moods: null,
+        genres_locked: false,
         imdb_id: undefined,
         media_type: undefined,
         title: null,
@@ -154,6 +156,7 @@ describe('api', () => {
     it('updates genres and moods from Trakt full payload', async () => {
       const api = new Api();
       const watchable = {
+        genres_locked: false,
         save: jest.fn().mockResolvedValue(undefined),
       };
       await api.updateWatchable({
@@ -162,9 +165,28 @@ describe('api', () => {
           ids: {},
           genres: ['Horror'],
         },
-      }, watchable);
+      }, watchable, null, { horror: ['scary'] });
       expect(watchable.genres).toEqual(['horror']);
       expect(watchable.moods).toEqual(['scary']);
+    });
+
+    it('preserves locked genres on refresh but recomputes moods', async () => {
+      const api = new Api();
+      const watchable = {
+        genres_locked: true,
+        genres: ['comedy'],
+        moods: ['light'],
+        save: jest.fn().mockResolvedValue(undefined),
+      };
+      await api.updateWatchable({
+        type: 'movie',
+        movie: {
+          ids: {},
+          genres: ['Horror'],
+        },
+      }, watchable, null, { comedy: ['comfort'], horror: ['scary'] });
+      expect(watchable.genres).toEqual(['comedy']);
+      expect(watchable.moods).toEqual(['comfort']);
     });
   });
 
@@ -192,7 +214,9 @@ describe('api', () => {
       };
       const req = {
         user: { access_token: 'token' },
-        models: {},
+        models: {
+          GenreMoodMap: { findAll: jest.fn().mockResolvedValue([]) },
+        },
       };
       const existingWatchables = [
         { trakt_id: '111', local: false, destroy: jest.fn() },
@@ -207,6 +231,7 @@ describe('api', () => {
           type: 'show',
         }),
         'alice',
+        expect.any(Object),
       );
     });
   });

@@ -2,12 +2,12 @@ const { Sequelize, DataTypes } = require('sequelize');
 const defineWatchable = require('./watchable');
 
 describe('Watchable browse metadata contract', () => {
-  it('exposes overview, year, rogerebert_url, trailer_url, genres, and moods attributes', () => {
+  it('exposes overview, year, rogerebert_url, trailer_url, genres, moods, genres_locked', () => {
     const sequelize = new Sequelize({ dialect: 'sqlite', storage: ':memory:', logging: false });
     const Watchable = defineWatchable(sequelize, DataTypes);
     expect(Object.keys(Watchable.rawAttributes)).toEqual(
       expect.arrayContaining([
-        'overview', 'year', 'rogerebert_url', 'trailer_url', 'genres', 'moods',
+        'overview', 'year', 'rogerebert_url', 'trailer_url', 'genres', 'moods', 'genres_locked',
       ]),
     );
   });

@@ -42,6 +42,11 @@ module.exports = (sequelize, DataTypes) => {
     trailer_url: DataTypes.STRING,
     genres: DataTypes.JSON,
     moods: DataTypes.JSON,
+    genres_locked: {
+      type: DataTypes.BOOLEAN,
+      allowNull: false,
+      defaultValue: false,
+    },
   }, {
     sequelize,
     modelName: 'Watchable',

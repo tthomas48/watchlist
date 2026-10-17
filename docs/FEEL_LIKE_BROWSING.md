@@ -25,23 +25,19 @@ The watchlist is a flat poster pile. Old video stores at least sliced by Comedy 
 - Sync on list refresh alongside `overview` / `year`.
 - Column: `Watchables.genres` TEXT/JSON NULL.
 
-### Moods
+### Moods and genres (editable catalogs)
 
-Curated vocabulary (v1 — keep small):
+Install-wide DB catalogs (seeded from a small default set: light, tense, comfort, date_night, smart, scary, family):
 
-| Mood id | Intent |
-|---------|--------|
-| `light` | Easy, funny, low friction |
-| `tense` | Thriller / suspense energy |
-| `comfort` | Familiar / cozy rewatch vibe |
-| `date_night` | Romance / chemistry-forward |
-| `smart` | Dense plot / prestige / brainy |
-| `scary` | Horror / dread |
-| `family` | All-ages / kids-friendly |
+- `Moods` — slug + label + sort order
+- `Genres` — slug + label (Trakt defaults + user-created)
+- `GenreMoodMaps` — genre → mood links
 
-- Store `Watchables.moods` TEXT/JSON array.
-- **v1 assignment:** static **genre → mood map** applied on refresh (a title can get multiple moods). Mapping lives in `api/mood_map.js`.
-- **Later:** manual mood override via edit API that is not clobbered on every refresh (e.g. `moods_locked` or separate override column). v1 recomputes moods from genres each refresh.
+- Store `Watchables.genres` / `Watchables.moods` as JSON slug arrays.
+- Derive moods from genres + map on refresh and after Settings save / genre edit.
+- `Watchables.genres_locked`: when true, Trakt refresh does not overwrite genres (still recomputes moods). Edit-form genre saves set the lock.
+- **Settings → Moods** edits vocabulary + mappings (`GET`/`PUT /api/moods`).
+- Watchable edit can tag genres and create custom ones (`GET`/`POST /api/genres`).
 
 ### Filters
 
@@ -66,12 +62,12 @@ Response includes `genres` and `moods` on each item so clients can build shelves
 ## Data model
 
 ```text
+Moods / Genres / GenreMoodMaps   -- global catalogs
 Watchables
-  + genres  TEXT NULL  -- JSON string array
-  + moods    TEXT NULL  -- JSON string array
+  + genres         TEXT/JSON NULL
+  + moods           TEXT/JSON NULL
+  + genres_locked  BOOLEAN DEFAULT false
 ```
-
-Genre→mood map: module constant (`api/mood_map.js`) + unit tests — not user-editable in v1.
 
 ## API contracts
 
@@ -109,11 +105,13 @@ Vote create body (additive):
 | Surface | Behavior |
 |---------|----------|
 | **Toolbar** | One row: **Sort**, **Filter** button (opens modal; badge = active facet count), chips for each active facet (delete clears that facet), **Clear all** when filtered, **Flat / Shelves** toggle, **Add**. |
-| **Filter modal** | Mood chips, genre / decade / type, title search, disabled “Recommended by… Soon” placeholder. Changes apply live; **Done** closes. |
-| **View mode** | **Flat** (default grid) vs **Shelves** — horizontal sections by genre. When any facet is active, stay flat. Preference is stored **per Trakt list** (`watchlist.viewModeByList`); switching lists restores that list’s last Flat/Shelves choice (unknown lists default to Flat). |
+| **Filter modal** | Mood chips + genre dropdown from live catalogs; decade / type / search; disabled “Recommended by… Soon”. Live apply; **Done** closes. |
+| **Settings → Moods** | Edit mood vocabulary and genre→mood mappings; save recomputes watchable moods. |
+| **Watchable edit** | Genre multi-select + add custom genre (locks genres against Trakt overwrite). |
+| **View mode** | **Flat** vs **Shelves** (per-list preference). When any facet is active, stay flat. |
 | **Empty filter** | Clear copy (“No titles match”) + **Clear filters**. |
-| **Start Voting** | When any facet is active, checkbox: “Only vote on filtered titles” (default on; passes through to session create). |
-| **Detail sheet** | Show genre/mood chips read-only (edit override is a later phase). |
+| **Start Voting** | When any facet is active, checkbox: “Only vote on filtered titles” (default on). |
+| **Detail sheet** | Genre/mood chips read-only (labels from catalogs). |
 
 ## TV presentation (deferred — do not implement TV app now)
 

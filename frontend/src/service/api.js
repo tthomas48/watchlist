@@ -197,6 +197,36 @@ class Api {
     return this.handleResponse(res);
   }
 
+  async getMoods() {
+    const res = await fetch('/api/moods', { withCredentials: true });
+    return this.handleResponse(res);
+  }
+
+  async saveMoods(payload) {
+    const res = await fetch('/api/moods', {
+      method: 'PUT',
+      withCredentials: true,
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload),
+    });
+    return this.handleResponse(res);
+  }
+
+  async getGenres() {
+    const res = await fetch('/api/genres', { withCredentials: true });
+    return this.handleResponse(res);
+  }
+
+  async createGenre(label) {
+    const res = await fetch('/api/genres', {
+      method: 'POST',
+      withCredentials: true,
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ label }),
+    });
+    return this.handleResponse(res);
+  }
+
   async getWatchable(id) {
     const res = await fetch(`/api/watchables/${id}/`, {
       withCredentials: true,

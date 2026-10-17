@@ -1,3 +1,5 @@
+import { useContext } from 'react';
+import { useQuery } from '@tanstack/react-query';
 import {
   Box,
   Button,
@@ -13,15 +15,39 @@ import {
   Typography,
 } from '@mui/material';
 import {
-  MOOD_OPTIONS,
-  GENRE_OPTIONS,
   DECADE_OPTIONS,
   MEDIA_TYPE_OPTIONS,
+  MOOD_OPTIONS,
+  GENRE_OPTIONS,
   formatGenreLabel,
 } from './browseFilters';
+import { MessageContext } from './context/MessageContext';
+import Api from './service/api';
 
 function BrowseFilterDialog({ open, onClose, filters, setFilters }) {
+  const messageContext = useContext(MessageContext);
+  const api = new Api(messageContext);
   const update = (patch) => setFilters({ ...filters, ...patch });
+
+  const moodsQuery = useQuery({
+    queryKey: ['moods'],
+    queryFn: async () => api.getMoods(),
+    enabled: open,
+    staleTime: 60_000,
+  });
+  const genresQuery = useQuery({
+    queryKey: ['genres'],
+    queryFn: async () => api.getGenres(),
+    enabled: open,
+    staleTime: 60_000,
+  });
+
+  const moodOptions = (moodsQuery.data?.moods?.length
+    ? moodsQuery.data.moods.map((m) => ({ id: m.slug, label: m.label }))
+    : MOOD_OPTIONS);
+  const genreOptions = (genresQuery.data?.length
+    ? genresQuery.data.map((g) => g.slug)
+    : GENRE_OPTIONS);
 
   return (
     <Dialog
@@ -39,7 +65,7 @@ function BrowseFilterDialog({ open, onClose, filters, setFilters }) {
               I feel like…
             </Typography>
             <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.75 }}>
-              {MOOD_OPTIONS.map((m) => (
+              {moodOptions.map((m) => (
                 <Chip
                   key={m.id}
                   label={m.label}
@@ -50,6 +76,9 @@ function BrowseFilterDialog({ open, onClose, filters, setFilters }) {
                   onClick={() => update({ mood: filters.mood === m.id ? '' : m.id })}
                 />
               ))}
+              {!moodOptions.length && (
+                <Typography variant="body2" color="text.secondary">No moods configured</Typography>
+              )}
             </Box>
           </Box>
 
@@ -63,9 +92,14 @@ function BrowseFilterDialog({ open, onClose, filters, setFilters }) {
               onChange={(e) => update({ genre: e.target.value })}
             >
               <option value="">Any</option>
-              {GENRE_OPTIONS.map((g) => (
-                <option key={g} value={g}>{formatGenreLabel(g)}</option>
-              ))}
+              {genreOptions.map((g) => {
+                const fromApi = genresQuery.data?.find((row) => row.slug === g);
+                return (
+                  <option key={g} value={g}>
+                    {fromApi?.label || formatGenreLabel(g)}
+                  </option>
+                );
+              })}
             </NativeSelect>
           </FormControl>
 
