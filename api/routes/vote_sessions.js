@@ -16,11 +16,18 @@ function mountVoteSessionRoutes(apiRouter, deps) {
     '/vote-sessions',
     requireAuth,
     asyncHandler(async (req, res) => {
+      const reqBody = req.body || {};
       const {
         trakt_list_id: traktListId,
         trakt_list_user_slug: traktListUserSlug,
         service_type: serviceType,
-      } = req.body || {};
+        genre,
+        mood,
+        decade,
+        media_type: mediaType,
+        q,
+        use_list_filters: useListFilters,
+      } = reqBody;
       if (!traktListId || !traktListUserSlug) {
         res.status(400).json({ message: 'trakt_list_id and trakt_list_user_slug are required' });
         return;
@@ -31,12 +38,18 @@ function mountVoteSessionRoutes(apiRouter, deps) {
         traktListId: String(traktListId),
         traktListUserSlug: String(traktListUserSlug),
         serviceType: serviceType || 'adb-googletv',
+        genre: genre || null,
+        mood: mood || null,
+        decade: decade != null && decade !== '' ? Number(decade) : null,
+        media_type: mediaType || null,
+        q: q || null,
+        use_list_filters: Boolean(useListFilters),
       });
-      const body = await service.buildSessionResponse(session);
+      const sessionBody = await service.buildSessionResponse(session);
       res.json({
         id: session.id,
         code: session.code,
-        joinUrl: body.joinUrl,
+        joinUrl: sessionBody.joinUrl,
       });
     }),
   );

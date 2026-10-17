@@ -40,6 +40,13 @@ module.exports = (sequelize, DataTypes) => {
     year: DataTypes.INTEGER,
     rogerebert_url: DataTypes.STRING,
     trailer_url: DataTypes.STRING,
+    genres: DataTypes.JSON,
+    moods: DataTypes.JSON,
+    genres_locked: {
+      type: DataTypes.BOOLEAN,
+      allowNull: false,
+      defaultValue: false,
+    },
   }, {
     sequelize,
     modelName: 'Watchable',

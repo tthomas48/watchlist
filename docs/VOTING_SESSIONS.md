@@ -25,6 +25,24 @@ Jackbox-style voting for a Trakt playlist. Phones join via URL; the host (web or
 }
 ```
 
+Optional feel-like pool subset (see [FEEL_LIKE_BROWSING.md](./FEEL_LIKE_BROWSING.md)): when `use_list_filters` is true, the same single-select facets as the watchlist list API AND together to build `pool_ids`:
+
+```json
+{
+  "trakt_list_id": "12345",
+  "trakt_list_user_slug": "username",
+  "service_type": "adb-googletv",
+  "use_list_filters": true,
+  "genre": "comedy",
+  "mood": "comfort",
+  "decade": 1980,
+  "media_type": "movie",
+  "q": "blade"
+}
+```
+
+If the filtered pool is empty, the API returns **400** with a clear message.
+
 **Response:**
 ```json
 {

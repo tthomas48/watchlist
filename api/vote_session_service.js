@@ -1,5 +1,6 @@
 const crypto = require('crypto');
 const { Op } = require('sequelize');
+const { buildWatchlistWhere } = require('./watchlist_filters');
 
 const SESSION_CODE_CHARS = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
 const SESSION_TTL_MS = 4 * 60 * 60 * 1000;
@@ -94,11 +95,16 @@ function pickPluralityWinner(casts, finalistIds) {
   return pickRandomId(tied);
 }
 
-function visibleWatchablesWhere(traktListId) {
-  return {
-    trakt_list_id: String(traktListId),
-    [Op.or]: [{ hidden: false }, { hidden: null }],
-  };
+function visibleWatchablesWhere(traktListId, filters = {}) {
+  return buildWatchlistWhere({
+    traktListId,
+    showHidden: false,
+    genre: filters.genre ?? null,
+    mood: filters.mood ?? null,
+    decade: filters.decade ?? null,
+    media_type: filters.media_type ?? null,
+    q: filters.q ?? null,
+  });
 }
 
 function sessionAllowsWatchable(session, watchableId) {
@@ -164,13 +170,24 @@ class VoteSessionService {
 
   async createSession({
     hostUserId, traktListId, traktListUserSlug, serviceType = 'adb-googletv',
+    genre = null, mood = null, decade = null, media_type: mediaType = null, q = null,
+    use_list_filters: useListFilters = false,
   }) {
+    const filters = useListFilters
+      ? {
+        genre, mood, decade, media_type: mediaType, q,
+      }
+      : {};
     const watchables = await this.models.Watchable.findAll({
-      where: visibleWatchablesWhere(traktListId),
+      where: visibleWatchablesWhere(traktListId, filters),
     });
     const poolIds = watchables.map((w) => w.id);
     if (!poolIds.length) {
-      const err = new Error('No watchables available for voting on this list');
+      const err = new Error(
+        useListFilters && (genre || mood || decade != null || mediaType || q)
+          ? 'No watchables match the selected filters for voting'
+          : 'No watchables available for voting on this list',
+      );
       err.status = 400;
       throw err;
     }

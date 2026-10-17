@@ -6,6 +6,7 @@ import {
   FormHelperText, IconButton, ListItemText,
   Tabs, Box, Tab, List, ListItem, ListItemButton, ListItemIcon,
   FormControlLabel, DialogTitle, DialogContent, CircularProgress,
+  Autocomplete, Chip, createFilterOptions,
 } from '@mui/material';
 import SearchIcon from '@mui/icons-material/Search';
 import DownloadIcon from '@mui/icons-material/Download';
@@ -14,6 +15,8 @@ import ContentCopyIcon from '@mui/icons-material/ContentCopy';
 import ManageSearchIcon from '@mui/icons-material/ManageSearch';
 import { MessageContext } from './context/MessageContext';
 import Api from './service/api';
+
+const genreFilter = createFilterOptions();
 
 function a11yProps(index) {
   return {
@@ -64,6 +67,7 @@ export function WatchableEditor({ id, onClose }) {
 
   const [tabIndex, setTabIndex] = useState(0);
   const [checked, setChecked] = useState([]);
+  const [selectedGenres, setSelectedGenres] = useState([]);
   const queryClient = useQueryClient();
   const {
     register, handleSubmit, getValues, setValue,
@@ -72,13 +76,19 @@ export function WatchableEditor({ id, onClose }) {
   useEffect(() => {
     setTabIndex(0);
     setChecked([]);
+    setSelectedGenres([]);
   }, [id]);
 
   const { mutate } = useMutation({
     mutationFn: async (watchable) => {
       try {
-        await api.saveWatchable(id, watchable);
+        await api.saveWatchable(id, {
+          ...watchable,
+          genres: selectedGenres.map((g) => g.slug || g),
+        });
         queryClient.invalidateQueries({ queryKey: ['watchable', id] });
+        queryClient.invalidateQueries({ queryKey: ['watchlist'] });
+        queryClient.invalidateQueries({ queryKey: ['genres'] });
         onClose();
         return true;
       } catch (e) {
@@ -99,6 +109,35 @@ export function WatchableEditor({ id, onClose }) {
     queryFn: async () => api.getWatchable(id),
     staleTime: Infinity, // do not refresh data
   });
+
+  const genresQuery = useQuery({
+    queryKey: ['genres'],
+    queryFn: async () => api.getGenres(),
+    staleTime: 60_000,
+  });
+
+  // Seed selection from the watchable only (not when the genre catalog refetches —
+  // otherwise creating a genre resets chips back to the last saved list).
+  useEffect(() => {
+    if (!data?.watchable) return;
+    const slugs = Array.isArray(data.watchable.genres) ? data.watchable.genres : [];
+    const catalog = genresQuery.data || [];
+    setSelectedGenres(slugs.map((slug) => {
+      const found = catalog.find((g) => g.slug === slug);
+      return found || { slug, label: slug };
+    }));
+  // eslint-disable-next-line react-hooks/exhaustive-deps -- intentionally omit genresQuery.data
+  }, [data?.watchable]);
+
+  // Enrich chip labels when catalog loads/updates without dropping local selections
+  useEffect(() => {
+    const catalog = genresQuery.data;
+    if (!catalog?.length) return;
+    setSelectedGenres((prev) => prev.map((g) => {
+      const found = catalog.find((c) => c.slug === g.slug);
+      return found || g;
+    }));
+  }, [genresQuery.data]);
 
   const episodesQuery = useQuery({
     queryKey: ['episodes', id],
@@ -317,6 +356,94 @@ export function WatchableEditor({ id, onClose }) {
                 )}
                 label="Disable Auto Advance"
               />
+              <Box sx={{ width: '100%' }}>
+                <Autocomplete
+                  multiple
+                  selectOnFocus
+                  clearOnBlur
+                  handleHomeEndKeys
+                  options={genresQuery.data || []}
+                  value={selectedGenres}
+                  filterOptions={(options, params) => {
+                    const filtered = genreFilter(options, params);
+                    const input = params.inputValue.trim();
+                    if (!input) return filtered;
+                    const exists = options.some(
+                      (opt) => (opt.label || opt.slug || '').toLowerCase() === input.toLowerCase(),
+                    );
+                    if (!exists) {
+                      filtered.push({
+                        inputValue: input,
+                        label: `Add "${input}"`,
+                        slug: `__new__${input}`,
+                        isNew: true,
+                      });
+                    }
+                    return filtered;
+                  }}
+                  onChange={async (_e, next) => {
+                    const pending = next.filter((g) => g?.isNew);
+                    const kept = next.filter((g) => g && !g.isNew);
+                    if (!pending.length) {
+                      setSelectedGenres(kept);
+                      return;
+                    }
+                    try {
+                      const createdList = [];
+                      for (const p of pending) {
+                        const label = p.inputValue || p.label;
+                        // eslint-disable-next-line no-await-in-loop
+                        const created = await api.createGenre(label);
+                        createdList.push(created);
+                      }
+                      queryClient.invalidateQueries({ queryKey: ['genres'] });
+                      const bySlug = new Map();
+                      [...kept, ...createdList].forEach((g) => {
+                        if (g?.slug) bySlug.set(g.slug, g);
+                      });
+                      setSelectedGenres([...bySlug.values()]);
+                    } catch (e) {
+                      messageContext.sendMessage({
+                        message: e.message,
+                        severity: 'error',
+                        open: true,
+                      });
+                      setSelectedGenres(kept);
+                    }
+                  }}
+                  getOptionLabel={(opt) => {
+                    if (typeof opt === 'string') return opt;
+                    if (opt.isNew) return opt.inputValue || '';
+                    return opt.label || opt.slug || '';
+                  }}
+                  isOptionEqualToValue={(a, b) => a.slug === b.slug}
+                  renderOption={(props, option) => (
+                    <li {...props} key={option.slug}>
+                      {option.isNew ? option.label : (option.label || option.slug)}
+                    </li>
+                  )}
+                  renderTags={(value, getTagProps) => value.map((option, index) => (
+                    <Chip
+                      {...getTagProps({ index })}
+                      key={option.slug}
+                      size="small"
+                      label={option.label || option.slug}
+                    />
+                  ))}
+                  renderInput={(params) => (
+                    <TextField
+                      {...params}
+                      label="Genres"
+                      variant="outlined"
+                      placeholder="Search or add…"
+                    />
+                  )}
+                />
+                <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mt: 0.5 }}>
+                  Type to search; choose “Add …” if the genre is new. Editing locks tags against Trakt refresh.
+                  {data.watchable.genres_locked ? ' (currently locked)' : ''}
+                </Typography>
+              </Box>
               <Stack
                 direction="row"
                 justifyContent="center"

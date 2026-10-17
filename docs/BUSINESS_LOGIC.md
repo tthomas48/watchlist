@@ -83,13 +83,15 @@ Related: [VOTING_SESSIONS.md](./VOTING_SESSIONS.md), [ANDROID_VOTING_HOST.md](./
 
 # Genres, moods, and feel-like filters
 
-*(Target rules from [FEEL_LIKE_BROWSING.md](./FEEL_LIKE_BROWSING.md).)*
+See [FEEL_LIKE_BROWSING.md](./FEEL_LIKE_BROWSING.md).
 
-- Sync Trakt genres onto the watchable on list refresh.
-- Derive `moods` from a curated genre→mood map (v1); titles may have multiple moods.
-- List filters: single `genre` and/or `mood` query params (AND when both set).
-- Optional: vote session create accepts `genre` / `mood` to subset `pool_ids`.
-- Parallel facet: filter by recommender `personId` — [PEOPLE_RECOMMENDERS.md](./PEOPLE_RECOMMENDERS.md).
+- Global catalogs: `Moods`, `Genres`, `GenreMoodMaps` (install-wide). Editable in **Settings → Moods**.
+- Sync Trakt genres onto the watchable on list refresh unless `genres_locked`; derive `moods` from the DB genre→mood map every refresh (including locked titles).
+- Editing genres on a watchable sets `genres_locked` and recomputes moods; custom genres are upserted into the `Genres` catalog.
+- Saving moods/mappings via `PUT /api/moods` recomputes moods on all watchables.
+- List filters (single-select each, **AND** combined): `genre`, `mood`, `decade`, `media_type`, `q`.
+- `personId` is reserved / ignored until People recommenders ship — [PEOPLE_RECOMMENDERS.md](./PEOPLE_RECOMMENDERS.md).
+- Vote session create with `use_list_filters: true` plus the same facet fields subsets `pool_ids`.
 
 ---
 

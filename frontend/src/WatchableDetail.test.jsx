@@ -1,5 +1,7 @@
 import { render, screen, fireEvent } from '@testing-library/react';
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import WatchableDetailContent from './WatchableDetail';
+import { MessageContext } from './context/MessageContext';
 
 jest.mock('./PlayButton', () => ({
   __esModule: true,
@@ -15,6 +17,21 @@ jest.mock('./TrailerButton', () => ({
   },
 }));
 
+jest.mock('./service/api', () => ({
+  __esModule: true,
+  default: class MockApi {
+    // eslint-disable-next-line class-methods-use-this
+    async getMoods() {
+      return { moods: [{ slug: 'light', label: 'Light' }], mappings: [] };
+    }
+
+    // eslint-disable-next-line class-methods-use-this
+    async getGenres() {
+      return [{ slug: 'comedy', label: 'Comedy' }];
+    }
+  },
+}));
+
 const baseItem = {
   id: 42,
   title: 'Example Movie',
@@ -25,9 +42,22 @@ const baseItem = {
   streaming_service_id: 'netflix',
 };
 
+function renderDetail(ui) {
+  const client = new QueryClient({
+    defaultOptions: { queries: { retry: false } },
+  });
+  return render(
+    <QueryClientProvider client={client}>
+      <MessageContext.Provider value={{ sendMessage: jest.fn() }}>
+        {ui}
+      </MessageContext.Provider>
+    </QueryClientProvider>,
+  );
+}
+
 describe('WatchableDetailContent', () => {
   it('renders title, year, overview, and Ebert link', () => {
-    render(
+    renderDetail(
       <WatchableDetailContent
         item={baseItem}
         player="browser"
@@ -44,9 +74,22 @@ describe('WatchableDetailContent', () => {
     expect(screen.getByText('Netflix')).toBeInTheDocument();
   });
 
+  it('renders genre and mood chips when present', async () => {
+    renderDetail(
+      <WatchableDetailContent
+        item={{ ...baseItem, genres: ['comedy'], moods: ['light'] }}
+        player="browser"
+        onEdit={jest.fn()}
+        onClose={jest.fn()}
+      />,
+    );
+    expect(await screen.findByText('Comedy')).toBeInTheDocument();
+    expect(await screen.findByText('Light')).toBeInTheDocument();
+  });
+
   it('calls onEdit when Edit is clicked', () => {
     const onEdit = jest.fn();
-    render(
+    renderDetail(
       <WatchableDetailContent
         item={baseItem}
         player="browser"
@@ -60,7 +103,7 @@ describe('WatchableDetailContent', () => {
   });
 
   it('omits Ebert link when rogerebert_url is missing', () => {
-    render(
+    renderDetail(
       <WatchableDetailContent
         item={{ ...baseItem, rogerebert_url: null }}
         player="browser"

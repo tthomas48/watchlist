@@ -6,7 +6,6 @@ const { PassThrough } = require('stream');
 const { pipeline } = require('stream/promises');
 const axios = require('axios');
 const singleflight = require('node-singleflight');
-const { Op } = require('sequelize');
 const Sentry = require('@sentry/node');
 const TraktClient = require('./traktclient');
 const { getTitle, getTraktId, getTraktIds } = require('./helpers');
@@ -40,6 +39,19 @@ const mountRogerEbertRoutes = require('./routes/rogerebert');
 const mountTrailerRoutes = require('./routes/trailer');
 const { normalizeTrailerField } = require('./trailer');
 const { serveWatchablePoster } = require('./poster_serve');
+const {
+  normalizeGenres,
+  moodsFromGenres,
+  loadGenreMoodMap,
+} = require('./mood_map');
+const {
+  getMoodsPayload,
+  getGenresPayload,
+  ensureGenre,
+  replaceMoodsAndMappings,
+  applyWatchableGenres,
+} = require('./moods_service');
+const { buildWatchlistWhere, parseListFilters } = require('./watchlist_filters');
 
 const defaultPosterImagePath = path.join(__dirname, '../images/movie.jpg');
 let cachedDefaultPosterSha256 = null;
@@ -167,9 +179,11 @@ class Api {
     throw new Error('unable to play');
   }
 
-  async createWatchable(models, traktListId, traktItem, traktListUserSlug) {
+  async createWatchable(models, traktListId, traktItem, traktListUserSlug, genreToMoodsMap) {
     const ids = getTraktIds(traktItem);
     const media = traktItem[traktItem.type] || {};
+    const genres = normalizeGenres(media.genres);
+    const moods = moodsFromGenres(genres, genreToMoodsMap);
     const props = {
       title: getTitle(traktItem),
       trakt_id: getTraktId(traktItem),
@@ -181,6 +195,9 @@ class Api {
       overview: media.overview || null,
       year: media.year || null,
       trailer_url: normalizeTrailerField(media.trailer),
+      genres: genres.length ? genres : null,
+      moods: moods.length ? moods : null,
+      genres_locked: false,
       web_url: null,
       streaming_service_id: null,
       streaming_addon_id: null,
@@ -191,7 +208,7 @@ class Api {
     return models.Watchable.create(props);
   }
 
-  async updateWatchable(traktItem, watchable, traktListUserSlug) {
+  async updateWatchable(traktItem, watchable, traktListUserSlug, genreToMoodsMap) {
     const media = traktItem[traktItem.type] || {};
     watchable.media_type = traktItem.type;
     watchable.homepage = media.homepage;
@@ -200,6 +217,16 @@ class Api {
     watchable.trailer_url = normalizeTrailerField(media.trailer);
     watchable.imdb_id = media.ids?.imdb;
     watchable.tmdb_id = media.ids?.tmdb;
+    if (watchable.genres_locked) {
+      const lockedGenres = normalizeGenres(watchable.genres);
+      const moods = moodsFromGenres(lockedGenres, genreToMoodsMap);
+      watchable.moods = moods.length ? moods : null;
+    } else {
+      const genres = normalizeGenres(media.genres);
+      const moods = moodsFromGenres(genres, genreToMoodsMap);
+      watchable.genres = genres.length ? genres : null;
+      watchable.moods = moods.length ? moods : null;
+    }
     if (traktListUserSlug != null && String(traktListUserSlug).trim() !== '') {
       watchable.trakt_list_user_slug = traktListUserSlug;
     }
@@ -420,15 +447,28 @@ class Api {
           tasks.push(deletedItem.destroy());
         });
 
+        const genreToMoodsMap = await loadGenreMoodMap(req.models);
+
         updateItems.forEach((traktItem) => {
           const existingWatchable = existingWatchables.find(
             (ew) => getTraktId(traktItem) === ew.trakt_id,
           );
-          tasks.push(this.updateWatchable(traktItem, existingWatchable, traktListUserId));
+          tasks.push(this.updateWatchable(
+            traktItem,
+            existingWatchable,
+            traktListUserId,
+            genreToMoodsMap,
+          ));
         });
 
         newItems.forEach((traktItem) => {
-          tasks.push(this.createWatchable(req.models, traktListId, traktItem, traktListUserId));
+          tasks.push(this.createWatchable(
+            req.models,
+            traktListId,
+            traktItem,
+            traktListUserId,
+            genreToMoodsMap,
+          ));
         });
         await Promise.all(tasks);
         await this.refreshEpisodes(req.models, traktListId);
@@ -690,12 +730,13 @@ class Api {
             break;
         }
         const showHidden = req.query.hidden === 'true';
-
-        const where = { [Op.and]: [{ trakt_list_id: traktListId }] };
-        if (!showHidden) {
-          // by using ne true we get nulls as well
-          where[Op.and].push({ [Op.or]: [{ hidden: false }, { hidden: null }] });
-        }
+        const filters = parseListFilters(req.query);
+        // personId is reserved for People recommenders — ignored for now
+        const where = buildWatchlistWhere({
+          traktListId,
+          showHidden,
+          ...filters,
+        });
 
         const findAllOptions = {
           where,
@@ -752,6 +793,47 @@ class Api {
       const saved = await settings.save();
       await this.receiverFactory.update(saved);
       res.json(saved);
+    });
+
+    apiRouter.get('/moods', this.authProvider.requireLogin, async (req, res) => {
+      try {
+        res.json(await getMoodsPayload(req.models));
+      } catch (e) {
+        this.handleError(res, e);
+      }
+    });
+
+    apiRouter.put('/moods', this.authProvider.requireLogin, async (req, res) => {
+      try {
+        res.json(await replaceMoodsAndMappings(req.models, req.body));
+      } catch (e) {
+        if (e.status) {
+          res.status(e.status).json({ message: e.message });
+          return;
+        }
+        this.handleError(res, e);
+      }
+    });
+
+    apiRouter.get('/genres', this.authProvider.requireLogin, async (req, res) => {
+      try {
+        res.json(await getGenresPayload(req.models));
+      } catch (e) {
+        this.handleError(res, e);
+      }
+    });
+
+    apiRouter.post('/genres', this.authProvider.requireLogin, async (req, res) => {
+      try {
+        const label = req.body?.label ?? req.body?.slug;
+        res.json(await ensureGenre(req.models, label));
+      } catch (e) {
+        if (e.status) {
+          res.status(e.status).json({ message: e.message });
+          return;
+        }
+        this.handleError(res, e);
+      }
     });
 
     apiRouter.post('/reconnect', this.authProvider.requireLogin, async (req, res) => {
@@ -853,6 +935,9 @@ class Api {
       watchable.noautoadvance = watchableUpdate.noautoadvance;
       if (Object.prototype.hasOwnProperty.call(watchableUpdate, 'rogerebertUrl')) {
         watchable.rogerebert_url = watchableUpdate.rogerebertUrl || null;
+      }
+      if (Object.prototype.hasOwnProperty.call(watchableUpdate, 'genres')) {
+        await applyWatchableGenres(req.models, watchable, watchableUpdate.genres);
       }
 
       await watchable.save();

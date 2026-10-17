@@ -17,6 +17,9 @@ describe('api', () => {
         overview: null,
         year: 2021,
         trailer_url: null,
+        genres: null,
+        moods: null,
+        genres_locked: false,
         imdb_id: 'tt1234',
         media_type: 'movie',
         title: 'A Movie',
@@ -32,6 +35,9 @@ describe('api', () => {
         overview: null,
         year: null,
         trailer_url: null,
+        genres: null,
+        moods: null,
+        genres_locked: false,
         imdb_id: undefined,
         media_type: undefined,
         title: null,
@@ -89,6 +95,28 @@ describe('api', () => {
         expect.objectContaining({ trailer_url: 'https://youtube.com/watch?v=abc' }),
       );
     });
+
+    it('persists genres and derived moods from Trakt full payload', () => {
+      const api = new Api();
+      const models = {
+        Watchable: { create: jest.fn().mockReturnValue(Promise.resolve({})) },
+        WatchableUrl: { },
+      };
+      api.createWatchable(models, '1234', {
+        type: 'movie',
+        movie: {
+          ids: { trakt: '1111' },
+          title: 'A Movie',
+          genres: ['Comedy', 'Romance'],
+        },
+      });
+      expect(models.Watchable.create).toHaveBeenCalledWith(
+        expect.objectContaining({
+          genres: ['comedy', 'romance'],
+          moods: expect.arrayContaining(['light', 'date_night', 'comfort']),
+        }),
+      );
+    });
   });
 
   describe('updateWatchable', () => {
@@ -124,6 +152,42 @@ describe('api', () => {
       }, watchable);
       expect(watchable.trailer_url).toBeNull();
     });
+
+    it('updates genres and moods from Trakt full payload', async () => {
+      const api = new Api();
+      const watchable = {
+        genres_locked: false,
+        save: jest.fn().mockResolvedValue(undefined),
+      };
+      await api.updateWatchable({
+        type: 'movie',
+        movie: {
+          ids: {},
+          genres: ['Horror'],
+        },
+      }, watchable, null, { horror: ['scary'] });
+      expect(watchable.genres).toEqual(['horror']);
+      expect(watchable.moods).toEqual(['scary']);
+    });
+
+    it('preserves locked genres on refresh but recomputes moods', async () => {
+      const api = new Api();
+      const watchable = {
+        genres_locked: true,
+        genres: ['comedy'],
+        moods: ['light'],
+        save: jest.fn().mockResolvedValue(undefined),
+      };
+      await api.updateWatchable({
+        type: 'movie',
+        movie: {
+          ids: {},
+          genres: ['Horror'],
+        },
+      }, watchable, null, { comedy: ['comfort'], horror: ['scary'] });
+      expect(watchable.genres).toEqual(['comedy']);
+      expect(watchable.moods).toEqual(['comfort']);
+    });
   });
 
   describe('refresh', () => {
@@ -150,7 +214,9 @@ describe('api', () => {
       };
       const req = {
         user: { access_token: 'token' },
-        models: {},
+        models: {
+          GenreMoodMap: { findAll: jest.fn().mockResolvedValue([]) },
+        },
       };
       const existingWatchables = [
         { trakt_id: '111', local: false, destroy: jest.fn() },
@@ -165,6 +231,7 @@ describe('api', () => {
           type: 'show',
         }),
         'alice',
+        expect.any(Object),
       );
     });
   });

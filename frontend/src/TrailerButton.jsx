@@ -10,7 +10,10 @@ function TrailerButton({
   trailerUrl: initialTrailerUrl = null,
   title = null,
   disabled = false,
-  sx = { flexGrow: 1 },
+  /** 'button' for card actions; 'menu' for overflow-style text button */
+  variant = 'button',
+  sx,
+  buttonRef = null,
 }) {
   const messageContext = useContext(MessageContext);
   const api = new Api(messageContext);
@@ -18,6 +21,8 @@ function TrailerButton({
   const [url, setUrl] = useState(initialTrailerUrl);
   const [loading, setLoading] = useState(false);
   const [unavailable, setUnavailable] = useState(false);
+  const isMenu = variant === 'menu';
+  const buttonSx = sx ?? (isMenu ? undefined : { flexGrow: 1 });
 
   const handleOpen = async () => {
     if (url) {
@@ -55,12 +60,13 @@ function TrailerButton({
   return (
     <>
       <Button
+        ref={buttonRef}
         onClick={handleOpen}
         disabled={disabled || loading}
-        variant="outlined"
+        variant={isMenu ? 'text' : 'outlined'}
         color="primary"
         startIcon={<OndemandVideo />}
-        sx={sx}
+        sx={buttonSx}
       >
         {loading ? 'Trailer…' : 'Trailer'}
       </Button>

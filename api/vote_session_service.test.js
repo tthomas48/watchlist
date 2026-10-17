@@ -124,10 +124,19 @@ describe('vote_session_service helpers', () => {
 
 describe('visibleWatchablesWhere', () => {
   it('includes non-hidden and null hidden watchables', () => {
-    expect(visibleWatchablesWhere('12345')).toEqual({
-      trakt_list_id: '12345',
-      [Op.or]: [{ hidden: false }, { hidden: null }],
-    });
+    const where = visibleWatchablesWhere('12345');
+    expect(where[Op.and]).toEqual(
+      expect.arrayContaining([
+        { trakt_list_id: '12345' },
+        { [Op.or]: [{ hidden: false }, { hidden: null }] },
+      ]),
+    );
+  });
+
+  it('applies mood filter when provided', () => {
+    const base = visibleWatchablesWhere('12345');
+    const filtered = visibleWatchablesWhere('12345', { mood: 'comfort' });
+    expect(filtered[Op.and].length).toBeGreaterThan(base[Op.and].length);
   });
 });
 
@@ -161,6 +170,34 @@ describe('VoteSessionService.createSession', () => {
     }));
   });
 
+  it('subsets pool when use_list_filters and mood are set', async () => {
+    const findAll = jest.fn().mockResolvedValue([{ id: 7 }]);
+    const create = jest.fn().mockResolvedValue({ id: 99, code: 'ABCDEF' });
+    const findOne = jest.fn().mockResolvedValue(null);
+    const service = new VoteSessionService({
+      models: {
+        Watchable: { findAll },
+        VoteSession: { findOne, create },
+      },
+    });
+
+    await service.createSession({
+      hostUserId: 1,
+      traktListId: '555',
+      traktListUserSlug: 'me',
+      use_list_filters: true,
+      mood: 'comfort',
+      genre: 'comedy',
+    });
+
+    expect(findAll).toHaveBeenCalledWith({
+      where: visibleWatchablesWhere('555', { mood: 'comfort', genre: 'comedy' }),
+    });
+    expect(create).toHaveBeenCalledWith(expect.objectContaining({
+      pool_ids: [7],
+    }));
+  });
+
   it('rejects when no visible watchables exist', async () => {
     const service = new VoteSessionService({
       models: {
@@ -175,6 +212,26 @@ describe('VoteSessionService.createSession', () => {
       traktListUserSlug: 'me',
     })).rejects.toMatchObject({
       message: 'No watchables available for voting on this list',
+      status: 400,
+    });
+  });
+
+  it('rejects with filter message when filtered pool is empty', async () => {
+    const service = new VoteSessionService({
+      models: {
+        Watchable: { findAll: jest.fn().mockResolvedValue([]) },
+        VoteSession: { findOne: jest.fn(), create: jest.fn() },
+      },
+    });
+
+    await expect(service.createSession({
+      hostUserId: 1,
+      traktListId: '123',
+      traktListUserSlug: 'me',
+      use_list_filters: true,
+      mood: 'scary',
+    })).rejects.toMatchObject({
+      message: 'No watchables match the selected filters for voting',
       status: 400,
     });
   });

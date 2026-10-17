@@ -7,6 +7,7 @@ import {
 import StreamIcon from '@mui/icons-material/Stream';
 import StreamingAccess from './StreamingAccess';
 import Settings from './Settings';
+import MoodsSettings from './MoodsSettings';
 
 const StreamingSettingsContext = createContext(null);
 
@@ -63,7 +64,7 @@ export function StreamingSettingsProvider({ children }) {
           <Tabs
             value={tab}
             onChange={(_, newValue) => setTab(newValue)}
-            aria-label="Streaming and Google TV settings"
+            aria-label="Settings"
           >
             <Tab
               label="Streaming"
@@ -75,6 +76,11 @@ export function StreamingSettingsProvider({ children }) {
               id="streaming-settings-tab-1"
               aria-controls="streaming-settings-tabpanel-1"
             />
+            <Tab
+              label="Moods"
+              id="streaming-settings-tab-2"
+              aria-controls="streaming-settings-tabpanel-2"
+            />
           </Tabs>
         </DialogTitle>
         <DialogContent dividers>
@@ -83,6 +89,9 @@ export function StreamingSettingsProvider({ children }) {
           </TabPanel>
           <TabPanel value={tab} index={1}>
             <Settings onClose={closeDialog} embedded />
+          </TabPanel>
+          <TabPanel value={tab} index={2}>
+            <MoodsSettings onClose={closeDialog} embedded />
           </TabPanel>
         </DialogContent>
       </Dialog>

@@ -2,11 +2,13 @@ const { Sequelize, DataTypes } = require('sequelize');
 const defineWatchable = require('./watchable');
 
 describe('Watchable browse metadata contract', () => {
-  it('exposes overview, year, rogerebert_url, and trailer_url attributes for watchlist JSON', () => {
+  it('exposes overview, year, rogerebert_url, trailer_url, genres, moods, genres_locked', () => {
     const sequelize = new Sequelize({ dialect: 'sqlite', storage: ':memory:', logging: false });
     const Watchable = defineWatchable(sequelize, DataTypes);
     expect(Object.keys(Watchable.rawAttributes)).toEqual(
-      expect.arrayContaining(['overview', 'year', 'rogerebert_url', 'trailer_url']),
+      expect.arrayContaining([
+        'overview', 'year', 'rogerebert_url', 'trailer_url', 'genres', 'moods', 'genres_locked',
+      ]),
     );
   });
 
@@ -18,6 +20,8 @@ describe('Watchable browse metadata contract', () => {
       overview: 'Synopsis text',
       rogerebert_url: 'https://www.rogerebert.com/reviews/example',
       trailer_url: 'https://youtu.be/abc',
+      genres: ['comedy'],
+      moods: ['light'],
       media_type: 'movie',
       web_url: null,
       streaming_service_id: null,
@@ -29,16 +33,22 @@ describe('Watchable browse metadata contract', () => {
     expect(json.year).toBe(2019);
     expect(json.rogerebert_url).toBe('https://www.rogerebert.com/reviews/example');
     expect(json.trailer_url).toBe('https://youtu.be/abc');
+    expect(json.genres).toEqual(['comedy']);
+    expect(json.moods).toEqual(['light']);
 
     const empty = JSON.parse(JSON.stringify({
       overview: null,
       year: null,
       rogerebert_url: null,
       trailer_url: null,
+      genres: null,
+      moods: null,
     }));
     expect(empty.overview).toBeNull();
     expect(empty.year).toBeNull();
     expect(empty.rogerebert_url).toBeNull();
     expect(empty.trailer_url).toBeNull();
+    expect(empty.genres).toBeNull();
+    expect(empty.moods).toBeNull();
   });
 });
