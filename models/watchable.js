@@ -39,6 +39,7 @@ module.exports = (sequelize, DataTypes) => {
     overview: DataTypes.TEXT,
     year: DataTypes.INTEGER,
     rogerebert_url: DataTypes.STRING,
+    trailer_url: DataTypes.STRING,
   }, {
     sequelize,
     modelName: 'Watchable',

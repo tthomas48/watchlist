@@ -18,6 +18,7 @@ import { alpha } from '@mui/material/styles';
 import MenuIcon from '@mui/icons-material/Menu';
 import LiveTv from '@mui/icons-material/LiveTv';
 import PlayButton from './PlayButton';
+import TrailerButton from './TrailerButton';
 import EditButton from './EditButton';
 import ViewOnTraktButton from './ViewOnTraktButton';
 import HideButton from './HideButton';
@@ -265,6 +266,11 @@ function WatchlistItem({
       </Box>
       <CardActions disableSpacing sx={{ color: 'primary.main', flexShrink: 0, mt: 'auto' }}>
         <PlayButton player={player} id={item.id} disabled={!item.web_url} />
+        <TrailerButton
+          id={item.id}
+          trailerUrl={item.trailer_url}
+          title={item.title}
+        />
         <CommentButton item={item} saveWatchable={saveWatchable}></CommentButton>
         <IconButton
           id="basic-button"

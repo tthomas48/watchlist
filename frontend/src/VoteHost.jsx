@@ -10,6 +10,7 @@ import { QRCodeSVG } from 'qrcode.react';
 import Api from './service/api';
 import { MessageContext } from './context/MessageContext';
 import { fetchVoteSession } from './service/voteApi';
+import TrailerButton from './TrailerButton';
 
 function CandidateCard({ candidate, footer }) {
   if (!candidate) {
@@ -131,7 +132,17 @@ function VoteHost() {
         <Stack spacing={2} alignItems="center" sx={{ width: '100%' }}>
           <Typography variant="h6" textAlign="center">Swipe round — do we watch this?</Typography>
           <Box sx={{ width: '100%', maxWidth: 480, mx: 'auto' }}>
-            <CandidateCard candidate={session.currentCandidate} />
+            <CandidateCard
+              candidate={session.currentCandidate}
+              footer={session.currentCandidate ? (
+                <TrailerButton
+                  id={session.currentCandidate.id}
+                  trailerUrl={session.currentCandidate.trailerUrl}
+                  title={session.currentCandidate.title}
+                  sx={{ mt: 1 }}
+                />
+              ) : null}
+            />
           </Box>
           <Box sx={{ px: 2 }}>
             <Typography variant="body2" align="center" gutterBottom>

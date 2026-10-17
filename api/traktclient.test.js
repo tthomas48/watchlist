@@ -57,4 +57,33 @@ describe('TraktClient', () => {
       expect(get).toHaveBeenCalledTimes(2);
     });
   });
+
+  describe('getVideos', () => {
+    it('calls movies videos endpoint', async () => {
+      const call = jest.fn().mockResolvedValue([{ type: 'trailer', url: 'https://youtu.be/x' }]);
+      const client = new TraktClient('id', 'secret');
+      // eslint-disable-next-line no-underscore-dangle
+      client.traktClient = { _call: call };
+
+      const videos = await client.getVideos('movie', 123);
+      expect(videos).toHaveLength(1);
+      expect(call).toHaveBeenCalledWith(
+        expect.objectContaining({ method: 'GET', url: '/movies/:id/videos' }),
+        { id: 123 },
+      );
+    });
+
+    it('calls shows videos endpoint', async () => {
+      const call = jest.fn().mockResolvedValue([]);
+      const client = new TraktClient('id', 'secret');
+      // eslint-disable-next-line no-underscore-dangle
+      client.traktClient = { _call: call };
+
+      await client.getVideos('show', 'slug');
+      expect(call).toHaveBeenCalledWith(
+        expect.objectContaining({ url: '/shows/:id/videos' }),
+        { id: 'slug' },
+      );
+    });
+  });
 });

@@ -100,6 +100,26 @@ describe('vote_session_service helpers', () => {
       web_url: null,
     }).year).toBeNull();
   });
+
+  it('serializeWatchable includes trailerUrl when present and null when missing', () => {
+    expect(serializeWatchable({
+      id: 1,
+      title: 'With Trailer',
+      year: null,
+      overview: null,
+      rogerebert_url: null,
+      trailer_url: 'https://youtu.be/abc',
+      web_url: null,
+    }).trailerUrl).toBe('https://youtu.be/abc');
+    expect(serializeWatchable({
+      id: 2,
+      title: 'No Trailer',
+      year: null,
+      overview: null,
+      rogerebert_url: null,
+      web_url: null,
+    }).trailerUrl).toBeNull();
+  });
 });
 
 describe('visibleWatchablesWhere', () => {

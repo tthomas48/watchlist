@@ -8,6 +8,13 @@ jest.mock('./PlayButton', () => ({
   },
 }));
 
+jest.mock('./TrailerButton', () => ({
+  __esModule: true,
+  default: function MockTrailerButton() {
+    return <button type="button">Trailer</button>;
+  },
+}));
+
 const baseItem = {
   id: 42,
   title: 'Example Movie',

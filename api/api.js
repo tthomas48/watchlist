@@ -37,6 +37,8 @@ const {
 } = require('./poster_trakt_cache');
 const mountVoteSessionRoutes = require('./routes/vote_sessions');
 const mountRogerEbertRoutes = require('./routes/rogerebert');
+const mountTrailerRoutes = require('./routes/trailer');
+const { normalizeTrailerField } = require('./trailer');
 const { serveWatchablePoster } = require('./poster_serve');
 
 const defaultPosterImagePath = path.join(__dirname, '../images/movie.jpg');
@@ -178,6 +180,7 @@ class Api {
       homepage: media.homepage,
       overview: media.overview || null,
       year: media.year || null,
+      trailer_url: normalizeTrailerField(media.trailer),
       web_url: null,
       streaming_service_id: null,
       streaming_addon_id: null,
@@ -194,6 +197,7 @@ class Api {
     watchable.homepage = media.homepage;
     watchable.overview = media.overview || null;
     watchable.year = media.year || null;
+    watchable.trailer_url = normalizeTrailerField(media.trailer);
     watchable.imdb_id = media.ids?.imdb;
     watchable.tmdb_id = media.ids?.tmdb;
     if (traktListUserSlug != null && String(traktListUserSlug).trim() !== '') {
@@ -1053,6 +1057,10 @@ class Api {
       playWatchable: (req, serviceType, watchable) => this.playWatchable(req, serviceType, watchable),
     });
     mountRogerEbertRoutes(apiRouter, { authProvider: this.authProvider });
+    mountTrailerRoutes(apiRouter, {
+      authProvider: this.authProvider,
+      traktClient: this.traktClient,
+    });
 
     return apiRouter;
   }

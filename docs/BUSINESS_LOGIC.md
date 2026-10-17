@@ -57,7 +57,7 @@ Related: [VOTING_SESSIONS.md](./VOTING_SESSIONS.md), [ANDROID_VOTING_HOST.md](./
 
 - `overview` and `year` sync from Trakt on list refresh.
 - `rogerebert_url` is editable in the watchable editor; optional Lookup fills it via slug URL check.
-- Vote serialize includes `year` (camelCase). Browse/TV use `/api/watchlist/...` snake_case rows (`overview`, `year`, `rogerebert_url` already returned). Planned additive fields (see design docs): `genres`, `moods`, subscription streaming snapshot, `recommenders`, `trailer_url` — [TV_BROWSE_METADATA.md](./TV_BROWSE_METADATA.md).
+- Vote serialize includes `year` and `trailerUrl` (camelCase). Browse/TV use `/api/watchlist/...` snake_case rows (`overview`, `year`, `rogerebert_url`, `trailer_url`). Planned additive fields (see design docs): `genres`, `moods`, subscription streaming snapshot, `recommenders` — [TV_BROWSE_METADATA.md](./TV_BROWSE_METADATA.md).
 - WebUI: poster opens a detail sheet (synopsis, year, Ebert link); Edit is an explicit action from detail or the card menu.
 
 ## Max / HBO Max play URLs
@@ -107,9 +107,12 @@ Related: [VOTING_SESSIONS.md](./VOTING_SESSIONS.md), [ANDROID_VOTING_HOST.md](./
 
 # Trailers
 
-*(Target rules from [TRAILERS.md](./TRAILERS.md).)*
+See [TRAILERS.md](./TRAILERS.md).
 
-- `trailer_url` syncs from Trakt when available; on-demand lookup may write through if missing.
+- `Watchables.trailer_url` syncs from Trakt `trailer` on list refresh (`createWatchable` / `updateWatchable`).
+- `GET /api/watchables/:id/trailer` returns `{ trailerUrl }`; on miss, looks up Trakt videos, write-through when found.
+- Watchlist rows expose `trailer_url`; vote serialize exposes `trailerUrl`.
 - **Trailer** and **Play** are separate actions; trailer never overwrites `web_url`.
-- Null trailer is allowed; UI hides or disables Trailer when absent after lookup.
+- WebUI plays trailers in a dialog (`react-player`); non-embeddable URLs open in a new tab.
+- Null trailer is allowed; Trailer control hides after an on-demand miss.
 - TV cast of trailers is deferred; API still exposes `trailerUrl` for later clients.
