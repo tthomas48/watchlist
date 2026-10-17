@@ -6,9 +6,114 @@ const {
   isRentalOption,
 } = require('./streaming_options_filter');
 const { getOrCreateUserStreamingAccess } = require('./streaming_access_service');
+const ProviderFactory = require('../receiver/providers/factory');
 
 /** Subscription snapshot older than this is treated as stale. */
 const STREAMING_SNAPSHOT_STALE_MS = 1000 * 60 * 60 * 24;
+
+/** Existing play URLs may be rewritten when last_played is older than this (~3 months). */
+const PLAY_URL_REFRESH_MAX_AGE_MS = 1000 * 60 * 60 * 24 * 90;
+
+function hasPlayUrl(watchable) {
+  return watchable?.web_url != null && String(watchable.web_url).trim() !== '';
+}
+
+/**
+ * Whether MotN refresh may write web_url / service ids.
+ * Missing URL: always. Existing: only if never played or last_played older than 3 months.
+ */
+function canRefreshPlayUrl(watchable, now = Date.now()) {
+  if (!hasPlayUrl(watchable)) {
+    return true;
+  }
+  const lp = watchable?.last_played;
+  if (lp == null || lp === '') {
+    return true;
+  }
+  const t = lp instanceof Date ? lp.getTime() : new Date(lp).getTime();
+  if (!Number.isFinite(t)) {
+    return true;
+  }
+  return now - t > PLAY_URL_REFRESH_MAX_AGE_MS;
+}
+
+function optionServiceIds(option) {
+  const ids = new Set();
+  if (option?.serviceId != null && String(option.serviceId).trim() !== '') {
+    ids.add(String(option.serviceId));
+  }
+  const resolved = ProviderFactory.resolveStreamingServiceIdFromUrl(option?.link);
+  if (resolved) {
+    ids.add(String(resolved));
+  }
+  return ids;
+}
+
+function addonIdsEqual(a, b) {
+  const left = a == null || a === '' ? null : String(a);
+  const right = b == null || b === '' ? null : String(b);
+  return left === right;
+}
+
+/**
+ * Pick a subscription/free option for the play target.
+ * Prefer matching streaming_service_id (+ addon when set); else first non-rental with a link.
+ */
+function pickPlayUrlOption(options, watchable) {
+  const list = Array.isArray(options) ? options : [];
+  const eligible = [];
+  for (let i = 0; i < list.length; i += 1) {
+    const opt = list[i];
+    if (!opt?.link || isRentalOption(opt.type)) {
+      // eslint-disable-next-line no-continue
+      continue;
+    }
+    eligible.push(opt);
+  }
+  if (!eligible.length) {
+    return null;
+  }
+
+  const wantService = watchable?.streaming_service_id != null
+    && String(watchable.streaming_service_id).trim() !== ''
+    ? String(watchable.streaming_service_id)
+    : null;
+  if (!wantService) {
+    return eligible[0];
+  }
+
+  const wantAddon = watchable?.streaming_addon_id;
+  const withAddonMatch = eligible.find((opt) => (
+    optionServiceIds(opt).has(wantService) && addonIdsEqual(opt.addonId, wantAddon)
+  ));
+  if (withAddonMatch) {
+    return withAddonMatch;
+  }
+
+  const serviceOnly = eligible.find((opt) => optionServiceIds(opt).has(wantService));
+  if (serviceOnly) {
+    return serviceOnly;
+  }
+
+  return eligible[0];
+}
+
+/**
+ * Write play target fields from a MotN/subscription option onto the watchable (in memory).
+ * @returns {boolean} true if applied
+ */
+function applyPlayUrlOption(watchable, option) {
+  if (!watchable || !option?.link) {
+    return false;
+  }
+  watchable.web_url = option.link;
+  watchable.streaming_service_id = ProviderFactory.resolveStreamingServiceIdFromUrl(option.link)
+    || (option.serviceId != null ? String(option.serviceId) : null);
+  watchable.streaming_addon_id = option.addonId != null && String(option.addonId).trim() !== ''
+    ? String(option.addonId)
+    : null;
+  return true;
+}
 
 function isStreamingSnapshotStale(checkedAt, now = Date.now()) {
   if (checkedAt == null || checkedAt === '') {
@@ -166,13 +271,26 @@ async function refreshWatchableStreamingSnapshot(models, userId, watchable) {
   const checkedAt = new Date();
   watchable.streaming_options_json = JSON.stringify(snapshot);
   watchable.streaming_checked_at = checkedAt;
+
+  let playUrlUpdated = false;
+  if (canRefreshPlayUrl(watchable)) {
+    const chosen = pickPlayUrlOption(snapshot.subscription, watchable);
+    if (chosen) {
+      playUrlUpdated = applyPlayUrlOption(watchable, chosen);
+    }
+  }
+
   await watchable.save();
-  return { ok: true, snapshot, checkedAt };
+  return { ok: true, snapshot, checkedAt, playUrlUpdated };
 }
 
 module.exports = {
   STREAMING_SNAPSHOT_STALE_MS,
+  PLAY_URL_REFRESH_MAX_AGE_MS,
   isStreamingSnapshotStale,
+  canRefreshPlayUrl,
+  pickPlayUrlOption,
+  applyPlayUrlOption,
   buildSubscriptionSnapshot,
   parseStoredSnapshot,
   streamingSummaryFromWatchable,

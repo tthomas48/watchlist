@@ -85,6 +85,7 @@ See [STREAMING_AVAILABILITY.md](./STREAMING_AVAILABILITY.md).
 - **Subscription** is the normal save/play path (`web_url` + service ids). Watchables are **never** saved as rental-only.
 - Persist a **subscription snapshot** on the watchable (`streaming_options_json`, `streaming_checked_at`), filtered by `UserStreamingAccess`. Treat as stale after ~24h; refresh on list refresh (best-effort batch), after add-item save when still stale, or `POST /api/watchables/:id/streaming/refresh`.
 - Watchlist JSON includes additive `streaming: { checkedAt, stale, subscription }` (no rental price lists on rows).
+- On MotN snapshot refresh: **fill missing `web_url`** from a subscription/free match; **rewrite existing `web_url`** only when `last_played` is null or older than **3 months** (protect recently played titles). Prefer matching saved service/addon; never persist rent/buy as play URL.
 - **Rentals** are on-demand: `GET /api/watchables/:id/rentals` returns current MotN `rent` / `buy` options with prices. Short TTL MotN cache; do not treat rental catalogs as the stored play target.
 - Opening a rent link for a one-off play does not change persisted `web_url` unless the user explicitly edits it.
 - **Posters:** Trakt-backed titles download/cache posters on add/list refresh (`prefetchMissingPosters`); placeholder JPEGs are retried. Local-only titles still use manual Image URL.
