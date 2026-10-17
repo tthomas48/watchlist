@@ -130,21 +130,18 @@ module.exports = {
     const moodBySlug = Object.fromEntries(moods.map((m) => [m.slug, m.id]));
     const genreBySlug = Object.fromEntries(genres.map((g) => [g.slug, g.id]));
 
-    const mapRows = [];
-    for (const [genreSlug, moodSlugs] of Object.entries(DEFAULT_GENRE_TO_MOODS)) {
+    const mapRows = Object.entries(DEFAULT_GENRE_TO_MOODS).flatMap(([genreSlug, moodSlugs]) => {
       const genreId = genreBySlug[genreSlug];
-      if (!genreId) continue;
-      for (const moodSlug of moodSlugs) {
-        const moodId = moodBySlug[moodSlug];
-        if (!moodId) continue;
-        mapRows.push({
+      if (!genreId) return [];
+      return moodSlugs
+        .filter((moodSlug) => moodBySlug[moodSlug])
+        .map((moodSlug) => ({
           genre_id: genreId,
-          mood_id: moodId,
+          mood_id: moodBySlug[moodSlug],
           createdAt: now,
           updatedAt: now,
-        });
-      }
-    }
+        }));
+    });
     if (mapRows.length) {
       await queryInterface.bulkInsert('GenreMoodMaps', mapRows);
     }
