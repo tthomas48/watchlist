@@ -25,6 +25,11 @@ function CandidateCard({ candidate, footer }) {
       />
       <CardContent>
         <Typography variant="h5" gutterBottom>{candidate.title}</Typography>
+        {candidate.year != null && (
+          <Typography variant="subtitle2" color="text.secondary" sx={{ mb: 1 }}>
+            {candidate.year}
+          </Typography>
+        )}
         {candidate.overview && (
           <Typography variant="body2" color="text.secondary" sx={{ mb: 1 }}>
             {candidate.overview}

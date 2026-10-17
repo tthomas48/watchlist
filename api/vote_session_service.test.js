@@ -74,12 +74,31 @@ describe('vote_session_service helpers', () => {
       id: 42,
       title: 'Test',
       overview: null,
+      year: null,
       rogerebert_url: null,
       web_url: null,
     };
     expect(serializeWatchable(watchable, 'ABC123').imageUrl)
       .toBe('/api/vote-sessions/ABC123/img/42');
     expect(serializeWatchable(watchable).imageUrl).toBe('/api/img/42');
+  });
+
+  it('serializeWatchable includes year when present and null when missing', () => {
+    expect(serializeWatchable({
+      id: 1,
+      title: 'With Year',
+      year: 2019,
+      overview: null,
+      rogerebert_url: null,
+      web_url: null,
+    }).year).toBe(2019);
+    expect(serializeWatchable({
+      id: 2,
+      title: 'No Year',
+      overview: null,
+      rogerebert_url: null,
+      web_url: null,
+    }).year).toBeNull();
   });
 });
 

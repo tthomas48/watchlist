@@ -132,6 +132,7 @@ function serializeWatchable(w, sessionCode) {
     title: w.title,
     imageUrl,
     overview: w.overview || null,
+    year: w.year ?? null,
     rogerebertUrl: w.rogerebert_url || null,
     webUrl: w.web_url || null,
   };
