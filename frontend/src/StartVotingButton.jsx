@@ -25,12 +25,16 @@ function StartVotingButton({ list, player, filters }) {
         throw new Error('Select a list first');
       }
       const useListFilters = filtersActive && onlyFiltered;
+      const query = browseFiltersToQuery(filters);
       return api.createVoteSession({
         traktListId: list.ids.trakt,
         traktListUserSlug: list.user.username,
         serviceType,
         useListFilters,
-        filters: useListFilters ? browseFiltersToQuery(filters) : {},
+        filters: {
+          ...(useListFilters ? query : {}),
+          ...(query.video_store ? { video_store: query.video_store } : {}),
+        },
       });
     },
   });

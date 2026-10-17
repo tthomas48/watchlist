@@ -5,7 +5,7 @@ import {
 } from 'react-router-dom';
 import {
   Typography, Toolbar, Container, AppBar, IconButton, Menu, MenuItem, Box,
-  ToggleButton, ToggleButtonGroup,
+  ToggleButton, ToggleButtonGroup, Tooltip,
 } from '@mui/material';
 import Grid from '@mui/material/Grid';
 import MenuIcon from '@mui/icons-material/Menu';
@@ -60,6 +60,7 @@ const hiddenStorageKey = 'watchlist.hidden';
 const sortStorageKey = 'watchlist.sort';
 const filtersStorageKey = 'watchlist.browseFilters';
 const viewModeByListKey = 'watchlist.viewModeByList';
+const videoStoreByListKey = 'watchlist.videoStoreByList';
 
 function listIdFromList(list) {
   if (list?.ids?.trakt == null) return null;
@@ -85,20 +86,24 @@ function App() {
     defaultBrowseFilters(),
   );
   const [viewModeByList, setViewModeByList] = useLocalStorage(viewModeByListKey, {});
+  const [videoStoreByList, setVideoStoreByList] = useLocalStorage(videoStoreByListKey, {});
 
   const listId = listIdFromList(list);
 
-  // Restore Flat/Shelves for the selected list (default flat)
+  // Restore Flat/Shelves + Video Store Mode for the selected list
   useEffect(() => {
     if (!listId) return;
     const stored = viewModeByList?.[listId];
     const nextMode = stored === 'shelves' ? 'shelves' : 'flat';
+    const nextVideoStore = Boolean(videoStoreByList?.[listId]);
     setBrowseFilters((prev) => {
       const current = prev && typeof prev === 'object' ? prev : defaultBrowseFilters();
-      if (current.viewMode === nextMode) return current;
-      return { ...current, viewMode: nextMode };
+      if (current.viewMode === nextMode && Boolean(current.videoStoreMode) === nextVideoStore) {
+        return current;
+      }
+      return { ...current, viewMode: nextMode, videoStoreMode: nextVideoStore };
     });
-  // Only react to list changes; viewModeByList updates from the toggle handler
+  // Only react to list changes; per-list maps update from toggle handlers
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [listId]);
 
@@ -112,6 +117,20 @@ function App() {
       setViewModeByList((prev) => ({
         ...(prev && typeof prev === 'object' ? prev : {}),
         [listId]: nextMode,
+      }));
+    }
+  };
+
+  const setVideoStoreMode = (nextOn) => {
+    const on = Boolean(nextOn);
+    setBrowseFilters((prev) => {
+      const current = prev && typeof prev === 'object' ? prev : defaultBrowseFilters();
+      return { ...current, videoStoreMode: on };
+    });
+    if (listId) {
+      setVideoStoreByList((prev) => ({
+        ...(prev && typeof prev === 'object' ? prev : {}),
+        [listId]: on,
       }));
     }
   };
@@ -247,6 +266,18 @@ function App() {
                 <ToggleButton value="flat">Flat</ToggleButton>
                 <ToggleButton value="shelves">Shelves</ToggleButton>
               </ToggleButtonGroup>
+              <Tooltip title="Show titles without a Play URL (browse / rent later)">
+                <ToggleButton
+                  size="small"
+                  value="video-store"
+                  selected={Boolean(browseFilters?.videoStoreMode)}
+                  onChange={() => setVideoStoreMode(!browseFilters?.videoStoreMode)}
+                  aria-label="Video store mode"
+                  sx={{ flexShrink: 0 }}
+                >
+                  Video store
+                </ToggleButton>
+              </Tooltip>
               <Box sx={{ flexShrink: 0, ml: { xs: 0, sm: 'auto' } }}>
                 <AddItem list={list} />
               </Box>

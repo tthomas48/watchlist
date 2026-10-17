@@ -108,6 +108,7 @@ function visibleWatchablesWhere(traktListId, filters = {}) {
     media_type: filters.media_type ?? null,
     q: filters.q ?? null,
     personId: filters.personId ?? null,
+    video_store: filters.video_store === true || filters.videoStore === true,
   });
 }
 
@@ -178,13 +179,15 @@ class VoteSessionService {
     hostUserId, traktListId, traktListUserSlug, serviceType = 'adb-googletv',
     genre = null, mood = null, decade = null, media_type: mediaType = null, q = null,
     personId = null,
+    video_store: videoStore = false,
     use_list_filters: useListFilters = false,
   }) {
+    // Always apply video_store (default playable-only). Facets only when use_list_filters.
     const filters = useListFilters
       ? {
-        genre, mood, decade, media_type: mediaType, q, personId,
+        genre, mood, decade, media_type: mediaType, q, personId, video_store: videoStore,
       }
-      : {};
+      : { video_store: videoStore };
     const watchables = await this.models.Watchable.findAll({
       where: visibleWatchablesWhere(traktListId, filters),
     });

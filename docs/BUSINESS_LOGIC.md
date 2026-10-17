@@ -83,11 +83,12 @@ Related: [VOTING_SESSIONS.md](./VOTING_SESSIONS.md), [ANDROID_VOTING_HOST.md](./
 See [STREAMING_AVAILABILITY.md](./STREAMING_AVAILABILITY.md).
 
 - **Subscription** is the normal save/play path (`web_url` + service ids). Watchables are **never** saved as rental-only.
-- Persist a **subscription snapshot** on the watchable (`streaming_options_json`, `streaming_checked_at`), filtered by `UserStreamingAccess`. Treat as stale after ~24h; refresh on list refresh (best-effort batch), after add-item save when still stale, or `POST /api/watchables/:id/streaming/refresh`.
-- Watchlist JSON includes additive `streaming: { checkedAt, stale, subscription }` (no rental price lists on rows).
-- On MotN snapshot refresh: **fill missing `web_url`** from a subscription/free match; **rewrite existing `web_url`** only when `last_played` is null or older than **3 months** (protect recently played titles). Prefer matching saved service/addon; never persist rent/buy as play URL.
-- **Rentals** are on-demand: `GET /api/watchables/:id/rentals` returns current MotN `rent` / `buy` options with prices. Short TTL MotN cache; do not treat rental catalogs as the stored play target.
-- Opening a rent link for a one-off play does not change persisted `web_url` unless the user explicitly edits it.
+- Persist a snapshot (`streaming_options_json`, `streaming_checked_at`) with `subscription` (profile matches) and `other` (non-profile subscription/free). Treat as stale after ~24h; refresh on list refresh (best-effort batch), after add-item save when still stale, or `POST /api/watchables/:id/streaming/refresh`.
+- Watchlist JSON includes additive `streaming: { checkedAt, stale, subscription, other }` (no rental price lists on rows).
+- **Play URL:** fill/rewrite only from profile `subscription` (missing always; existing when `last_played` null or older than **3 months**). List sync backfills from stored snapshot. Never persist `other` or rent/buy as `web_url`.
+- **Rentals** are on-demand: `GET /api/watchables/:id/rentals` (detail auto-fetches). Short TTL MotN cache; informational only.
+- Opening an other/rent link does not change persisted `web_url` unless the user explicitly edits it.
+- **Video Store Mode:** list/vote default is playable-only (`web_url` set). `video_store=true` shows the full shelf (titles without Play URL). Not a MotN/rentals filter — browse framing only.
 - **Posters:** Trakt-backed titles download/cache posters on add/list refresh (`prefetchMissingPosters`); placeholder JPEGs are retried. Local-only titles still use manual Image URL.
 
 ---
@@ -101,7 +102,8 @@ See [FEEL_LIKE_BROWSING.md](./FEEL_LIKE_BROWSING.md).
 - Editing genres on a watchable sets `genres_locked` and recomputes moods; custom genres are upserted into the `Genres` catalog.
 - Saving moods/mappings via `PUT /api/moods` recomputes moods on all watchables.
 - List filters (single-select each, **AND** combined): `genre`, `mood`, `decade`, `media_type`, `q`, `personId`.
-- Vote session create with `use_list_filters: true` plus the same facet fields (including `personId`) subsets `pool_ids`.
+- Video Store Mode (`video_store`) is a view preference (default off = playable-only), not counted as an active facet.
+- Vote session create with `use_list_filters: true` plus the same facet fields (including `personId`) subsets `pool_ids`; `video_store` always applies.
 
 ---
 

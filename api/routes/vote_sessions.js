@@ -2,6 +2,7 @@ const { createRequireAuth } = require('../auth/require_auth');
 const { VoteSessionService, sessionAllowsWatchable } = require('../vote_session_service');
 const { asyncHandler, sendError } = require('../route_helpers');
 const { serveWatchablePoster } = require('../poster_serve');
+const { parseBoolFlag } = require('../watchlist_filters');
 
 function mountVoteSessionRoutes(apiRouter, deps) {
   const {
@@ -27,6 +28,8 @@ function mountVoteSessionRoutes(apiRouter, deps) {
         media_type: mediaType,
         q,
         personId,
+        video_store: videoStoreSnake,
+        videoStore: videoStoreCamel,
         use_list_filters: useListFilters,
       } = reqBody;
       if (!traktListId || !traktListUserSlug) {
@@ -40,6 +43,7 @@ function mountVoteSessionRoutes(apiRouter, deps) {
           parsedPersonId = Math.trunc(n);
         }
       }
+      const videoStoreRaw = videoStoreSnake != null ? videoStoreSnake : videoStoreCamel;
       const service = getService(req);
       const session = await service.createSession({
         hostUserId: req.user.id,
@@ -52,6 +56,7 @@ function mountVoteSessionRoutes(apiRouter, deps) {
         media_type: mediaType || null,
         q: q || null,
         personId: parsedPersonId,
+        video_store: parseBoolFlag(videoStoreRaw),
         use_list_filters: Boolean(useListFilters),
       });
       const sessionBody = await service.buildSessionResponse(session);

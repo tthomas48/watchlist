@@ -35,29 +35,30 @@ Relevant code: `api/streaming_availability_client.js`, `api/streaming_options_fi
 
 ### Subscription freshness
 
-- Persist a **subscription-oriented snapshot** on each watchable:
-  - `streaming_options_json` — TEXT/JSON of matched (or compact) subscription options for the user’s profile at check time
+- Persist a snapshot on each watchable:
+  - `streaming_options_json` — TEXT/JSON with `subscription` (matches `UserStreamingAccess`) and `other` (subscription/free MotN options **not** on the profile)
   - `streaming_checked_at` — timestamp
 - Refresh when older than **~24 hours**, on Trakt list refresh (best-effort per item / batch), or on explicit refresh.
-- Snapshot is filtered using `UserStreamingAccess` (same rules as today’s subscription mode).
-- List/detail payloads expose a **summary** (service ids/names, links, `checkedAt`, `stale` flag). Do **not** embed full rental catalogs on every list row.
+- List refresh also MotN-refreshes when `web_url` is still missing and the snapshot has fillable profile links or lacks the `other` field (schema upgrade).
+- Cheap list-refresh pass: **backfill** `web_url` from stored `subscription` links without MotN when the play-URL gate allows.
+- List/detail payloads expose `{ checkedAt, stale, subscription, other }`. Do **not** embed full rental catalogs on every list row.
 
 ### Play URL (`web_url`) fill / refresh
 
-Same MotN fetch that builds the subscription snapshot may also update the saved play target:
+**Only** profile-matched subscription/free options may set Play. `other` and rent/buy are informational only.
 
 | Situation | Action |
 |-----------|--------|
-| **Missing `web_url`** | Always fill when a subscription (or free) match has a link |
+| **Missing `web_url`** | Always fill when a **profile** subscription (or free) match has a link |
 | **Existing `web_url`** | Rewrite only when `last_played` is **NULL** or **older than 3 months** |
 | **Played within 3 months** | Leave `web_url` (and service/addon ids) alone — avoid breaking an in-progress season / deep link |
 
 Selection when filling or rewriting:
 
-- Prefer an option that matches the current `streaming_service_id` / `streaming_addon_id` when still present in the filtered subscription set.
-- Else pick the first filtered subscription/free option with a `link` (same ordering as add-item subscription mode).
+- Prefer an option that matches the current `streaming_service_id` / `streaming_addon_id` when still present in the filtered **subscription** set.
+- Else pick the first filtered subscription/free option with a `link`.
 - On write: set `web_url`, and refresh `streaming_service_id` / `streaming_addon_id` from the chosen option (same resolution path as edit/save).
-- Never write a rent/buy link as the saved play target.
+- Never write a rent/buy or `other` link as the saved play target.
 
 Signal notes: `last_played` is set on Play. New titles start NULL. The original `last_played` migration backfilled existing rows with “now,” so those look played until they age past 3 months or are re-played — by design under this rule.
 
@@ -107,11 +108,20 @@ Suggested snapshot JSON (compact):
       "addonId": null,
       "link": "https://..."
     }
+  ],
+  "other": [
+    {
+      "serviceId": "hulu",
+      "serviceName": "Hulu",
+      "type": "subscription",
+      "addonId": null,
+      "link": "https://..."
+    }
   ]
 }
 ```
 
-`web_url` remains the play target; MotN may fill or refresh it under the rules above. `justwatch_id` remains unused legacy.
+`web_url` remains the play target; MotN may fill or refresh it from `subscription` only. `justwatch_id` remains unused legacy.
 
 ## API contracts
 
@@ -128,6 +138,15 @@ On watchlist payloads (`GET /api/watchlist/...`), include something like:
       {
         "serviceId": "netflix",
         "serviceName": "Netflix",
+        "type": "subscription",
+        "addonId": null,
+        "link": "https://..."
+      }
+    ],
+    "other": [
+      {
+        "serviceId": "hulu",
+        "serviceName": "Hulu",
         "type": "subscription",
         "addonId": null,
         "link": "https://..."
@@ -170,18 +189,21 @@ Errors: not configured (`RAPIDAPI_KEY`), missing ids, upstream failure — clear
 ### Refresh
 
 - Hook subscription snapshot refresh into list refresh and/or `POST /api/watchables/:id/streaming/refresh`.
-- On each successful MotN snapshot refresh (list batch, explicit refresh, post-save when stale), apply **Play URL fill / refresh** using the filtered subscription options and `last_played` gate.
-- Same refresh path (add awaits full refresh; manual / stale refresh may run in background) must also **prefetch / repair posters** using list-item images when available.
+- On each successful MotN snapshot refresh (list batch, explicit refresh, post-save when stale), apply **Play URL fill / refresh** using profile `subscription` options and `last_played` gate.
+- List sync backfills play URL from stored snapshot; MotN also runs for missing play URL when fillable or when upgrading to include `other`.
+- Explicit refresh response includes `streaming` plus `web_url` / service ids so the detail sheet can enable Play without a full list reload.
+- Same refresh path must also **prefetch / repair posters** using list-item images when available.
 - Capabilities continue to expose `streamingEnabled`.
 
 ## WebUI presentation (in scope when implementing)
 
 | Surface | Behavior |
 |---------|----------|
-| **Poster grid** | Keep circular streaming-service badge from `streaming_service_id`. If snapshot has **no** subscription matches (and check succeeded), show a subtle secondary cue (muted badge or small “Rent?” affordance) — **no prices on the card**. |
-| **Detail sheet** (see metadata plan) | “Where to watch” block: subscription matches from snapshot + “as of” timestamp + Refresh. Button **Check rentals** loads rentals endpoint into a list (store, rent/buy, price). Optional **Open / Play once** does not re-save as rental-only by default. |
+| **Poster grid** | Keep circular streaming-service badge from `streaming_service_id`. If snapshot has **no** subscription matches (and check succeeded), show a tilted primary-pink **RENT** ticket badge with black type (rent/buy may be available) — **no prices on the card**. |
+| **Video Store Mode** | Toolbar toggle (default **off**): playable-only (`web_url` set). **On** → show titles without a Play URL too (`video_store=true`). Persisted per list. Vote pools respect the same flag. |
+| **Detail sheet** | Where to watch: **On your plan** (`subscription`), **Also available** (`other`), **Rent / buy** (auto-fetch `/rentals` on open). Snapshot Refresh updates MotN data and may fill `web_url`. Opening other/rental links does not re-save as play target. |
 | **Add-item** | Subscription picker remains primary. Optional “also rentable on…” hint only. Rename misleading Rent mode → `all` / unfiltered if retained. Saving still chooses subscription/free/none — never rental-only. |
-| **Settings → Streaming** | Unchanged profile drives subscription snapshot filtering. |
+| **Settings → Streaming** | Unchanged profile drives subscription snapshot filtering and play-URL autofill. |
 
 ## TV presentation (deferred — do not implement TV app now)
 
@@ -207,8 +229,8 @@ Rough lean-back design for the **existing** TV browse client later:
 2. Migration for snapshot columns; filter + rentals endpoint with tests (price passthrough, never drop rent/buy on that path).
 3. Persist/refresh subscription snapshot on list refresh and stale read. *(largely done)*
 4. Expose streaming summary on `/api/watchlist/...` JSON (additive fields). *(largely done)*
-5. **Play URL fill / refresh** — in `refreshWatchableStreamingSnapshot` (or shared helper): fill missing `web_url`; rewrite when `last_played` is null or &gt; 3 months; prefer matching service/addon; never rent/buy; tests as below.
-6. WebUI: detail “Where to watch” + Check rentals; add-item mode rename/hint.
+5. **Play URL fill / refresh + backfill** — fill from profile `subscription`; rewrite when `last_played` is null or &gt; 3 months; backfill from stored snapshot; never `other`/rent/buy. *(in progress / done on branch)*
+6. Snapshot `other` + detail Where to watch sections + auto rentals. *(in progress / done on branch)*
 7. Document TV (watchlisttv) field adoption in [TV_BROWSE_METADATA.md](./TV_BROWSE_METADATA.md).
 
 ## Tests
@@ -216,8 +238,8 @@ Rough lean-back design for the **existing** TV browse client later:
 - Poster helper / prefetch: embedded list poster used; `getImages` when search has no poster; placeholder retry; skip existing real JPEG; items without `trakt_id` skipped; refresh still invokes prefetch.
 - `streaming_options_filter`: subscription vs rentals vs unfiltered; rent ≠ buy in output.
 - Rentals endpoint: MotN mock → prices/links; missing key → not configured.
-- Snapshot round-trip on refresh; `stale` flag after threshold.
-- Play URL: missing → filled; existing + `last_played` null → rewritten; existing + played &lt; 3 months → unchanged; existing + played &gt; 3 months → rewritten; prefer matching `streaming_service_id`; rent/buy never written.
+- Snapshot round-trip on refresh; `stale` flag after threshold; `other` excludes profile matches and rentals.
+- Play URL: missing → filled from `subscription`; backfill from stored snapshot; never from `other`/rent; existing + `last_played` null → rewritten; played &lt; 3 months → unchanged; prefer matching `streaming_service_id`.
 - Regression: add-item subscription save still writes `web_url` only for chosen subscription option.
 
 ## Related business rules

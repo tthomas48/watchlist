@@ -19,6 +19,25 @@ function jsonArrayContains(column, value) {
 }
 
 /**
+ * Parse a boolean query/body flag. Default false when unset/unknown.
+ * @param {unknown} raw
+ * @returns {boolean}
+ */
+function parseBoolFlag(raw) {
+  if (raw === true || raw === 1) {
+    return true;
+  }
+  if (raw === false || raw === 0 || raw == null || raw === '') {
+    return false;
+  }
+  const s = String(raw).trim().toLowerCase();
+  if (s === '1' || s === 'true' || s === 'yes' || s === 'on') {
+    return true;
+  }
+  return false;
+}
+
+/**
  * Parse list-filter query/body fields into a normalized object.
  * @param {Record<string, unknown>} raw
  */
@@ -52,13 +71,21 @@ function parseListFilters(raw = {}) {
       personId = Math.trunc(n);
     }
   }
+  const videoStoreRaw = raw.video_store != null ? raw.video_store : raw.videoStore;
+  const videoStore = parseBoolFlag(videoStoreRaw);
   return {
-    genre, mood, decade, media_type: mediaType, q, personId,
+    genre,
+    mood,
+    decade,
+    media_type: mediaType,
+    q,
+    personId,
+    video_store: videoStore,
   };
 }
 
 /**
- * Whether any browse facet (excluding hidden/list) is active.
+ * Whether any browse facet (excluding hidden/list/video_store) is active.
  * @param {ReturnType<typeof parseListFilters>} filters
  */
 function hasActiveListFilters(filters) {
@@ -71,6 +98,19 @@ function hasActiveListFilters(filters) {
     || filters.q
     || filters.personId != null,
   );
+}
+
+/** Non-empty play URL (ready to Play). */
+function hasPlayUrlWhere() {
+  return {
+    [Op.and]: [
+      { web_url: { [Op.ne]: null } },
+      Sequelize.where(
+        Sequelize.fn('trim', Sequelize.col('web_url')),
+        { [Op.ne]: '' },
+      ),
+    ],
+  };
 }
 
 /**
@@ -86,6 +126,7 @@ function hasActiveListFilters(filters) {
  * @param {string|null} [opts.media_type]
  * @param {string|null} [opts.q]
  * @param {number|null} [opts.personId]
+ * @param {boolean} [opts.video_store] when true, include titles without web_url
  */
 function buildWatchlistWhere({
   traktListId,
@@ -96,11 +137,17 @@ function buildWatchlistWhere({
   media_type: mediaType = null,
   q = null,
   personId = null,
+  video_store: videoStore = false,
 }) {
   const and = [{ trakt_list_id: String(traktListId) }];
 
   if (!showHidden) {
     and.push({ [Op.or]: [{ hidden: false }, { hidden: null }] });
+  }
+
+  // Default: playable-only. Video Store Mode (video_store=true) shows the full shelf.
+  if (!videoStore) {
+    and.push(hasPlayUrlWhere());
   }
 
   if (genre) {
@@ -140,7 +187,9 @@ function buildWatchlistWhere({
 
 module.exports = {
   jsonArrayContains,
+  parseBoolFlag,
   parseListFilters,
   hasActiveListFilters,
+  hasPlayUrlWhere,
   buildWatchlistWhere,
 };

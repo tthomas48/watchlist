@@ -18,6 +18,13 @@ function hasPlayUrl(watchable) {
   return watchable?.web_url != null && String(watchable.web_url).trim() !== '';
 }
 
+function hasExternalIds(watchable) {
+  if (watchable?.imdb_id != null && String(watchable.imdb_id).trim() !== '') {
+    return true;
+  }
+  return watchable?.tmdb_id != null && String(watchable.tmdb_id).trim() !== '';
+}
+
 /**
  * Whether MotN refresh may write web_url / service ids.
  * Missing URL: always. Existing: only if never played or last_played older than 3 months.
@@ -53,6 +60,37 @@ function addonIdsEqual(a, b) {
   const left = a == null || a === '' ? null : String(a);
   const right = b == null || b === '' ? null : String(b);
   return left === right;
+}
+
+function optionDedupeKey(m) {
+  return `${m.serviceId || ''}|${m.addonId || ''}|${m.link || ''}|${m.type || ''}`;
+}
+
+function compactNonRentalProviders(providers) {
+  const out = [];
+  const seen = new Set();
+  const list = Array.isArray(providers) ? providers : [];
+  for (let i = 0; i < list.length; i += 1) {
+    const m = list[i];
+    if (isRentalOption(m?.type) || !m?.link) {
+      // eslint-disable-next-line no-continue
+      continue;
+    }
+    const key = optionDedupeKey(m);
+    if (seen.has(key)) {
+      // eslint-disable-next-line no-continue
+      continue;
+    }
+    seen.add(key);
+    out.push({
+      serviceId: m.serviceId || null,
+      serviceName: m.serviceName || null,
+      type: m.type || 'subscription',
+      addonId: m.addonId || null,
+      link: m.link,
+    });
+  }
+  return out;
 }
 
 /**
@@ -126,54 +164,6 @@ function isStreamingSnapshotStale(checkedAt, now = Date.now()) {
   return now - t > STREAMING_SNAPSHOT_STALE_MS;
 }
 
-function normalizePrice(price) {
-  if (!price || typeof price !== 'object') {
-    return null;
-  }
-  const amount = price.amount != null ? String(price.amount) : null;
-  const currency = price.currency != null ? String(price.currency) : null;
-  const formatted = price.formatted != null ? String(price.formatted) : null;
-  if (!amount && !formatted) {
-    return null;
-  }
-  return { amount, currency, formatted };
-}
-
-/**
- * Compact subscription snapshot from a filtered MotN result.
- * @param {object} filtered - filterStreamingOptionsByMode output
- * @param {string} country
- */
-function buildSubscriptionSnapshot(filtered, country) {
-  const subscription = [];
-  const seen = new Set();
-  const providers = Array.isArray(filtered?.matchedProviders) ? filtered.matchedProviders : [];
-  for (let i = 0; i < providers.length; i += 1) {
-    const m = providers[i];
-    if (isRentalOption(m?.type)) {
-      // eslint-disable-next-line no-continue
-      continue;
-    }
-    const key = `${m.serviceId || ''}|${m.addonId || ''}|${m.link || ''}|${m.type || ''}`;
-    if (seen.has(key) || !m.link) {
-      // eslint-disable-next-line no-continue
-      continue;
-    }
-    seen.add(key);
-    subscription.push({
-      serviceId: m.serviceId || null,
-      serviceName: m.serviceName || null,
-      type: m.type || 'subscription',
-      addonId: m.addonId || null,
-      link: m.link,
-    });
-  }
-  return {
-    country: String(country || '').toLowerCase() || 'us',
-    subscription,
-  };
-}
-
 function parseStoredSnapshot(raw) {
   if (raw == null || raw === '') {
     return null;
@@ -190,16 +180,102 @@ function parseStoredSnapshot(raw) {
 }
 
 /**
+ * Fill/rewrite web_url from stored snapshot.subscription (no MotN).
+ * @returns {{ ok: true, playUrlUpdated: boolean }}
+ */
+async function applyPlayUrlFromStoredSnapshot(watchable, { save = true } = {}) {
+  if (!watchable || !canRefreshPlayUrl(watchable)) {
+    return { ok: true, playUrlUpdated: false };
+  }
+  const snapshot = parseStoredSnapshot(watchable.streaming_options_json);
+  const chosen = pickPlayUrlOption(snapshot?.subscription, watchable);
+  if (!chosen) {
+    return { ok: true, playUrlUpdated: false };
+  }
+  const playUrlUpdated = applyPlayUrlOption(watchable, chosen);
+  if (playUrlUpdated && save) {
+    await watchable.save();
+  }
+  return { ok: true, playUrlUpdated };
+}
+
+/**
+ * Whether list sync should call MotN for this watchable.
+ * Stale snapshots always; missing play URL when snapshot is absent, has fillable
+ * subscription links, or lacks the newer `other` field (one-time schema upgrade).
+ */
+function needsMotNStreamingRefresh(watchable, now = Date.now()) {
+  if (!hasExternalIds(watchable)) {
+    return false;
+  }
+  if (isStreamingSnapshotStale(watchable?.streaming_checked_at, now)) {
+    return true;
+  }
+  if (hasPlayUrl(watchable)) {
+    return false;
+  }
+  const snap = parseStoredSnapshot(watchable?.streaming_options_json);
+  if (!snap) {
+    return true;
+  }
+  const sub = Array.isArray(snap.subscription) ? snap.subscription : [];
+  if (sub.some((s) => s?.link)) {
+    return true;
+  }
+  if (!Object.prototype.hasOwnProperty.call(snap, 'other')) {
+    return true;
+  }
+  return false;
+}
+
+function normalizePrice(price) {
+  if (!price || typeof price !== 'object') {
+    return null;
+  }
+  const amount = price.amount != null ? String(price.amount) : null;
+  const currency = price.currency != null ? String(price.currency) : null;
+  const formatted = price.formatted != null ? String(price.formatted) : null;
+  if (!amount && !formatted) {
+    return null;
+  }
+  return { amount, currency, formatted };
+}
+
+/**
+ * Compact snapshot: profile matches + other subscription/free options.
+ * @param {object} filteredMine - filterStreamingOptionsByMode subscription mode
+ * @param {string} country
+ * @param {object} [filteredAll] - filterStreamingOptionsByMode all / non-rental
+ */
+function buildSubscriptionSnapshot(filteredMine, country, filteredAll = null) {
+  const subscription = compactNonRentalProviders(filteredMine?.matchedProviders);
+  const mineKeys = new Set(subscription.map(optionDedupeKey));
+  let other = [];
+  if (filteredAll) {
+    other = compactNonRentalProviders(filteredAll.matchedProviders).filter(
+      (o) => !mineKeys.has(optionDedupeKey(o)),
+    );
+  }
+  return {
+    country: String(country || '').toLowerCase() || 'us',
+    subscription,
+    other,
+  };
+}
+
+/**
  * Additive watchlist field from DB columns.
  */
 function streamingSummaryFromWatchable(watchable, now = Date.now()) {
   const checkedAt = watchable?.streaming_checked_at || null;
   const snapshot = parseStoredSnapshot(watchable?.streaming_options_json);
   const subscription = Array.isArray(snapshot?.subscription) ? snapshot.subscription : [];
+  const other = Array.isArray(snapshot?.other) ? snapshot.other : [];
   return {
     checkedAt: checkedAt ? new Date(checkedAt).toISOString() : null,
     stale: isStreamingSnapshotStale(checkedAt, now),
     subscription,
+    other,
   };
 }
 
@@ -262,12 +338,17 @@ async function refreshWatchableStreamingSnapshot(models, userId, watchable) {
     return raw;
   }
 
-  const filtered = filterStreamingOptionsByMode(raw, {
+  const filteredMine = filterStreamingOptionsByMode(raw, {
     mode: 'subscription',
     access,
     includeRentals: false,
   });
-  const snapshot = buildSubscriptionSnapshot(filtered, country);
+  const filteredAll = filterStreamingOptionsByMode(raw, {
+    mode: 'all',
+    access,
+    includeRentals: false,
+  });
+  const snapshot = buildSubscriptionSnapshot(filteredMine, country, filteredAll);
   const checkedAt = new Date();
   watchable.streaming_options_json = JSON.stringify(snapshot);
   watchable.streaming_checked_at = checkedAt;
@@ -281,7 +362,12 @@ async function refreshWatchableStreamingSnapshot(models, userId, watchable) {
   }
 
   await watchable.save();
-  return { ok: true, snapshot, checkedAt, playUrlUpdated };
+  return {
+    ok: true,
+    snapshot,
+    checkedAt,
+    playUrlUpdated,
+  };
 }
 
 module.exports = {
@@ -289,8 +375,12 @@ module.exports = {
   PLAY_URL_REFRESH_MAX_AGE_MS,
   isStreamingSnapshotStale,
   canRefreshPlayUrl,
+  hasPlayUrl,
+  hasExternalIds,
+  needsMotNStreamingRefresh,
   pickPlayUrlOption,
   applyPlayUrlOption,
+  applyPlayUrlFromStoredSnapshot,
   buildSubscriptionSnapshot,
   parseStoredSnapshot,
   streamingSummaryFromWatchable,

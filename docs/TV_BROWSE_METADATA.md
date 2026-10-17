@@ -62,7 +62,8 @@ Example watchlist row shape (illustrative; not a full dump):
         "addonId": null,
         "link": "https://..."
       }
-    ]
+    ],
+    "other": []
   },
   "trailer_url": "https://www.youtube.com/watch?v=..."
 }

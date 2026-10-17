@@ -52,11 +52,14 @@ Single-select per facet; **AND** across facets (e.g. comedy + 1980s). No multi-s
 | Title search | `q` | Case-insensitive substring on `title` |
 | Recommended by | `personId` | Account People id — see [PEOPLE_RECOMMENDERS.md](./PEOPLE_RECOMMENDERS.md) |
 
+**Video Store Mode** (view preference, not a facet chip): query `video_store=true` shows titles **without** a Play `web_url`. Default (omitted / false) is **playable-only** — non-empty `web_url`. Persisted per list in the WebUI like Flat/Shelves. See [STREAMING_AVAILABILITY.md](./STREAMING_AVAILABILITY.md).
+
 Response includes `genres` and `moods` on each item so clients can build shelves client-side.
 
 ### Voting
 
 - Optional facets on `POST /vote-sessions` when `use_list_filters: true` to subset `pool_ids`.
+- Vote pools always respect `video_store` (default playable-only) even when facets are off.
 - Documented in [VOTING_SESSIONS.md](./VOTING_SESSIONS.md).
 
 ## Data model

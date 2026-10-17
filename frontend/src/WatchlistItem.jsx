@@ -27,6 +27,7 @@ import EditButton from './EditButton';
 import ViewOnTraktButton from './ViewOnTraktButton';
 import HideButton from './HideButton';
 import CommentButton from './CommentButton';
+import ForRentTicketIcon from './ForRentTicketIcon';
 import { MessageContext } from './context/MessageContext';
 import Api from './service/api';
 import getStreamingServiceIcon from './streamingServiceIcon';
@@ -254,22 +255,21 @@ function WatchlistItem({
               <Box
                 sx={{
                   position: 'absolute',
-                  top: 8,
-                  right: 8,
+                  top: 4,
+                  right: 4,
                   zIndex: 1,
                   pointerEvents: 'none',
-                  px: 1,
-                  py: 0.25,
-                  borderRadius: 1,
-                  bgcolor: 'rgba(0,0,0,0.55)',
-                  color: 'grey.300',
-                  fontSize: '0.7rem',
-                  fontWeight: 600,
-                  letterSpacing: 0.2,
+                  width: 52,
+                  height: 52,
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  filter: 'drop-shadow(0 2px 6px rgba(0,0,0,0.55))',
                 }}
                 aria-label="No subscription match; rent options may be available"
+                title="For rent — rent / buy options may be available"
               >
-                Rent?
+                <ForRentTicketIcon sx={{ width: 48, height: 48, color: 'primary.main' }} />
               </Box>
             )}
 

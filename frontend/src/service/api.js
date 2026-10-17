@@ -439,6 +439,10 @@ class Api {
       if (filters.q) body.q = filters.q;
       if (filters.personId) body.personId = Number(filters.personId);
     }
+    // Always forward Video Store Mode (default playable-only when omitted).
+    if (filters.video_store === true || filters.video_store === 'true') {
+      body.video_store = true;
+    }
     const res = await fetch('/api/vote-sessions', {
       method: 'POST',
       withCredentials: true,

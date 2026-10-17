@@ -15,6 +15,8 @@ const {
   canRefreshPlayUrl,
   pickPlayUrlOption,
   applyPlayUrlOption,
+  applyPlayUrlFromStoredSnapshot,
+  needsMotNStreamingRefresh,
   refreshWatchableStreamingSnapshot,
   STREAMING_SNAPSHOT_STALE_MS,
   PLAY_URL_REFRESH_MAX_AGE_MS,
@@ -61,6 +63,47 @@ describe('streaming_snapshot', () => {
       expect(snap.country).toBe('us');
       expect(snap.subscription).toHaveLength(1);
       expect(snap.subscription[0].serviceId).toBe('netflix');
+      expect(snap.other).toEqual([]);
+    });
+
+    it('puts non-profile subscription options in other (never rentals)', () => {
+      const mine = {
+        matchedProviders: [{
+          serviceId: 'netflix',
+          serviceName: 'Netflix',
+          type: 'subscription',
+          addonId: null,
+          link: 'https://www.netflix.com/title/1',
+        }],
+      };
+      const all = {
+        matchedProviders: [
+          {
+            serviceId: 'netflix',
+            serviceName: 'Netflix',
+            type: 'subscription',
+            addonId: null,
+            link: 'https://www.netflix.com/title/1',
+          },
+          {
+            serviceId: 'hulu',
+            serviceName: 'Hulu',
+            type: 'subscription',
+            addonId: null,
+            link: 'https://www.hulu.com/movie/1',
+          },
+          {
+            serviceId: 'prime',
+            serviceName: 'Prime',
+            type: 'rent',
+            addonId: null,
+            link: 'https://prime/rent',
+          },
+        ],
+      };
+      const snap = buildSubscriptionSnapshot(mine, 'us', all);
+      expect(snap.subscription.map((s) => s.serviceId)).toEqual(['netflix']);
+      expect(snap.other.map((s) => s.serviceId)).toEqual(['hulu']);
     });
   });
 
@@ -103,18 +146,112 @@ describe('streaming_snapshot', () => {
   });
 
   describe('streamingSummaryFromWatchable', () => {
-    it('exposes checkedAt, stale, subscription', () => {
+    it('exposes checkedAt, stale, subscription, other', () => {
       const now = Date.now();
       const summary = streamingSummaryFromWatchable({
         streaming_checked_at: new Date(now - 1000),
         streaming_options_json: JSON.stringify({
           country: 'us',
           subscription: [{ serviceId: 'netflix', link: 'https://x', type: 'subscription' }],
+          other: [{ serviceId: 'hulu', link: 'https://h', type: 'subscription' }],
         }),
       }, now);
       expect(summary.stale).toBe(false);
       expect(summary.subscription).toHaveLength(1);
+      expect(summary.other).toHaveLength(1);
       expect(summary.checkedAt).toMatch(/T/);
+    });
+  });
+
+  describe('applyPlayUrlFromStoredSnapshot', () => {
+    it('fills missing web_url from stored subscription (not other)', async () => {
+      const w = {
+        web_url: null,
+        streaming_service_id: null,
+        streaming_addon_id: null,
+        last_played: null,
+        streaming_options_json: JSON.stringify({
+          country: 'us',
+          subscription: [{
+            serviceId: 'netflix',
+            type: 'subscription',
+            link: 'https://www.netflix.com/title/81282091',
+          }],
+          other: [{
+            serviceId: 'hulu',
+            type: 'subscription',
+            link: 'https://www.hulu.com/movie/should-not-use',
+          }],
+        }),
+        save: jest.fn().mockResolvedValue(undefined),
+      };
+      const out = await applyPlayUrlFromStoredSnapshot(w);
+      expect(out.playUrlUpdated).toBe(true);
+      expect(w.web_url).toBe('https://www.netflix.com/title/81282091');
+      expect(w.streaming_service_id).toBe('netflix');
+      expect(w.save).toHaveBeenCalled();
+    });
+
+    it('does not use other or rentals for play url', async () => {
+      const w = {
+        web_url: null,
+        last_played: null,
+        streaming_options_json: JSON.stringify({
+          subscription: [],
+          other: [{
+            serviceId: 'hulu',
+            type: 'subscription',
+            link: 'https://www.hulu.com/movie/x',
+          }],
+        }),
+        save: jest.fn(),
+      };
+      const out = await applyPlayUrlFromStoredSnapshot(w);
+      expect(out.playUrlUpdated).toBe(false);
+      expect(w.web_url).toBeNull();
+      expect(w.save).not.toHaveBeenCalled();
+    });
+  });
+
+  describe('needsMotNStreamingRefresh', () => {
+    const now = Date.now();
+
+    it('is true when snapshot is stale', () => {
+      expect(needsMotNStreamingRefresh({
+        imdb_id: 'tt1',
+        web_url: 'https://x',
+        streaming_checked_at: new Date(now - STREAMING_SNAPSHOT_STALE_MS - 1),
+      }, now)).toBe(true);
+    });
+
+    it('is true when web_url missing and subscription has links', () => {
+      expect(needsMotNStreamingRefresh({
+        imdb_id: 'tt1',
+        web_url: null,
+        streaming_checked_at: new Date(now),
+        streaming_options_json: JSON.stringify({
+          subscription: [{ serviceId: 'netflix', link: 'https://n', type: 'subscription' }],
+          other: [],
+        }),
+      }, now)).toBe(true);
+    });
+
+    it('is false when fresh, has play url', () => {
+      expect(needsMotNStreamingRefresh({
+        imdb_id: 'tt1',
+        web_url: 'https://x',
+        streaming_checked_at: new Date(now),
+        streaming_options_json: JSON.stringify({ subscription: [], other: [] }),
+      }, now)).toBe(false);
+    });
+
+    it('is false when fresh, no play url, empty subscription, has other field', () => {
+      expect(needsMotNStreamingRefresh({
+        imdb_id: 'tt1',
+        web_url: null,
+        streaming_checked_at: new Date(now),
+        streaming_options_json: JSON.stringify({ subscription: [], other: [] }),
+      }, now)).toBe(false);
     });
   });
 
@@ -277,6 +414,11 @@ describe('streaming_snapshot', () => {
                 link: 'https://www.amazon.com/gp/video/detail/B0NEWID',
               },
               {
+                service: { id: 'hulu', name: 'Hulu' },
+                type: 'subscription',
+                link: 'https://www.hulu.com/movie/other',
+              },
+              {
                 service: { id: 'prime', name: 'Prime Video' },
                 type: 'rent',
                 link: 'https://www.amazon.com/gp/video/detail/RENT',
@@ -306,7 +448,7 @@ describe('streaming_snapshot', () => {
       return w;
     }
 
-    it('fills missing web_url from subscription options', async () => {
+    it('fills missing web_url from subscription options and stores other', async () => {
       mockMotN();
       const w = watchableStub();
       const out = await refreshWatchableStreamingSnapshot({}, 1, w);
@@ -315,6 +457,9 @@ describe('streaming_snapshot', () => {
       expect(w.web_url).toBe('https://www.netflix.com/title/new');
       expect(w.streaming_service_id).toBe('netflix');
       expect(w.save).toHaveBeenCalled();
+      const snap = JSON.parse(w.streaming_options_json);
+      expect(snap.other.map((o) => o.serviceId)).toEqual(['hulu']);
+      expect(snap.other.every((o) => o.type !== 'rent')).toBe(true);
     });
 
     it('rewrites existing web_url when last_played is null', async () => {

@@ -46,6 +46,7 @@ export const defaultBrowseFilters = () => ({
   q: '',
   personId: '',
   viewMode: 'flat',
+  videoStoreMode: false,
 });
 
 export function hasActiveBrowseFilters(filters) {
@@ -60,11 +61,12 @@ export function hasActiveBrowseFilters(filters) {
   );
 }
 
-/** Clear facet filters only; preserve viewMode. */
+/** Clear facet filters only; preserve viewMode and videoStoreMode. */
 export function clearBrowseFacets(filters) {
   return {
     ...defaultBrowseFilters(),
     viewMode: filters?.viewMode || 'flat',
+    videoStoreMode: Boolean(filters?.videoStoreMode),
   };
 }
 
@@ -117,6 +119,8 @@ export function browseFiltersToQuery(filters) {
   if (filters.mediaType) query.media_type = filters.mediaType;
   if (filters.q && String(filters.q).trim()) query.q = String(filters.q).trim();
   if (filters.personId) query.personId = String(filters.personId);
+  // Only send when on — API defaults to playable-only (video_store off).
+  if (filters.videoStoreMode) query.video_store = 'true';
   return query;
 }
 

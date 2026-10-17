@@ -26,6 +26,8 @@ const {
   refreshWatchableStreamingSnapshot,
   isStreamingSnapshotStale,
   streamingSummaryFromWatchable,
+  needsMotNStreamingRefresh,
+  applyPlayUrlFromStoredSnapshot,
 } = require('./streaming_snapshot');
 const { loadStreamingManifest } = require('./streaming_manifest');
 const {
@@ -455,7 +457,7 @@ class Api {
   }
 
   /**
-   * Best-effort MotN subscription snapshots for stale watchables (cap per refresh).
+   * Best-effort MotN subscription snapshots + play-URL backfill (cap MotN per refresh).
    */
   async syncStaleStreamingSnapshots(req, traktListId, { maxItems = 15 } = {}) {
     const userId = req.user?.id;
@@ -469,14 +471,22 @@ class Api {
       debug('syncStaleStreamingSnapshots findAll failed', e);
       return;
     }
+
+    // Cheap pass: fill missing play URLs from stored profile subscription links.
+    for (let i = 0; i < watchables.length; i += 1) {
+      const w = watchables[i];
+      try {
+        // eslint-disable-next-line no-await-in-loop
+        await applyPlayUrlFromStoredSnapshot(w);
+      } catch (e) {
+        debug(`play url backfill failed watchable ${w.id}: ${e.message}`);
+      }
+    }
+
     let refreshed = 0;
     for (let i = 0; i < watchables.length && refreshed < maxItems; i += 1) {
       const w = watchables[i];
-      if (!isStreamingSnapshotStale(w.streaming_checked_at)) {
-        // eslint-disable-next-line no-continue
-        continue;
-      }
-      if (!w.imdb_id && (w.tmdb_id == null || String(w.tmdb_id).trim() === '')) {
+      if (!needsMotNStreamingRefresh(w)) {
         // eslint-disable-next-line no-continue
         continue;
       }
@@ -488,6 +498,17 @@ class Api {
         }
       } catch (e) {
         debug(`syncStaleStreamingSnapshots failed watchable ${w.id}: ${e.message}`);
+      }
+    }
+
+    // Second backfill for rows MotN just wrote (or still missing after first pass).
+    for (let i = 0; i < watchables.length; i += 1) {
+      const w = watchables[i];
+      try {
+        // eslint-disable-next-line no-await-in-loop
+        await applyPlayUrlFromStoredSnapshot(w);
+      } catch (e) {
+        debug(`play url backfill (post-MotN) failed watchable ${w.id}: ${e.message}`);
       }
     }
   }
@@ -737,6 +758,10 @@ class Api {
         res.json({
           ok: true,
           streaming: streamingSummaryFromWatchable(watchable),
+          web_url: watchable.web_url,
+          streaming_service_id: watchable.streaming_service_id,
+          streaming_addon_id: watchable.streaming_addon_id,
+          playUrlUpdated: Boolean(out.playUrlUpdated),
         });
       } catch (e) {
         this.handleError(res, e);

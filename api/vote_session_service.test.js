@@ -144,6 +144,12 @@ describe('visibleWatchablesWhere', () => {
     );
   });
 
+  it('defaults to playable-only; video_store shows all', () => {
+    const playable = visibleWatchablesWhere('12345');
+    const all = visibleWatchablesWhere('12345', { video_store: true });
+    expect(playable[Op.and].length).toBeGreaterThan(all[Op.and].length);
+  });
+
   it('applies mood filter when provided', () => {
     const base = visibleWatchablesWhere('12345');
     const filtered = visibleWatchablesWhere('12345', { mood: 'comfort' });

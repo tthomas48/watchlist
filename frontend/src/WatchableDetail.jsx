@@ -1,4 +1,4 @@
-import { useContext, useState } from 'react';
+import { useContext, useEffect, useState } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import {
   Box,
@@ -38,6 +38,42 @@ function formatCheckedAt(iso) {
   }
 }
 
+function StreamingOptionList({ options, emptyLabel }) {
+  if (!options.length) {
+    return (
+      <Typography variant="body2" color="text.secondary" sx={{ mb: 1 }}>
+        {emptyLabel}
+      </Typography>
+    );
+  }
+  return (
+    <List dense disablePadding sx={{ mb: 1 }}>
+      {options.map((opt) => (
+        <ListItem
+          key={`${opt.serviceId}-${opt.addonId || ''}-${opt.link}`}
+          disableGutters
+          secondaryAction={opt.link ? (
+            <Button
+              size="small"
+              component="a"
+              href={opt.link}
+              target="_blank"
+              rel="noreferrer"
+            >
+              Open
+            </Button>
+          ) : null}
+        >
+          <ListItemText
+            primary={opt.serviceName || opt.serviceId || 'Service'}
+            secondary={opt.type}
+          />
+        </ListItem>
+      ))}
+    </List>
+  );
+}
+
 export function WatchableDetailContent({
   item,
   player,
@@ -69,8 +105,10 @@ export function WatchableDetailContent({
     checkedAt: null,
     stale: true,
     subscription: [],
+    other: [],
   };
   const subscription = Array.isArray(streaming.subscription) ? streaming.subscription : [];
+  const other = Array.isArray(streaming.other) ? streaming.other : [];
 
   const moodLabel = (id) => (
     moodsQuery.data?.moods?.find((m) => m.slug === id)?.label
@@ -85,8 +123,17 @@ export function WatchableDetailContent({
   const refreshStreamingMutation = useMutation({
     mutationFn: () => api.refreshWatchableStreaming(item.id),
     onSuccess: (data) => {
-      if (data?.streaming && typeof onItemUpdated === 'function') {
-        onItemUpdated({ ...item, streaming: data.streaming });
+      if (typeof onItemUpdated === 'function') {
+        onItemUpdated({
+          ...item,
+          ...(data?.streaming ? { streaming: data.streaming } : {}),
+          ...(Object.prototype.hasOwnProperty.call(data || {}, 'web_url')
+            ? { web_url: data.web_url } : {}),
+          ...(Object.prototype.hasOwnProperty.call(data || {}, 'streaming_service_id')
+            ? { streaming_service_id: data.streaming_service_id } : {}),
+          ...(Object.prototype.hasOwnProperty.call(data || {}, 'streaming_addon_id')
+            ? { streaming_addon_id: data.streaming_addon_id } : {}),
+        });
       }
       queryClient.invalidateQueries({ queryKey: ['watchlist'] });
     },
@@ -98,6 +145,13 @@ export function WatchableDetailContent({
       setRentals(Array.isArray(data?.options) ? data.options : []);
     },
   });
+
+  useEffect(() => {
+    setRentals(null);
+    rentalsMutation.mutate();
+    // Auto-load rentals once per watchable open; intentional mount/id trigger.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [item.id]);
 
   return (
     <>
@@ -224,58 +278,47 @@ export function WatchableDetailContent({
                   {streaming.stale ? ' (stale)' : ''}
                 </Typography>
               )}
-              {subscription.length === 0 ? (
+
+              <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mb: 0.25 }}>
+                On your plan
+              </Typography>
+              <StreamingOptionList
+                options={subscription}
+                emptyLabel={streaming.checkedAt
+                  ? 'No matching subscription options for your profile.'
+                  : 'Streaming availability has not been checked yet.'}
+              />
+
+              <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mb: 0.25 }}>
+                Also available
+              </Typography>
+              <StreamingOptionList
+                options={other}
+                emptyLabel={streaming.checkedAt
+                  ? 'No other subscription services found.'
+                  : 'Not checked yet.'}
+              />
+
+              <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mb: 0.25, mt: 0.5 }}>
+                Rent / buy
+              </Typography>
+              {rentalsMutation.isPending && rentals == null && (
                 <Typography variant="body2" color="text.secondary" sx={{ mb: 1 }}>
-                  {streaming.checkedAt
-                    ? 'No matching subscription options for your profile.'
-                    : 'Streaming availability has not been checked yet.'}
+                  Loading rentals…
                 </Typography>
-              ) : (
-                <List dense disablePadding sx={{ mb: 1 }}>
-                  {subscription.map((opt) => (
-                    <ListItem
-                      key={`${opt.serviceId}-${opt.addonId || ''}-${opt.link}`}
-                      disableGutters
-                      secondaryAction={opt.link ? (
-                        <Button
-                          size="small"
-                          component="a"
-                          href={opt.link}
-                          target="_blank"
-                          rel="noreferrer"
-                        >
-                          Open
-                        </Button>
-                      ) : null}
-                    >
-                      <ListItemText
-                        primary={opt.serviceName || opt.serviceId || 'Service'}
-                        secondary={opt.type}
-                      />
-                    </ListItem>
-                  ))}
-                </List>
               )}
-              <Button
-                size="small"
-                variant="outlined"
-                disabled={rentalsMutation.isPending}
-                onClick={() => rentalsMutation.mutate()}
-              >
-                Check rentals
-              </Button>
               {rentalsMutation.isError && (
-                <Typography variant="caption" color="error" sx={{ display: 'block', mt: 0.75 }}>
+                <Typography variant="caption" color="error" sx={{ display: 'block', mb: 1 }}>
                   {rentalsMutation.error?.message || 'Could not load rentals'}
                 </Typography>
               )}
               {Array.isArray(rentals) && (
                 rentals.length === 0 ? (
-                  <Typography variant="body2" color="text.secondary" sx={{ mt: 1 }}>
+                  <Typography variant="body2" color="text.secondary" sx={{ mb: 1 }}>
                     No rent/buy options found.
                   </Typography>
                 ) : (
-                  <List dense disablePadding sx={{ mt: 1 }}>
+                  <List dense disablePadding sx={{ mb: 1 }}>
                     {rentals.map((opt) => (
                       <ListItem
                         key={`${opt.serviceId}-${opt.type}-${opt.link}`}

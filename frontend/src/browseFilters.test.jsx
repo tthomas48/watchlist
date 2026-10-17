@@ -34,6 +34,14 @@ describe('browseFilters helpers', () => {
     });
   });
 
+  it('browseFiltersToQuery sends video_store only when Video Store Mode is on', () => {
+    expect(browseFiltersToQuery(defaultBrowseFilters()).video_store).toBeUndefined();
+    expect(browseFiltersToQuery({
+      ...defaultBrowseFilters(),
+      videoStoreMode: true,
+    }).video_store).toBe('true');
+  });
+
   it('groupByGenre builds shelves and other', () => {
     const shelves = groupByGenre([
       { id: 1, title: 'A', genres: ['comedy', 'drama'] },
@@ -66,15 +74,16 @@ describe('browseFilters helpers', () => {
     ]);
   });
 
-  it('countActiveBrowseFilters ignores viewMode', () => {
+  it('countActiveBrowseFilters ignores viewMode and videoStoreMode', () => {
     expect(countActiveBrowseFilters({
       ...defaultBrowseFilters(),
       viewMode: 'shelves',
+      videoStoreMode: true,
       mood: 'light',
     })).toBe(1);
   });
 
-  it('clearBrowseFacets preserves viewMode', () => {
+  it('clearBrowseFacets preserves viewMode and videoStoreMode', () => {
     expect(clearBrowseFacets({
       mood: 'scary',
       genre: 'horror',
@@ -83,9 +92,11 @@ describe('browseFilters helpers', () => {
       q: 'x',
       personId: '2',
       viewMode: 'shelves',
+      videoStoreMode: true,
     })).toEqual({
       ...defaultBrowseFilters(),
       viewMode: 'shelves',
+      videoStoreMode: true,
     });
   });
 });

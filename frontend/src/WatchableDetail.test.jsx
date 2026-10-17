@@ -29,6 +29,16 @@ jest.mock('./service/api', () => ({
     async getGenres() {
       return [{ slug: 'comedy', label: 'Comedy' }];
     }
+
+    // eslint-disable-next-line class-methods-use-this
+    async getWatchableRentals() {
+      return { options: [] };
+    }
+
+    // eslint-disable-next-line class-methods-use-this
+    async refreshWatchableStreaming() {
+      return { ok: true, streaming: { subscription: [], other: [] } };
+    }
   },
 }));
 
@@ -73,7 +83,40 @@ describe('WatchableDetailContent', () => {
     expect(ebert).toHaveAttribute('href', baseItem.rogerebert_url);
     expect(screen.getByText('Netflix')).toBeInTheDocument();
     expect(screen.getByText('Where to watch')).toBeInTheDocument();
-    expect(screen.getByRole('button', { name: /check rentals/i })).toBeInTheDocument();
+    expect(screen.getByText('On your plan')).toBeInTheDocument();
+    expect(screen.getByText('Also available')).toBeInTheDocument();
+    expect(screen.getByText('Rent / buy')).toBeInTheDocument();
+  });
+
+  it('lists on-plan and other streaming options', () => {
+    renderDetail(
+      <WatchableDetailContent
+        item={{
+          ...baseItem,
+          streaming: {
+            checkedAt: '2026-10-17T12:00:00.000Z',
+            stale: false,
+            subscription: [{
+              serviceId: 'netflix',
+              serviceName: 'Netflix',
+              type: 'subscription',
+              link: 'https://www.netflix.com/title/1',
+            }],
+            other: [{
+              serviceId: 'hulu',
+              serviceName: 'Hulu',
+              type: 'subscription',
+              link: 'https://www.hulu.com/movie/1',
+            }],
+          },
+        }}
+        player="browser"
+        onEdit={jest.fn()}
+        onClose={jest.fn()}
+      />,
+    );
+    expect(screen.getByText('Hulu')).toBeInTheDocument();
+    expect(screen.getAllByRole('link', { name: /open/i }).length).toBeGreaterThanOrEqual(2);
   });
 
   it('renders genre and mood chips when present', async () => {
