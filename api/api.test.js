@@ -113,6 +113,88 @@ describe('api', () => {
     });
   });
 
+  describe('maybeRefreshIfStale', () => {
+    const listId = 'list-1';
+    const listUser = 'alice';
+
+    function buildReq(watchables) {
+      return {
+        user: { access_token: 'token' },
+        models: {
+          Watchable: {
+            findAll: jest.fn().mockResolvedValue(watchables),
+          },
+        },
+      };
+    }
+
+    it('does not refresh when lastRefresh is fresh', async () => {
+      const api = new Api();
+      api.lastRefresh = jest.fn().mockResolvedValue(new Date());
+      api.refresh = jest.fn();
+      api.refreshInBackground = jest.fn();
+      const req = buildReq([{ trakt_id: '1' }]);
+
+      const result = await api.maybeRefreshIfStale(req, listUser, listId);
+
+      expect(result).toEqual({ awaited: false });
+      expect(api.refresh).not.toHaveBeenCalled();
+      expect(api.refreshInBackground).not.toHaveBeenCalled();
+      expect(req.models.Watchable.findAll).not.toHaveBeenCalled();
+    });
+
+    it('starts background refresh when stale and list is non-empty', async () => {
+      const api = new Api();
+      api.lastRefresh = jest.fn().mockResolvedValue(new Date(Date.now() - Api.STALE_REFRESH_MS - 1000));
+      let resolveRefresh;
+      const refreshDone = new Promise((resolve) => {
+        resolveRefresh = resolve;
+      });
+      api.refresh = jest.fn().mockReturnValue(refreshDone);
+      const watchables = [{ trakt_id: '1' }];
+      const req = buildReq(watchables);
+
+      const resultPromise = api.maybeRefreshIfStale(req, listUser, listId);
+      const result = await resultPromise;
+
+      expect(result).toEqual({ awaited: false });
+      expect(api.refresh).toHaveBeenCalledWith(req, listUser, listId, watchables);
+      // Helper returned before refresh completed
+      expect(resolveRefresh).toBeDefined();
+      resolveRefresh();
+      await refreshDone;
+    });
+
+    it('awaits refresh when stale and list is empty', async () => {
+      const api = new Api();
+      api.lastRefresh = jest.fn().mockResolvedValue(new Date(1970, 1, 1));
+      let resolveRefresh;
+      let helperSettled = false;
+      api.refresh = jest.fn().mockImplementation(() => new Promise((resolve) => {
+        resolveRefresh = resolve;
+      }));
+      const req = buildReq([]);
+
+      const resultPromise = api.maybeRefreshIfStale(req, listUser, listId).then((r) => {
+        helperSettled = true;
+        return r;
+      });
+
+      // Flush until refresh() has been entered (await findAll + await refresh start)
+      for (let i = 0; i < 10 && !resolveRefresh; i += 1) {
+        // eslint-disable-next-line no-await-in-loop
+        await Promise.resolve();
+      }
+      expect(resolveRefresh).toBeDefined();
+      expect(helperSettled).toBe(false);
+
+      resolveRefresh();
+      const result = await resultPromise;
+      expect(result).toEqual({ awaited: true });
+      expect(api.refresh).toHaveBeenCalledWith(req, listUser, listId, []);
+    });
+  });
+
   describe('handleError', () => {
     afterEach(() => {
       jest.restoreAllMocks();

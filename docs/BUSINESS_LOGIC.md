@@ -53,6 +53,15 @@ Related: [VOTING_SESSIONS.md](./VOTING_SESSIONS.md), [ANDROID_VOTING_HOST.md](./
 | Duplicate display names | Allowed |
 | Revote same item | Upsert — one vote per participant per phase/item |
 
+## List refresh on GET /api/watchlist
+
+- Watchlist JSON is served from the local DB (filtered/sorted rows).
+- When `RefreshStatuses.lastRefresh` for the list is older than **24 hours** (or missing), Trakt sync is kicked off.
+- If the list already has rows, refresh runs **in the background** and the response returns current DB rows immediately (no wait for Trakt).
+- If the list has **no** rows yet, GET **awaits** the first sync so a never-synced list is not returned as `[]`.
+- Manual `GET /api/refresh/...` always starts refresh in the background and returns current rows.
+- `POST` add-to-list still **awaits** refresh after mutating Trakt.
+
 ## Watchable metadata
 
 - `overview` and `year` sync from Trakt on list refresh.
