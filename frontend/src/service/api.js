@@ -110,6 +110,24 @@ class Api {
     return this.handleResponse(res);
   }
 
+  async getWatchableRentals(id) {
+    const res = await fetch(`/api/watchables/${id}/rentals`, {
+      withCredentials: true,
+    });
+    return this.handleResponse(res);
+  }
+
+  async refreshWatchableStreaming(id) {
+    const res = await fetch(`/api/watchables/${id}/streaming/refresh`, {
+      method: 'POST',
+      withCredentials: true,
+      headers: {
+        'Content-Type': 'application/json',
+      },
+    });
+    return this.handleResponse(res);
+  }
+
   async traktSearch(query, type = 'movie,show') {
     const params = new URLSearchParams({ q: query, type });
     const res = await fetch(`/api/trakt/search?${params.toString()}`, {

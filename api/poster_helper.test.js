@@ -1,6 +1,7 @@
 const {
   normalizePosterValue,
   posterFromExtendedItem,
+  posterUrlForCandidate,
 } = require('./poster_helper');
 
 describe('poster_helper', () => {
@@ -69,6 +70,82 @@ describe('poster_helper', () => {
       expect(posterFromExtendedItem(item)).toBe(
         'https://media.trakt.tv/images/movies/001/333/279/posters/medium/x.jpg',
       );
+    });
+  });
+
+  describe('posterUrlForCandidate', () => {
+    const embeddedUrl =
+      'https://media.trakt.tv/images/movies/001/333/279/posters/medium/x.jpg';
+
+    it('returns embedded list poster without calling getImages or search', async () => {
+      const traktClient = {
+        getImages: jest.fn(),
+        traktClient: { search: { id: jest.fn() } },
+      };
+      const item = {
+        type: 'movie',
+        movie: {
+          ids: { trakt: 42 },
+          images: {
+            poster: ['media.trakt.tv/images/movies/001/333/279/posters/medium/x.jpg.webp'],
+          },
+        },
+      };
+      await expect(posterUrlForCandidate(traktClient, item)).resolves.toBe(embeddedUrl);
+      expect(traktClient.getImages).not.toHaveBeenCalled();
+      expect(traktClient.traktClient.search.id).not.toHaveBeenCalled();
+    });
+
+    it('uses getImages when embedded poster is missing', async () => {
+      const traktClient = {
+        getImages: jest.fn().mockResolvedValue({
+          poster: { full: 'https://tmdb.org/from-plugin.jpg' },
+        }),
+        traktClient: { search: { id: jest.fn() } },
+      };
+      const item = {
+        type: 'movie',
+        movie: { ids: { trakt: 99 }, title: 'No Images' },
+      };
+      await expect(posterUrlForCandidate(traktClient, item)).resolves.toBe(
+        'https://tmdb.org/from-plugin.jpg',
+      );
+      expect(traktClient.getImages).toHaveBeenCalledWith({ trakt: 99, type: 'movie' });
+      expect(traktClient.traktClient.search.id).not.toHaveBeenCalled();
+    });
+
+    it('falls back to search.id extended=full when getImages has no poster', async () => {
+      const traktClient = {
+        getImages: jest.fn().mockResolvedValue({}),
+        traktClient: {
+          search: {
+            id: jest.fn().mockResolvedValue([
+              {
+                movie: {
+                  images: {
+                    poster: [
+                      'media.trakt.tv/images/movies/000/000/001/posters/medium/y.jpg.webp',
+                    ],
+                  },
+                },
+              },
+            ]),
+          },
+        },
+      };
+      const item = {
+        type: 'movie',
+        movie: { ids: { trakt: 1 } },
+      };
+      await expect(posterUrlForCandidate(traktClient, item)).resolves.toBe(
+        'https://media.trakt.tv/images/movies/000/000/001/posters/medium/y.jpg',
+      );
+      expect(traktClient.traktClient.search.id).toHaveBeenCalledWith({
+        id_type: 'trakt',
+        id: 1,
+        type: 'movie',
+        extended: 'full',
+      });
     });
   });
 });

@@ -72,6 +72,8 @@ describe('WatchableDetailContent', () => {
     const ebert = screen.getByRole('link', { name: /roger ebert review/i });
     expect(ebert).toHaveAttribute('href', baseItem.rogerebert_url);
     expect(screen.getByText('Netflix')).toBeInTheDocument();
+    expect(screen.getByText('Where to watch')).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /check rentals/i })).toBeInTheDocument();
   });
 
   it('renders genre and mood chips when present', async () => {

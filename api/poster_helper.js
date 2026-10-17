@@ -89,15 +89,38 @@ async function posterUrlForCandidate(traktClient, item) {
     debug('poster lookup skipped missing id/type type=%s traktId=%s', type, id);
     return null;
   }
-  try {
-    debug('poster lookup requesting trakt images type=%s traktId=%s', type, id);
-    const items = await traktClient.traktClient.search.id({ id_type: 'trakt', id: Number(id), type: type });
-    const item = items[0][type];
-    const images = item.images;
 
-    //const images = await traktClient.getImages({ trakt: Number(id), type });
+  const idNum = Number(id);
+
+  try {
+    debug('poster lookup requesting getImages type=%s traktId=%s', type, id);
+    const viaPlugin = await traktClient.getImages({ trakt: idNum, type });
+    const fromPlugin = normalizePosterValue(viaPlugin?.poster);
+    if (fromPlugin) {
+      debug('poster lookup resolved from getImages type=%s traktId=%s url=%s', type, id, fromPlugin);
+      return fromPlugin;
+    }
+  } catch (e) {
     debug(
-      'poster lookup trakt response type=%s traktId=%s hasPoster=%s posterRaw=%o',
+      'poster lookup getImages error type=%s traktId=%s message=%s',
+      type,
+      id,
+      e?.message || e,
+    );
+  }
+
+  try {
+    debug('poster lookup requesting search.id extended=full type=%s traktId=%s', type, id);
+    const items = await traktClient.traktClient.search.id({
+      id_type: 'trakt',
+      id: idNum,
+      type,
+      extended: 'full',
+    });
+    const entity = items?.[0]?.[type];
+    const images = entity?.images;
+    debug(
+      'poster lookup search response type=%s traktId=%s hasPoster=%s posterRaw=%o',
       type,
       id,
       Boolean(images?.poster),
@@ -112,7 +135,7 @@ async function posterUrlForCandidate(traktClient, item) {
     return out;
   } catch (e) {
     debug(
-      'poster lookup error type=%s traktId=%s name=%s message=%s',
+      'poster lookup search error type=%s traktId=%s name=%s message=%s',
       type,
       id,
       e?.name || 'Error',

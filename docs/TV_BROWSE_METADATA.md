@@ -51,11 +51,24 @@ Example watchlist row shape (illustrative; not a full dump):
   "hidden": false,
   "genres": ["comedy", "drama"],
   "moods": ["light", "comfort"],
-  "streaming_options_json": null,
-  "streaming_checked_at": null,
+  "streaming": {
+    "checkedAt": "2026-10-15T12:00:00.000Z",
+    "stale": false,
+    "subscription": [
+      {
+        "serviceId": "netflix",
+        "serviceName": "Netflix",
+        "type": "subscription",
+        "addonId": null,
+        "link": "https://..."
+      }
+    ]
+  },
   "trailer_url": "https://www.youtube.com/watch?v=..."
 }
 ```
+
+Browse JSON exposes additive `streaming` summary (not raw `streaming_options_json`). On-demand rentals: `GET /api/watchables/:id/rentals`. Explicit refresh: `POST /api/watchables/:id/streaming/refresh`. TV clients can adopt these without UI work in this repo — see [STREAMING_AVAILABILITY.md](./STREAMING_AVAILABILITY.md).
 
 - `genres` / `moods`: [FEEL_LIKE_BROWSING.md](./FEEL_LIKE_BROWSING.md)
 - Streaming snapshot / rentals: [STREAMING_AVAILABILITY.md](./STREAMING_AVAILABILITY.md)

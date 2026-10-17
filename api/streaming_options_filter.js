@@ -75,15 +75,37 @@ function subscriptionProfileNonEmpty(access) {
 }
 
 /**
- * Apply streaming-option filter (Rent vs Subscription).
+ * Normalize availability filter mode.
+ * Legacy `rent` means unfiltered (all non-rental options when includeRentals is false).
+ * @param {string} raw
+ * @returns {'subscription'|'all'|'rentals'}
+ */
+function normalizeStreamingFilterMode(raw) {
+  const m = String(raw || 'subscription').trim().toLowerCase();
+  if (m === 'all' || m === 'rent' || m === 'unfiltered') {
+    return 'all';
+  }
+  if (m === 'rentals' || m === 'tvod') {
+    return 'rentals';
+  }
+  return 'subscription';
+}
+
+/**
+ * Apply streaming-option filter (subscription vs all / unfiltered vs rentals-only).
  * @param {object} result fetchShowStreaming-style result
  * @param {object} opts
- * @param {'rent'|'subscription'} opts.mode
+ * @param {'rent'|'all'|'subscription'|'rentals'|string} opts.mode
  * @param {ReturnType<typeof parseUserStreamingAccess>} opts.access
  * @param {boolean} opts.includeRentals
  */
 function filterStreamingOptionsByMode(result, opts) {
-  const { mode, access, includeRentals } = opts;
+  const mode = normalizeStreamingFilterMode(opts.mode);
+  const { access } = opts;
+  let { includeRentals } = opts;
+  if (mode === 'rentals') {
+    includeRentals = true;
+  }
   if (!result?.ok || !result.show?.streamingOptions) {
     return {
       ...result,
@@ -122,10 +144,13 @@ function filterStreamingOptionsByMode(result, opts) {
       return;
     }
     const filtered = arr.filter((opt) => {
+      if (mode === 'rentals') {
+        return isRentalOption(opt?.type);
+      }
       if (!includeRentals && isRentalOption(opt?.type)) {
         return false;
       }
-      if (mode === 'rent') {
+      if (mode === 'all') {
         return true;
       }
       return optionAllowedSubscription(access, opt);
@@ -192,6 +217,8 @@ function logCountryMismatch(accessCountry, envCountry) {
 module.exports = {
   parseUserStreamingAccess,
   filterStreamingOptionsByMode,
+  normalizeStreamingFilterMode,
+  isRentalOption,
   subscriptionProfileNonEmpty,
   logCountryMismatch,
   isRentalOption,

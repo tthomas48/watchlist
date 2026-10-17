@@ -80,13 +80,14 @@ Related: [VOTING_SESSIONS.md](./VOTING_SESSIONS.md), [ANDROID_VOTING_HOST.md](./
 
 # Streaming availability & rentals
 
-*(Target rules from [STREAMING_AVAILABILITY.md](./STREAMING_AVAILABILITY.md) — implement with that plan.)*
+See [STREAMING_AVAILABILITY.md](./STREAMING_AVAILABILITY.md).
 
 - **Subscription** is the normal save/play path (`web_url` + service ids). Watchables are **never** saved as rental-only.
-- Persist a **subscription snapshot** on the watchable (`streaming_options_json`, `streaming_checked_at`), filtered by `UserStreamingAccess`. Treat as stale after ~24h; refresh on list refresh or explicit refresh.
-- **Rentals** are on-demand: `GET .../rentals` returns current MotN `rent` / `buy` options with prices. Short TTL cache OK; do not treat rental catalogs as the stored play target.
+- Persist a **subscription snapshot** on the watchable (`streaming_options_json`, `streaming_checked_at`), filtered by `UserStreamingAccess`. Treat as stale after ~24h; refresh on list refresh (best-effort batch), after add-item save when still stale, or `POST /api/watchables/:id/streaming/refresh`.
+- Watchlist JSON includes additive `streaming: { checkedAt, stale, subscription }` (no rental price lists on rows).
+- **Rentals** are on-demand: `GET /api/watchables/:id/rentals` returns current MotN `rent` / `buy` options with prices. Short TTL MotN cache; do not treat rental catalogs as the stored play target.
 - Opening a rent link for a one-off play does not change persisted `web_url` unless the user explicitly edits it.
-- List payloads may include subscription summary + staleness; they must not embed full rental price lists on every row.
+- **Posters:** Trakt-backed titles download/cache posters on add/list refresh (`prefetchMissingPosters`); placeholder JPEGs are retried. Local-only titles still use manual Image URL.
 
 ---
 

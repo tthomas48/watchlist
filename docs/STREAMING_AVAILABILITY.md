@@ -6,6 +6,7 @@ Design plan for fresher “where can I watch this on my subscriptions?” data a
 
 1. **Stale / incomplete subscription data** — After add-item, availability is not stored on the watchable. List refresh syncs Trakt metadata only. When deciding what to watch, the app often cannot answer “is this on a service I pay for?”
 2. **Rentals as a fallback, not a save mode** — Users normally play from a subscription. If none of their services have the title (or they simply want options), they need **current** rent/buy locations and prices via API. Watchables are **never** saved as rental-only.
+3. **Missing posters after add / refresh** — List refresh is supposed to download and cache poster art so browse does not depend on manual Image URL entry. Today that path often fails silently, leaving the default placeholder until the user pastes a URL.
 
 ## Current behavior + gaps
 
@@ -19,8 +20,10 @@ Design plan for fresher “where can I watch this on my subscriptions?” data a
 | UI `mode=rent` | Means “ignore subscription profile / show all non-filtered options,” **not** TVOD |
 | User profile | `UserStreamingAccess` (country, direct services, add-ons) filters subscription mode |
 | List refresh | Trakt membership + metadata; **no** streaming re-check |
+| Poster cache | Files under `data/img/local/{watchableId}.jpg` and `data/img/trakt/{type}_{traktId}.jpg`; served via `/api/img/...`. Refresh calls `prefetchMissingPosters`, and lazy serve can download on request |
+| Poster gap | Prefetch builds a **minimal** Trakt stub and **drops** embedded `images.poster` from `getListItems(extended: full)`. `posterUrlForCandidate` often gets no URL (`search.id` without images; `getImages` fallback commented out). Failures are debug-only. Sticky placeholders (`images/movie.jpg` written into local cache) are meant to be retried but usually stay until **Edit → Image URL** |
 
-Relevant code: `api/streaming_availability_client.js`, `api/streaming_options_filter.js`, `frontend/src/AddItem.jsx`, `models/user_streaming_access.js`.
+Relevant code: `api/streaming_availability_client.js`, `api/streaming_options_filter.js`, `frontend/src/AddItem.jsx`, `models/user_streaming_access.js`, `api/poster_helper.js`, `api/poster_serve.js`, `api/api.js` (`prefetchMissingPosters`, refresh / add-item).
 
 ## Decisions
 
@@ -51,6 +54,18 @@ Relevant code: `api/streaming_availability_client.js`, `api/streaming_options_fi
 
 - Stop unconditionally dropping rent/buy when the rentals endpoint needs them.
 - Keep subscription snapshot path excluding TVOD unless product explicitly wants a “also rentable” hint at add time (hint only, not save-as-rental).
+
+### Poster freshness (same refresh story)
+
+Refresh should leave a Trakt-backed watchable **browsable**, not only metadata-synced:
+
+- On Trakt **add-item** and **list refresh**, download missing or **placeholder-only** posters into `data/img/local/{watchableId}.jpg` and mirror to `data/img/trakt/{type}_{traktId}.jpg`.
+- Prefer embedded list-item `images.poster` from the refresh payload (`getListItems` with `extended: full`). Pass those full list items into prefetch instead of ids-only stubs.
+- Fallback chain for URL resolution: embedded poster → `trakt.tv-images` (`getImages`) → hydrated `search.id` with images / `extended: full`. Normalize host paths to `https` and strip trailing `.webp` (existing helper rules).
+- Skip re-download when a non-placeholder local file already exists; retry when the file is missing or byte-identical to the bundled default poster.
+- **Local-only** watchables (no `trakt_id`) stay on manual Image URL (unchanged).
+- Keep Edit → Image URL as an override; do **not** require writing `Watchables.image` for the happy path.
+- Lazy `GET /api/img/:id` remains a safety net using the same hardened lookup.
 
 ## Data model
 
@@ -136,6 +151,7 @@ Errors: not configured (`RAPIDAPI_KEY`), missing ids, upstream failure — clear
 ### Refresh
 
 - Hook subscription snapshot refresh into list refresh and/or `POST /api/watchables/:id/streaming/refresh`.
+- Same refresh path (add awaits full refresh; manual / stale refresh may run in background) must also **prefetch / repair posters** using list-item images when available.
 - Capabilities continue to expose `streamingEnabled`.
 
 ## WebUI presentation (in scope when implementing)
@@ -162,17 +178,21 @@ Rough lean-back design for the **existing** TV browse client later:
 - JustWatch reintegration
 - Price-history analytics
 - Saving items as rental-only
+- Fanart / backdrops; cron outside list refresh; writing `Watchables.image` on every successful poster download
+- TV app poster work (browse already uses `/api/img/...`)
 
 ## Phased next steps
 
-1. Migration for snapshot columns; filter + rentals endpoint with tests (price passthrough, never drop rent/buy on that path).
-2. Persist/refresh subscription snapshot on list refresh and stale read.
-3. Expose streaming summary on `/api/watchlist/...` JSON (additive fields).
-4. WebUI: detail “Where to watch” + Check rentals; add-item mode rename/hint.
-5. Document TV (watchlisttv) field adoption in [TV_BROWSE_METADATA.md](./TV_BROWSE_METADATA.md).
+1. **Poster prefetch harden** — pass Trakt list items into `prefetchMissingPosters`; restore `getImages` / extended-search fallbacks in `posterUrlForCandidate`; shared download helper; consolidate placeholder detection; tests (embedded poster wins, placeholder retry, skip real files, no-`trakt_id` skipped).
+2. Migration for snapshot columns; filter + rentals endpoint with tests (price passthrough, never drop rent/buy on that path).
+3. Persist/refresh subscription snapshot on list refresh and stale read.
+4. Expose streaming summary on `/api/watchlist/...` JSON (additive fields).
+5. WebUI: detail “Where to watch” + Check rentals; add-item mode rename/hint.
+6. Document TV (watchlisttv) field adoption in [TV_BROWSE_METADATA.md](./TV_BROWSE_METADATA.md).
 
 ## Tests
 
+- Poster helper / prefetch: embedded list poster used; `getImages` when search has no poster; placeholder retry; skip existing real JPEG; items without `trakt_id` skipped; refresh still invokes prefetch.
 - `streaming_options_filter`: subscription vs rentals vs unfiltered; rent ≠ buy in output.
 - Rentals endpoint: MotN mock → prices/links; missing key → not configured.
 - Snapshot round-trip on refresh; `stale` flag after threshold.

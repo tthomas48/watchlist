@@ -1,5 +1,4 @@
 const debug = require('debug')('watchlist:api');
-const crypto = require('crypto');
 const fs = require('fs');
 const path = require('path');
 const { PassThrough } = require('stream');
@@ -19,8 +18,15 @@ const { fetchShowStreaming } = require('./streaming_availability_client');
 const {
   parseUserStreamingAccess,
   filterStreamingOptionsByMode,
+  normalizeStreamingFilterMode,
   logCountryMismatch,
 } = require('./streaming_options_filter');
+const {
+  extractRentalOptions,
+  refreshWatchableStreamingSnapshot,
+  isStreamingSnapshotStale,
+  streamingSummaryFromWatchable,
+} = require('./streaming_snapshot');
 const { loadStreamingManifest } = require('./streaming_manifest');
 const {
   getOrCreateUserStreamingAccess,
@@ -28,7 +34,7 @@ const {
   serializePutBody,
 } = require('./streaming_access_service');
 const ProviderFactory = require('../receiver/providers/factory');
-const { posterUrlForCandidate, normalizePosterValue } = require('./poster_helper');
+const posterHelper = require('./poster_helper');
 const {
   traktPosterDiskPath,
   normalizeTraktPosterMediaType,
@@ -39,7 +45,13 @@ const mountRogerEbertRoutes = require('./routes/rogerebert');
 const mountTrailerRoutes = require('./routes/trailer');
 const mountPeopleRoutes = require('./routes/people');
 const { normalizeTrailerField } = require('./trailer');
-const { serveWatchablePoster } = require('./poster_serve');
+const posterServe = require('./poster_serve');
+const {
+  serveWatchablePoster,
+  localPosterIsDefaultPlaceholder,
+  localPosterPath,
+  defaultPosterImagePath,
+} = posterServe;
 const {
   normalizeGenres,
   moodsFromGenres,
@@ -58,29 +70,6 @@ const {
   recommendersInclude,
   watchableToBrowseJson,
 } = require('./people_service');
-
-const defaultPosterImagePath = path.join(__dirname, '../images/movie.jpg');
-let cachedDefaultPosterSha256 = null;
-
-function sha256FileSync(filePath) {
-  return crypto.createHash('sha256').update(fs.readFileSync(filePath)).digest('hex');
-}
-
-/** True if localPath is byte-identical to the bundled default poster (cached JPEG). */
-function localPosterIsDefaultPlaceholder(localPath) {
-  if (!fs.existsSync(localPath) || !fs.existsSync(defaultPosterImagePath)) {
-    return false;
-  }
-  const stLocal = fs.statSync(localPath);
-  const stDef = fs.statSync(defaultPosterImagePath);
-  if (stLocal.size !== stDef.size) {
-    return false;
-  }
-  if (cachedDefaultPosterSha256 === null) {
-    cachedDefaultPosterSha256 = sha256FileSync(defaultPosterImagePath);
-  }
-  return sha256FileSync(localPath) === cachedDefaultPosterSha256;
-}
 
 function parseBoolQuery(value, fallback = false) {
   if (value === undefined || value === null || value === '') {
@@ -310,13 +299,13 @@ class Api {
   /**
    * Writes poster JPEGs after list refresh: skips watchables that already have a non-placeholder
    * file; if the file is byte-identical to images/movie.jpg, tries again to fetch a real poster.
+   * When traktItems from getListItems is provided, prefer embedded images.poster on those rows.
    */
-  async prefetchMissingPosters(req, traktListId) {
+  async prefetchMissingPosters(req, traktListId, traktItems = null) {
     const token = req.user?.access_token;
     if (!token) {
       return;
     }
-    const imageDir = path.join(__dirname, '../data/img/local/');
     let watchables;
     try {
       watchables = await req.models.Watchable.findAll({ where: { trakt_list_id: traktListId } });
@@ -325,45 +314,44 @@ class Api {
       return;
     }
     await this.traktClient.importToken(token);
-    if (!fs.existsSync(imageDir)) {
-      fs.mkdirSync(imageDir, { recursive: true });
+
+    const listByTraktId = new Map();
+    if (Array.isArray(traktItems)) {
+      for (let i = 0; i < traktItems.length; i += 1) {
+        const item = traktItems[i];
+        const tid = getTraktId(item);
+        if (tid != null && tid !== '') {
+          listByTraktId.set(String(tid), item);
+        }
+      }
     }
+
     for (let i = 0; i < watchables.length; i += 1) {
       const w = watchables[i];
       if (!w.trakt_id || !w.media_type) {
         // eslint-disable-next-line no-continue
         continue;
       }
-      const fullPath = path.join(imageDir, `${w.id}.jpg`);
+      const fullPath = localPosterPath(w.id);
       const haveRealPoster = fs.existsSync(fullPath) && !localPosterIsDefaultPlaceholder(fullPath);
       if (haveRealPoster) {
         // eslint-disable-next-line no-continue
         continue;
       }
       try {
-        const minimal = {
+        const fromList = listByTraktId.get(String(w.trakt_id));
+        const candidate = fromList || {
           type: w.media_type,
           [w.media_type]: { ids: { trakt: Number(w.trakt_id) } },
         };
         // eslint-disable-next-line no-await-in-loop
-        const url = await posterUrlForCandidate(this.traktClient, minimal);
+        const url = await posterHelper.posterUrlForCandidate(this.traktClient, candidate);
         if (!url) {
           // eslint-disable-next-line no-continue
           continue;
         }
         // eslint-disable-next-line no-await-in-loop
-        const response = await axios({ method: 'get', url, responseType: 'stream' });
-        // eslint-disable-next-line no-await-in-loop
-        await pipeline(response.data, fs.createWriteStream(fullPath));
-        const traktPath = traktPosterDiskPath(w.media_type, w.trakt_id);
-        if (traktPath) {
-          const traktDir = path.dirname(traktPath);
-          if (!fs.existsSync(traktDir)) {
-            fs.mkdirSync(traktDir, { recursive: true });
-          }
-          // eslint-disable-next-line no-await-in-loop
-          await fs.promises.copyFile(fullPath, traktPath);
-        }
+        await posterServe.downloadPosterToLocal(w, url);
       } catch (e) {
         debug(`prefetch poster failed watchable ${w.id}: ${e.message}`);
       }
@@ -466,6 +454,44 @@ class Api {
     }
   }
 
+  /**
+   * Best-effort MotN subscription snapshots for stale watchables (cap per refresh).
+   */
+  async syncStaleStreamingSnapshots(req, traktListId, { maxItems = 15 } = {}) {
+    const userId = req.user?.id;
+    if (!userId) {
+      return;
+    }
+    let watchables;
+    try {
+      watchables = await req.models.Watchable.findAll({ where: { trakt_list_id: traktListId } });
+    } catch (e) {
+      debug('syncStaleStreamingSnapshots findAll failed', e);
+      return;
+    }
+    let refreshed = 0;
+    for (let i = 0; i < watchables.length && refreshed < maxItems; i += 1) {
+      const w = watchables[i];
+      if (!isStreamingSnapshotStale(w.streaming_checked_at)) {
+        // eslint-disable-next-line no-continue
+        continue;
+      }
+      if (!w.imdb_id && (w.tmdb_id == null || String(w.tmdb_id).trim() === '')) {
+        // eslint-disable-next-line no-continue
+        continue;
+      }
+      try {
+        // eslint-disable-next-line no-await-in-loop
+        const out = await refreshWatchableStreamingSnapshot(req.models, userId, w);
+        if (out?.ok) {
+          refreshed += 1;
+        }
+      } catch (e) {
+        debug(`syncStaleStreamingSnapshots failed watchable ${w.id}: ${e.message}`);
+      }
+    }
+  }
+
   async refresh(req, traktListUserId, traktListId, existingWatchables) {
     let error = null;
     await singleflight.Do(traktListId, async () => {
@@ -520,8 +546,9 @@ class Api {
         });
         await Promise.all(tasks);
         await this.refreshEpisodes(req.models, traktListId);
-        await this.prefetchMissingPosters(req, traktListId);
+        await this.prefetchMissingPosters(req, traktListId, traktItems);
         await this.syncStreamingServiceIds(req.models, traktListId);
+        await this.syncStaleStreamingSnapshots(req, traktListId);
       } catch (e) {
         Sentry.captureException(e);
         error = e;
@@ -627,8 +654,7 @@ class Api {
         }
         const country = (req.query.country || '').trim() || undefined;
         const includeRentals = parseBoolQuery(req.query.includeRentals, false);
-        const modeRaw = (req.query.mode || 'subscription').trim().toLowerCase();
-        const mode = modeRaw === 'rent' ? 'rent' : 'subscription';
+        const mode = normalizeStreamingFilterMode(req.query.mode || 'subscription');
         const raw = await fetchShowStreaming({
           imdbId,
           tmdbId,
@@ -643,6 +669,75 @@ class Api {
         const access = parseUserStreamingAccess(accessRow);
         const filtered = filterStreamingOptionsByMode(raw, { mode, access, includeRentals });
         res.json(filtered);
+      } catch (e) {
+        this.handleError(res, e);
+      }
+    });
+
+    apiRouter.get('/watchables/:id/rentals', this.authProvider.requireLogin, async (req, res) => {
+      try {
+        const watchable = await req.models.Watchable.findOne({
+          where: { id: req.params.id },
+        });
+        if (!watchable) {
+          res.status(404).json({ ok: false, reason: 'not_found', message: 'watchable not found' });
+          return;
+        }
+        const mediaType = watchable.media_type === 'show' ? 'show' : 'movie';
+        if (!watchable.imdb_id && (watchable.tmdb_id == null || String(watchable.tmdb_id).trim() === '')) {
+          res.status(400).json({ ok: false, reason: 'missing_ids', message: 'imdb_id or tmdb_id required' });
+          return;
+        }
+        const accessRow = await getOrCreateUserStreamingAccess(req.models, req.user.id);
+        const country = (accessRow.country
+          || process.env.STREAMING_AVAILABILITY_COUNTRY
+          || 'us').trim().toLowerCase();
+        const raw = await fetchShowStreaming({
+          imdbId: watchable.imdb_id,
+          tmdbId: watchable.tmdb_id,
+          mediaType,
+          country,
+        });
+        if (!raw.ok) {
+          const status = raw.reason === 'not_configured' ? 503
+            : raw.reason === 'missing_ids' ? 400
+              : raw.reason === 'not_found' ? 404
+                : 502;
+          res.status(status).json(raw);
+          return;
+        }
+        res.json({
+          ok: true,
+          checkedAt: new Date().toISOString(),
+          options: extractRentalOptions(raw),
+        });
+      } catch (e) {
+        this.handleError(res, e);
+      }
+    });
+
+    apiRouter.post('/watchables/:id/streaming/refresh', this.authProvider.requireLogin, async (req, res) => {
+      try {
+        const watchable = await req.models.Watchable.findOne({
+          where: { id: req.params.id },
+        });
+        if (!watchable) {
+          res.status(404).json({ ok: false, reason: 'not_found', message: 'watchable not found' });
+          return;
+        }
+        const out = await refreshWatchableStreamingSnapshot(req.models, req.user.id, watchable);
+        if (!out.ok) {
+          const status = out.reason === 'not_configured' ? 503
+            : out.reason === 'missing_ids' ? 400
+              : out.reason === 'not_found' ? 404
+                : 502;
+          res.status(status).json(out);
+          return;
+        }
+        res.json({
+          ok: true,
+          streaming: streamingSummaryFromWatchable(watchable),
+        });
       } catch (e) {
         this.handleError(res, e);
       }
@@ -1006,6 +1101,17 @@ class Api {
             req.user.id,
           );
         }
+        if (
+          Object.prototype.hasOwnProperty.call(watchableUpdate, 'webUrl')
+          && (watchable.imdb_id || watchable.tmdb_id)
+          && isStreamingSnapshotStale(watchable.streaming_checked_at)
+        ) {
+          try {
+            await refreshWatchableStreamingSnapshot(req.models, req.user.id, watchable);
+          } catch (snapErr) {
+            debug(`streaming snapshot after save failed watchable ${watchable.id}: ${snapErr.message}`);
+          }
+        }
         const withPeople = await req.models.Watchable.findOne({
           where: { id: watchable.id },
           include: [recommendersInclude(req.models)],
@@ -1127,14 +1233,14 @@ class Api {
           [type]: { ids: { trakt: idNum } },
         };
 
-        let posterUrl = await posterUrlForCandidate(this.traktClient, minimal);
+        let posterUrl = await posterHelper.posterUrlForCandidate(this.traktClient, minimal);
         if (!posterUrl) {
           const sresInner = await this.traktClient.searchByTraktId(type, idNum);
           if (sresInner.length > 0) {
             const { ids } = sresInner[0][type];
             ids.type = type;
             const images = await this.traktClient.getImages(ids);
-            posterUrl = normalizePosterValue(images?.poster);
+            posterUrl = posterHelper.normalizePosterValue(images?.poster);
           }
         }
 

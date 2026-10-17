@@ -116,6 +116,9 @@ export function WatchableDetailProvider({ children }) {
             player={detail.player}
             onEdit={handleEdit}
             onClose={closeDetail}
+            onItemUpdated={(next) => {
+              setDetail((prev) => (prev ? { ...prev, item: next } : prev));
+            }}
           />
         ) : null}
       </Dialog>

@@ -41,6 +41,8 @@ module.exports = (sequelize, DataTypes) => {
     homepage: DataTypes.STRING,
     streaming_service_id: DataTypes.STRING,
     streaming_addon_id: DataTypes.STRING,
+    streaming_options_json: DataTypes.TEXT,
+    streaming_checked_at: DataTypes.DATE,
     noautoadvance: DataTypes.BOOLEAN,
     overview: DataTypes.TEXT,
     year: DataTypes.INTEGER,

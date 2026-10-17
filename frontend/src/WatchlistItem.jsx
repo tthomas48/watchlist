@@ -245,6 +245,34 @@ function WatchlistItem({
               </Box>
             )}
 
+            {!serviceIcon
+              && item.streaming
+              && item.streaming.checkedAt
+              && !item.streaming.stale
+              && Array.isArray(item.streaming.subscription)
+              && item.streaming.subscription.length === 0 && (
+              <Box
+                sx={{
+                  position: 'absolute',
+                  top: 8,
+                  right: 8,
+                  zIndex: 1,
+                  pointerEvents: 'none',
+                  px: 1,
+                  py: 0.25,
+                  borderRadius: 1,
+                  bgcolor: 'rgba(0,0,0,0.55)',
+                  color: 'grey.300',
+                  fontSize: '0.7rem',
+                  fontWeight: 600,
+                  letterSpacing: 0.2,
+                }}
+                aria-label="No subscription match; rent options may be available"
+              >
+                Rent?
+              </Box>
+            )}
+
             {Array.isArray(item.recommenders) && item.recommenders.length > 0 && (
               <Box
                 sx={{

@@ -35,6 +35,30 @@ function localPosterPath(watchableId) {
   return path.join(localImageDir, `${watchableId}.jpg`);
 }
 
+/**
+ * Download a remote poster URL into local cache and mirror to trakt cache when possible.
+ * @param {{ id: string|number, media_type?: string, trakt_id?: string|number }} watchable
+ * @param {string} url
+ * @returns {Promise<string>} Absolute path of the local JPEG
+ */
+async function downloadPosterToLocal(watchable, url) {
+  const fullPath = localPosterPath(watchable.id);
+  if (!fs.existsSync(localImageDir)) {
+    fs.mkdirSync(localImageDir, { recursive: true });
+  }
+  const response = await axios({ method: 'get', url, responseType: 'stream' });
+  await pipeline(response.data, fs.createWriteStream(fullPath));
+  const traktPath = traktPosterDiskPath(watchable.media_type, watchable.trakt_id);
+  if (traktPath) {
+    const traktDir = path.dirname(traktPath);
+    if (!fs.existsSync(traktDir)) {
+      fs.mkdirSync(traktDir, { recursive: true });
+    }
+    await fs.promises.copyFile(fullPath, traktPath);
+  }
+  return fullPath;
+}
+
 async function streamDefaultPoster(res, watchableId) {
   const fullPath = localPosterPath(watchableId);
   if (!fs.existsSync(localImageDir)) {
@@ -51,7 +75,6 @@ async function serveWatchablePoster(res, {
   user = null,
 }) {
   const fullPath = localPosterPath(watchableId);
-  let sres;
   try {
     if (fs.existsSync(fullPath) && !localPosterIsDefaultPlaceholder(fullPath)) {
       await pipeline(fs.createReadStream(fullPath), res);
@@ -82,25 +105,9 @@ async function serveWatchablePoster(res, {
       return;
     }
 
-    const writeRemoteToCacheAndRes = async (readStream) => {
-      if (!fs.existsSync(localImageDir)) {
-        fs.mkdirSync(localImageDir, { recursive: true });
-      }
-      await pipeline(readStream, fs.createWriteStream(fullPath));
-      const tp = traktPosterDiskPath(watchable.media_type, watchable.trakt_id);
-      if (tp) {
-        const tdir = path.dirname(tp);
-        if (!fs.existsSync(tdir)) {
-          fs.mkdirSync(tdir, { recursive: true });
-        }
-        await fs.promises.copyFile(fullPath, tp);
-      }
-      await pipeline(fs.createReadStream(fullPath), res);
-    };
-
     await traktClient.importToken(user.access_token);
 
-    let posterUrl = watchable.image || null;
+    let posterUrl = watchable.image ? normalizePosterValue(watchable.image) : null;
     if (!posterUrl && watchable.trakt_id && watchable.media_type) {
       const minimal = {
         type: watchable.media_type,
@@ -110,46 +117,15 @@ async function serveWatchablePoster(res, {
     }
 
     if (posterUrl) {
-      const response = await axios({
-        method: 'get',
-        url: posterUrl,
-        responseType: 'stream',
-      });
-      await writeRemoteToCacheAndRes(response.data);
+      await downloadPosterToLocal(watchable, posterUrl);
+      await pipeline(fs.createReadStream(fullPath), res);
       return;
-    }
-
-    if (watchable.trakt_id) {
-      sres = await traktClient.findWatchable(watchable);
-      if (sres.length > 0) {
-        for (let i = 0; i < sres.length; i += 1) {
-          debug(sres[i]);
-          const { ids } = sres[i][watchable.media_type];
-          ids.type = watchable.media_type;
-
-          // eslint-disable-next-line no-await-in-loop
-          const images = await traktClient.getImages(ids);
-          debug(images);
-          const fallbackPosterUrl = normalizePosterValue(images?.poster);
-          if (fallbackPosterUrl) {
-            // eslint-disable-next-line no-await-in-loop
-            const response = await axios({
-              method: 'get',
-              url: fallbackPosterUrl,
-              responseType: 'stream',
-            });
-            // eslint-disable-next-line no-await-in-loop
-            await writeRemoteToCacheAndRes(response.data);
-            return;
-          }
-        }
-      }
     }
 
     await streamDefaultPoster(res, watchableId);
   } catch (e) {
     Sentry.captureException(e);
-    debug(sres, e);
+    debug(e);
     try {
       if (!res.headersSent) {
         await pipeline(fs.createReadStream(defaultPosterImagePath), res);
@@ -165,6 +141,8 @@ async function serveWatchablePoster(res, {
 
 module.exports = {
   serveWatchablePoster,
+  downloadPosterToLocal,
   localPosterIsDefaultPlaceholder,
+  localPosterPath,
   defaultPosterImagePath,
 };

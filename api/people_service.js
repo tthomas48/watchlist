@@ -255,10 +255,19 @@ function attachRecommendersSnake(watchableJson, recommenders) {
 }
 
 function watchableToBrowseJson(watchable) {
+  // Lazy require avoids circular init with streaming_snapshot → filter → …
+  // eslint-disable-next-line global-require
+  const { streamingSummaryFromWatchable } = require('./streaming_snapshot');
   const json = typeof watchable.toJSON === 'function' ? watchable.toJSON() : { ...watchable };
   const recommenders = json.recommenders || watchable.recommenders || [];
   delete json.WatchablePeople;
-  return attachRecommendersSnake(json, recommenders);
+  const streaming = streamingSummaryFromWatchable(json);
+  delete json.streaming_options_json;
+  delete json.streaming_checked_at;
+  return {
+    ...attachRecommendersSnake(json, recommenders),
+    streaming,
+  };
 }
 
 module.exports = {

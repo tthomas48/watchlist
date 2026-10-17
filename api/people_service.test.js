@@ -146,16 +146,24 @@ describe('people_service', () => {
     expect(fs.existsSync(dest)).toBe(true);
   });
 
-  it('watchableToBrowseJson emits snake_case recommenders', () => {
+  it('watchableToBrowseJson emits snake_case recommenders and streaming summary', () => {
     const json = peopleService.watchableToBrowseJson({
       toJSON: () => ({
         id: 1,
         title: 'X',
         recommenders: [{ id: 2, name: 'Sam', avatar: 'https://example.com/a.jpg' }],
+        streaming_options_json: JSON.stringify({
+          country: 'us',
+          subscription: [{ serviceId: 'netflix', link: 'https://n', type: 'subscription' }],
+        }),
+        streaming_checked_at: new Date(),
       }),
     });
     expect(json.recommenders).toEqual([
       { id: 2, name: 'Sam', avatar_url: 'https://example.com/a.jpg' },
     ]);
+    expect(json.streaming.subscription).toHaveLength(1);
+    expect(json.streaming.stale).toBe(false);
+    expect(json.streaming_options_json).toBeUndefined();
   });
 });

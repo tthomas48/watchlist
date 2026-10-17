@@ -197,6 +197,7 @@ describe('api', () => {
       api.refreshEpisodes = jest.fn().mockResolvedValue(undefined);
       api.prefetchMissingPosters = jest.fn().mockResolvedValue(undefined);
       api.syncStreamingServiceIds = jest.fn().mockResolvedValue(undefined);
+      api.syncStaleStreamingSnapshots = jest.fn().mockResolvedValue(undefined);
       api.updateWatchable = jest.fn().mockResolvedValue(undefined);
       api.createWatchable = jest.fn().mockResolvedValue(undefined);
       api.traktClient = {
@@ -233,6 +234,142 @@ describe('api', () => {
         'alice',
         expect.any(Object),
       );
+      expect(api.prefetchMissingPosters).toHaveBeenCalledWith(
+        req,
+        'list-1',
+        expect.arrayContaining([
+          expect.objectContaining({ type: 'movie' }),
+          expect.objectContaining({ type: 'show' }),
+        ]),
+      );
+    });
+  });
+
+  describe('prefetchMissingPosters', () => {
+    const fs = require('fs');
+    const path = require('path');
+    const posterServe = require('./poster_serve');
+    const posterHelper = require('./poster_helper');
+
+    const listId = 'list-1';
+    const localDir = path.join(__dirname, '../data/img/local');
+    const traktDir = path.join(__dirname, '../data/img/trakt');
+
+    beforeEach(() => {
+      jest.restoreAllMocks();
+    });
+
+    afterEach(() => {
+      for (const id of ['901', '902', '903']) {
+        const p = path.join(localDir, `${id}.jpg`);
+        if (fs.existsSync(p)) {
+          fs.unlinkSync(p);
+        }
+      }
+      const traktPath = path.join(traktDir, 'movie_901.jpg');
+      if (fs.existsSync(traktPath)) {
+        fs.unlinkSync(traktPath);
+      }
+    });
+
+    it('downloads from embedded list poster and mirrors to trakt cache', async () => {
+      const api = new Api();
+      api.traktClient = { importToken: jest.fn().mockResolvedValue(undefined) };
+      const watchables = [
+        { id: 901, trakt_id: '901', media_type: 'movie', trakt_list_id: listId },
+      ];
+      const req = {
+        user: { access_token: 'token' },
+        models: { Watchable: { findAll: jest.fn().mockResolvedValue(watchables) } },
+      };
+      const listItem = {
+        type: 'movie',
+        movie: {
+          ids: { trakt: 901 },
+          images: {
+            poster: ['media.trakt.tv/images/movies/000/000/901/posters/medium/a.jpg.webp'],
+          },
+        },
+      };
+      const downloadSpy = jest.spyOn(posterServe, 'downloadPosterToLocal').mockResolvedValue(
+        path.join(localDir, '901.jpg'),
+      );
+      const lookupSpy = jest.spyOn(posterHelper, 'posterUrlForCandidate');
+
+      await api.prefetchMissingPosters(req, listId, [listItem]);
+
+      expect(lookupSpy).toHaveBeenCalledWith(api.traktClient, listItem);
+      expect(downloadSpy).toHaveBeenCalledWith(
+        watchables[0],
+        'https://media.trakt.tv/images/movies/000/000/901/posters/medium/a.jpg',
+      );
+    });
+
+    it('skips watchables that already have a non-placeholder poster', async () => {
+      fs.mkdirSync(localDir, { recursive: true });
+      fs.writeFileSync(path.join(localDir, '902.jpg'), Buffer.from('real-poster-bytes-not-default'));
+      const api = new Api();
+      api.traktClient = { importToken: jest.fn().mockResolvedValue(undefined) };
+      const req = {
+        user: { access_token: 'token' },
+        models: {
+          Watchable: {
+            findAll: jest.fn().mockResolvedValue([
+              { id: 902, trakt_id: '902', media_type: 'movie', trakt_list_id: listId },
+            ]),
+          },
+        },
+      };
+      const downloadSpy = jest.spyOn(posterServe, 'downloadPosterToLocal');
+
+      await api.prefetchMissingPosters(req, listId, []);
+
+      expect(downloadSpy).not.toHaveBeenCalled();
+    });
+
+    it('retries when local file is the default placeholder', async () => {
+      fs.mkdirSync(localDir, { recursive: true });
+      fs.copyFileSync(posterServe.defaultPosterImagePath, path.join(localDir, '903.jpg'));
+      const api = new Api();
+      api.traktClient = {
+        importToken: jest.fn().mockResolvedValue(undefined),
+        getImages: jest.fn().mockResolvedValue({
+          poster: { full: 'https://example.com/fixed.jpg' },
+        }),
+        traktClient: { search: { id: jest.fn() } },
+      };
+      const watchable = { id: 903, trakt_id: '903', media_type: 'movie', trakt_list_id: listId };
+      const req = {
+        user: { access_token: 'token' },
+        models: { Watchable: { findAll: jest.fn().mockResolvedValue([watchable]) } },
+      };
+      const downloadSpy = jest.spyOn(posterServe, 'downloadPosterToLocal').mockResolvedValue(
+        path.join(localDir, '903.jpg'),
+      );
+
+      await api.prefetchMissingPosters(req, listId, null);
+
+      expect(downloadSpy).toHaveBeenCalledWith(watchable, 'https://example.com/fixed.jpg');
+    });
+
+    it('skips items without trakt_id', async () => {
+      const api = new Api();
+      api.traktClient = { importToken: jest.fn().mockResolvedValue(undefined) };
+      const req = {
+        user: { access_token: 'token' },
+        models: {
+          Watchable: {
+            findAll: jest.fn().mockResolvedValue([
+              { id: 1, trakt_id: null, media_type: 'movie', local: true },
+            ]),
+          },
+        },
+      };
+      const downloadSpy = jest.spyOn(posterServe, 'downloadPosterToLocal');
+
+      await api.prefetchMissingPosters(req, listId, []);
+
+      expect(downloadSpy).not.toHaveBeenCalled();
     });
   });
 

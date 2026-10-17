@@ -55,7 +55,7 @@ function StreamingAvailabilityBlock({
       sx={{ mt: 2, mb: 1 }}
     >
       <ToggleButton value="subscription">Subscription</ToggleButton>
-      <ToggleButton value="rent">Rent</ToggleButton>
+      <ToggleButton value="all">All services</ToggleButton>
     </ToggleButtonGroup>
   );
 

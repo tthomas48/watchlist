@@ -1,5 +1,5 @@
 import { useContext, useState } from 'react';
-import { useQuery } from '@tanstack/react-query';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import {
   Box,
   Button,
@@ -8,11 +8,15 @@ import {
   DialogContent,
   DialogTitle,
   Link,
+  List,
+  ListItem,
+  ListItemText,
   Stack,
   Typography,
 } from '@mui/material';
 import Edit from '@mui/icons-material/Edit';
 import LiveTv from '@mui/icons-material/LiveTv';
+import Refresh from '@mui/icons-material/Refresh';
 import PlayButton from './PlayButton';
 import TrailerButton from './TrailerButton';
 import getStreamingServiceIcon from './streamingServiceIcon';
@@ -23,15 +27,29 @@ import PersonAvatar from './PersonAvatar';
 
 const OVERVIEW_COLLAPSED_LINES = 4;
 
+function formatCheckedAt(iso) {
+  if (!iso) {
+    return null;
+  }
+  try {
+    return new Date(iso).toLocaleString();
+  } catch {
+    return iso;
+  }
+}
+
 export function WatchableDetailContent({
   item,
   player,
   onEdit,
   onClose,
+  onItemUpdated,
 }) {
   const [overviewExpanded, setOverviewExpanded] = useState(false);
+  const [rentals, setRentals] = useState(null);
   const messageContext = useContext(MessageContext);
   const api = new Api(messageContext);
+  const queryClient = useQueryClient();
   const moodsQuery = useQuery({
     queryKey: ['moods'],
     queryFn: async () => api.getMoods(),
@@ -47,6 +65,12 @@ export function WatchableDetailContent({
   const genres = Array.isArray(item.genres) ? item.genres : [];
   const moods = Array.isArray(item.moods) ? item.moods : [];
   const recommenders = Array.isArray(item.recommenders) ? item.recommenders : [];
+  const streaming = item.streaming || {
+    checkedAt: null,
+    stale: true,
+    subscription: [],
+  };
+  const subscription = Array.isArray(streaming.subscription) ? streaming.subscription : [];
 
   const moodLabel = (id) => (
     moodsQuery.data?.moods?.find((m) => m.slug === id)?.label
@@ -57,6 +81,23 @@ export function WatchableDetailContent({
     genresQuery.data?.find((g) => g.slug === slug)?.label
     || formatGenreLabel(slug)
   );
+
+  const refreshStreamingMutation = useMutation({
+    mutationFn: () => api.refreshWatchableStreaming(item.id),
+    onSuccess: (data) => {
+      if (data?.streaming && typeof onItemUpdated === 'function') {
+        onItemUpdated({ ...item, streaming: data.streaming });
+      }
+      queryClient.invalidateQueries({ queryKey: ['watchlist'] });
+    },
+  });
+
+  const rentalsMutation = useMutation({
+    mutationFn: () => api.getWatchableRentals(item.id),
+    onSuccess: (data) => {
+      setRentals(Array.isArray(data?.options) ? data.options : []);
+    },
+  });
 
   return (
     <>
@@ -159,11 +200,108 @@ export function WatchableDetailContent({
                 href={item.rogerebert_url}
                 target="_blank"
                 rel="noreferrer"
-                sx={{ display: 'inline-block' }}
+                sx={{ display: 'inline-block', mb: 1.5 }}
               >
                 Roger Ebert review
               </Link>
             )}
+
+            <Box sx={{ mt: 1 }}>
+              <Stack direction="row" alignItems="center" spacing={1} sx={{ mb: 0.5 }}>
+                <Typography variant="subtitle2">Where to watch</Typography>
+                <Button
+                  size="small"
+                  startIcon={<Refresh />}
+                  disabled={refreshStreamingMutation.isPending}
+                  onClick={() => refreshStreamingMutation.mutate()}
+                >
+                  Refresh
+                </Button>
+              </Stack>
+              {formatCheckedAt(streaming.checkedAt) && (
+                <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mb: 0.75 }}>
+                  As of {formatCheckedAt(streaming.checkedAt)}
+                  {streaming.stale ? ' (stale)' : ''}
+                </Typography>
+              )}
+              {subscription.length === 0 ? (
+                <Typography variant="body2" color="text.secondary" sx={{ mb: 1 }}>
+                  {streaming.checkedAt
+                    ? 'No matching subscription options for your profile.'
+                    : 'Streaming availability has not been checked yet.'}
+                </Typography>
+              ) : (
+                <List dense disablePadding sx={{ mb: 1 }}>
+                  {subscription.map((opt) => (
+                    <ListItem
+                      key={`${opt.serviceId}-${opt.addonId || ''}-${opt.link}`}
+                      disableGutters
+                      secondaryAction={opt.link ? (
+                        <Button
+                          size="small"
+                          component="a"
+                          href={opt.link}
+                          target="_blank"
+                          rel="noreferrer"
+                        >
+                          Open
+                        </Button>
+                      ) : null}
+                    >
+                      <ListItemText
+                        primary={opt.serviceName || opt.serviceId || 'Service'}
+                        secondary={opt.type}
+                      />
+                    </ListItem>
+                  ))}
+                </List>
+              )}
+              <Button
+                size="small"
+                variant="outlined"
+                disabled={rentalsMutation.isPending}
+                onClick={() => rentalsMutation.mutate()}
+              >
+                Check rentals
+              </Button>
+              {rentalsMutation.isError && (
+                <Typography variant="caption" color="error" sx={{ display: 'block', mt: 0.75 }}>
+                  {rentalsMutation.error?.message || 'Could not load rentals'}
+                </Typography>
+              )}
+              {Array.isArray(rentals) && (
+                rentals.length === 0 ? (
+                  <Typography variant="body2" color="text.secondary" sx={{ mt: 1 }}>
+                    No rent/buy options found.
+                  </Typography>
+                ) : (
+                  <List dense disablePadding sx={{ mt: 1 }}>
+                    {rentals.map((opt) => (
+                      <ListItem
+                        key={`${opt.serviceId}-${opt.type}-${opt.link}`}
+                        disableGutters
+                        secondaryAction={opt.link ? (
+                          <Button
+                            size="small"
+                            component="a"
+                            href={opt.link}
+                            target="_blank"
+                            rel="noreferrer"
+                          >
+                            Open
+                          </Button>
+                        ) : null}
+                      >
+                        <ListItemText
+                          primary={`${opt.serviceName || opt.serviceId || 'Store'} · ${opt.type}`}
+                          secondary={opt.price?.formatted || opt.price?.amount || null}
+                        />
+                      </ListItem>
+                    ))}
+                  </List>
+                )
+              )}
+            </Box>
           </Box>
         </Stack>
       </DialogContent>
