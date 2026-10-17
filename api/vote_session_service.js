@@ -1,6 +1,9 @@
 const crypto = require('crypto');
-const { Op } = require('sequelize');
 const { buildWatchlistWhere } = require('./watchlist_filters');
+const {
+  serializeRecommenderCamel,
+  recommendersInclude,
+} = require('./people_service');
 
 const SESSION_CODE_CHARS = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
 const SESSION_TTL_MS = 4 * 60 * 60 * 1000;
@@ -104,6 +107,7 @@ function visibleWatchablesWhere(traktListId, filters = {}) {
     decade: filters.decade ?? null,
     media_type: filters.media_type ?? null,
     q: filters.q ?? null,
+    personId: filters.personId ?? null,
   });
 }
 
@@ -133,6 +137,7 @@ function serializeWatchable(w, sessionCode) {
   const imageUrl = sessionCode
     ? `/api/vote-sessions/${sessionCode}/img/${w.id}`
     : `/api/img/${w.id}`;
+  const recommendersRaw = w.recommenders || [];
   return {
     id: w.id,
     title: w.title,
@@ -142,6 +147,7 @@ function serializeWatchable(w, sessionCode) {
     rogerebertUrl: w.rogerebert_url || null,
     trailerUrl: w.trailer_url || null,
     webUrl: w.web_url || null,
+    recommenders: recommendersRaw.map(serializeRecommenderCamel),
   };
 }
 
@@ -171,11 +177,12 @@ class VoteSessionService {
   async createSession({
     hostUserId, traktListId, traktListUserSlug, serviceType = 'adb-googletv',
     genre = null, mood = null, decade = null, media_type: mediaType = null, q = null,
+    personId = null,
     use_list_filters: useListFilters = false,
   }) {
     const filters = useListFilters
       ? {
-        genre, mood, decade, media_type: mediaType, q,
+        genre, mood, decade, media_type: mediaType, q, personId,
       }
       : {};
     const watchables = await this.models.Watchable.findAll({
@@ -183,8 +190,11 @@ class VoteSessionService {
     });
     const poolIds = watchables.map((w) => w.id);
     if (!poolIds.length) {
+      const hasFacets = Boolean(
+        genre || mood || decade != null || mediaType || q || personId != null,
+      );
       const err = new Error(
-        useListFilters && (genre || mood || decade != null || mediaType || q)
+        useListFilters && hasFacets
           ? 'No watchables match the selected filters for voting'
           : 'No watchables available for voting on this list',
       );
@@ -437,15 +447,24 @@ class VoteSessionService {
       order: [['joined_at', 'ASC']],
     });
 
+    const peopleInclude = this.models.Person
+      ? [recommendersInclude(this.models)]
+      : [];
+
     let currentCandidate = null;
     if (session.current_watchable_id) {
-      const w = await this.models.Watchable.findByPk(session.current_watchable_id);
+      const w = await this.models.Watchable.findByPk(session.current_watchable_id, {
+        include: peopleInclude,
+      });
       currentCandidate = serializeWatchable(w, session.code);
     }
 
     const finalistIds = parseJsonIds(session.finalist_ids);
     const finalists = finalistIds.length
-      ? await this.models.Watchable.findAll({ where: { id: finalistIds } })
+      ? await this.models.Watchable.findAll({
+        where: { id: finalistIds },
+        include: peopleInclude,
+      })
       : [];
     const finalistById = new Map(finalists.map((w) => [w.id, w]));
     const serializedFinalists = finalistIds
@@ -454,7 +473,9 @@ class VoteSessionService {
 
     let winner = null;
     if (session.winner_watchable_id) {
-      const w = await this.models.Watchable.findByPk(session.winner_watchable_id);
+      const w = await this.models.Watchable.findByPk(session.winner_watchable_id, {
+        include: peopleInclude,
+      });
       winner = serializeWatchable(w, session.code);
     }
 

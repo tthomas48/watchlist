@@ -11,6 +11,7 @@ module.exports = (sequelize, DataTypes) => {
      */
     static associate(models) {
       models.User.hasOne(models.UserStreamingAccess, { foreignKey: 'userId' });
+      models.User.hasMany(models.Person, { foreignKey: 'userId', as: 'people' });
     }
   }
   User.init({

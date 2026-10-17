@@ -50,7 +50,7 @@ Single-select per facet; **AND** across facets (e.g. comedy + 1980s). No multi-s
 | Decade | `decade` | e.g. `1980` → year 1980–1989 |
 | Type | `media_type` | `movie` \| `show` |
 | Title search | `q` | Case-insensitive substring on `title` |
-| Recommended by | `personId` | **Reserved** — ignored until [PEOPLE_RECOMMENDERS.md](./PEOPLE_RECOMMENDERS.md) |
+| Recommended by | `personId` | Account People id — see [PEOPLE_RECOMMENDERS.md](./PEOPLE_RECOMMENDERS.md) |
 
 Response includes `genres` and `moods` on each item so clients can build shelves client-side.
 
@@ -105,7 +105,7 @@ Vote create body (additive):
 | Surface | Behavior |
 |---------|----------|
 | **Toolbar** | One row: **Sort**, **Filter** button (opens modal; badge = active facet count), chips for each active facet (delete clears that facet), **Clear all** when filtered, **Flat / Shelves** toggle, **Add**. |
-| **Filter modal** | Mood chips + genre dropdown from live catalogs; decade / type / search; disabled “Recommended by… Soon”. Live apply; **Done** closes. |
+| **Filter modal** | Mood chips + genre dropdown from live catalogs; decade / type / search; **Recommended by** people select. Live apply; **Done** closes. |
 | **Settings → Moods** | Edit mood vocabulary and genre→mood mappings; save recomputes watchable moods. |
 | **Watchable edit** | Genre multi-select + add custom genre (locks genres against Trakt overwrite). |
 | **View mode** | **Flat** vs **Shelves** (per-list preference). When any facet is active, stay flat. |
@@ -129,7 +129,6 @@ Rough lean-back design later:
 - Cross-list “all my shelves” mega-view
 - Multi-select within a facet
 - Streaming subscription browse filter (see [STREAMING_AVAILABILITY.md](./STREAMING_AVAILABILITY.md))
-- Real `personId` filter (placeholder UI only)
 
 ## Tests
 

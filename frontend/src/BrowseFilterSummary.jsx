@@ -1,4 +1,5 @@
-import { useState } from 'react';
+import { useContext, useState } from 'react';
+import { useQuery } from '@tanstack/react-query';
 import {
   Badge,
   Box,
@@ -13,10 +14,20 @@ import {
   countActiveBrowseFilters,
   hasActiveBrowseFilters,
 } from './browseFilters';
+import { MessageContext } from './context/MessageContext';
+import Api from './service/api';
 
 function BrowseFilterSummary({ filters, setFilters }) {
   const [dialogOpen, setDialogOpen] = useState(false);
-  const chips = activeFilterChips(filters);
+  const messageContext = useContext(MessageContext);
+  const api = new Api(messageContext);
+  const peopleQuery = useQuery({
+    queryKey: ['people'],
+    queryFn: async () => api.getPeople(),
+    staleTime: 60_000,
+    enabled: Boolean(filters?.personId),
+  });
+  const chips = activeFilterChips(filters, peopleQuery.data || []);
   const activeCount = countActiveBrowseFilters(filters);
 
   const clearFacet = (key) => {

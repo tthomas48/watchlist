@@ -120,6 +120,17 @@ describe('vote_session_service helpers', () => {
       web_url: null,
     }).trailerUrl).toBeNull();
   });
+
+  it('serializeWatchable includes camelCase recommenders', () => {
+    expect(serializeWatchable({
+      id: 1,
+      title: 'T',
+      recommenders: [{ id: 9, name: 'Sam', avatar: 'https://example.com/s.jpg' }],
+    }).recommenders).toEqual([
+      { id: 9, name: 'Sam', avatarUrl: 'https://example.com/s.jpg' },
+    ]);
+    expect(serializeWatchable({ id: 1, title: 'T' }).recommenders).toEqual([]);
+  });
 });
 
 describe('visibleWatchablesWhere', () => {
@@ -195,6 +206,33 @@ describe('VoteSessionService.createSession', () => {
     });
     expect(create).toHaveBeenCalledWith(expect.objectContaining({
       pool_ids: [7],
+    }));
+  });
+
+  it('subsets pool when use_list_filters and personId are set', async () => {
+    const findAll = jest.fn().mockResolvedValue([{ id: 3 }]);
+    const create = jest.fn().mockResolvedValue({ id: 99, code: 'ABCDEF' });
+    const findOne = jest.fn().mockResolvedValue(null);
+    const service = new VoteSessionService({
+      models: {
+        Watchable: { findAll },
+        VoteSession: { findOne, create },
+      },
+    });
+
+    await service.createSession({
+      hostUserId: 1,
+      traktListId: '555',
+      traktListUserSlug: 'me',
+      use_list_filters: true,
+      personId: 12,
+    });
+
+    expect(findAll).toHaveBeenCalledWith({
+      where: visibleWatchablesWhere('555', { personId: 12 }),
+    });
+    expect(create).toHaveBeenCalledWith(expect.objectContaining({
+      pool_ids: [3],
     }));
   });
 

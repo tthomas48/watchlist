@@ -31,6 +31,7 @@ import { MessageContext } from './context/MessageContext';
 import Api from './service/api';
 import getStreamingServiceIcon from './streamingServiceIcon';
 import { useWatchableDetail } from './WatchableDetailDialog';
+import PersonAvatar from './PersonAvatar';
 
 const overlayAlertSx = {
   '& .MuiAlert-root': {
@@ -240,6 +241,56 @@ function WatchlistItem({
                     sx={{ width: 44, height: 44, color: 'primary.contrastText' }}
                     titleAccess={serviceIcon.alt}
                   />
+                )}
+              </Box>
+            )}
+
+            {Array.isArray(item.recommenders) && item.recommenders.length > 0 && (
+              <Box
+                sx={{
+                  position: 'absolute',
+                  top: 8,
+                  left: 8,
+                  zIndex: 1,
+                  pointerEvents: 'none',
+                  display: 'flex',
+                  alignItems: 'center',
+                }}
+                title={item.recommenders.map((p) => p.name).join(', ')}
+                aria-label={`Recommended by ${item.recommenders.map((p) => p.name).join(', ')}`}
+              >
+                {item.recommenders.slice(0, 2).map((person, index) => (
+                  <PersonAvatar
+                    key={person.id}
+                    person={person}
+                    size={48}
+                    sx={{
+                      ml: index === 0 ? 0 : -1.5,
+                      zIndex: 2 - index,
+                    }}
+                  />
+                ))}
+                {item.recommenders.length > 2 && (
+                  <Box
+                    sx={{
+                      ml: -1.5,
+                      zIndex: 0,
+                      width: 48,
+                      height: 48,
+                      borderRadius: '50%',
+                      bgcolor: 'primary.main',
+                      color: 'primary.contrastText',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      boxShadow: '0 2px 8px rgba(0,0,0,0.28)',
+                      border: '2px solid rgba(255,255,255,0.35)',
+                      fontWeight: 700,
+                      fontSize: 14,
+                    }}
+                  >
+                    {`+${item.recommenders.length - 2}`}
+                  </Box>
                 )}
               </Box>
             )}

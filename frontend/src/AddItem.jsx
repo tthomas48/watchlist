@@ -16,6 +16,7 @@ import { MessageContext } from './context/MessageContext';
 import Api from './service/api';
 import { getTraktId, getTitle, getTraktIds } from './traktDisplay';
 import { useStreamingSettingsDialog } from './StreamingSettingsDialog';
+import PeopleMultiSelect from './PeopleMultiSelect';
 
 function streamingAvailabilityLines(data) {
   if (!data?.ok || !data.show?.streamingOptions) {
@@ -294,6 +295,7 @@ const AddItem = ({ list }) => {
   const [pickedRow, setPickedRow] = useState(null);
   const [streamMode, setStreamMode] = useState('subscription');
   const [providerPick, setProviderPick] = useState(null);
+  const [selectedPeople, setSelectedPeople] = useState([]);
   const debouncedSearch = useDebounced(searchQuery, 800);
   const open = Boolean(anchorEl);
   const listReady = Boolean(list?.user?.username && list?.ids?.trakt != null);
@@ -348,6 +350,7 @@ const AddItem = ({ list }) => {
     setPickedRow(null);
     setStreamMode('subscription');
     setProviderPick(null);
+    setSelectedPeople([]);
     reset({ title: '' });
   };
 
@@ -392,6 +395,7 @@ const AddItem = ({ list }) => {
           webUrl: providerPick?.link ?? '',
           streamingServiceId: providerPick?.serviceId ?? null,
           streamingAddonId: providerPick?.addonId ?? null,
+          personIds: selectedPeople.map((p) => p.id),
         });
       }
       return addRes;
@@ -410,6 +414,7 @@ const AddItem = ({ list }) => {
         title,
         trakt_list_id: list.ids.trakt,
         noautoadvance: true,
+        personIds: selectedPeople.map((p) => p.id),
       };
       await api.createWatchable(watchable);
     },
@@ -548,6 +553,12 @@ const AddItem = ({ list }) => {
           {...register('title')}
         />
         </AddDialogTabPanel>
+        <Box sx={{ mt: 2 }}>
+          <PeopleMultiSelect
+            value={selectedPeople}
+            onChange={setSelectedPeople}
+          />
+        </Box>
       </DialogContent>
       <DialogActions>
         <Button onClick={closeAddDialog}>Close</Button>

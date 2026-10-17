@@ -13,6 +13,7 @@ describe('browseFilters helpers', () => {
     expect(hasActiveBrowseFilters(defaultBrowseFilters())).toBe(false);
     expect(hasActiveBrowseFilters({ ...defaultBrowseFilters(), mood: 'light' })).toBe(true);
     expect(hasActiveBrowseFilters({ ...defaultBrowseFilters(), q: '  x ' })).toBe(true);
+    expect(hasActiveBrowseFilters({ ...defaultBrowseFilters(), personId: '3' })).toBe(true);
   });
 
   it('browseFiltersToQuery maps camelCase to API params', () => {
@@ -22,12 +23,14 @@ describe('browseFilters helpers', () => {
       decade: '1980',
       mediaType: 'movie',
       q: ' blade ',
+      personId: '12',
     })).toEqual({
       mood: 'comfort',
       genre: 'comedy',
       decade: '1980',
       media_type: 'movie',
       q: 'blade',
+      personId: '12',
     });
   });
 
@@ -51,13 +54,15 @@ describe('browseFilters helpers', () => {
       decade: '1980',
       mediaType: 'movie',
       q: 'blade',
+      personId: '9',
       viewMode: 'shelves',
-    })).toEqual([
+    }, [{ id: 9, name: 'Sam' }])).toEqual([
       { key: 'mood', label: 'Mood: Comfort' },
       { key: 'genre', label: 'Genre: Comedy' },
       { key: 'decade', label: 'Decade: 1980s' },
       { key: 'mediaType', label: 'Movies' },
       { key: 'q', label: 'Search: blade' },
+      { key: 'personId', label: 'From: Sam' },
     ]);
   });
 
@@ -76,6 +81,7 @@ describe('browseFilters helpers', () => {
       decade: '1990',
       mediaType: 'movie',
       q: 'x',
+      personId: '2',
       viewMode: 'shelves',
     })).toEqual({
       ...defaultBrowseFilters(),

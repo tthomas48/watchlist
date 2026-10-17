@@ -66,7 +66,7 @@ Related: [VOTING_SESSIONS.md](./VOTING_SESSIONS.md), [ANDROID_VOTING_HOST.md](./
 
 - `overview` and `year` sync from Trakt on list refresh.
 - `rogerebert_url` is editable in the watchable editor; optional Lookup fills it via slug URL check.
-- Vote serialize includes `year` and `trailerUrl` (camelCase). Browse/TV use `/api/watchlist/...` snake_case rows (`overview`, `year`, `rogerebert_url`, `trailer_url`). Planned additive fields (see design docs): `genres`, `moods`, subscription streaming snapshot, `recommenders` — [TV_BROWSE_METADATA.md](./TV_BROWSE_METADATA.md).
+- Vote serialize includes `year`, `trailerUrl`, and `recommenders` (camelCase). Browse/TV use `/api/watchlist/...` snake_case rows (`overview`, `year`, `rogerebert_url`, `trailer_url`, `genres`, `moods`, `recommenders`) — [TV_BROWSE_METADATA.md](./TV_BROWSE_METADATA.md).
 - WebUI: poster opens a detail sheet (synopsis, year, Ebert link); Edit is an explicit action from detail or the card menu.
 
 ## Max / HBO Max play URLs
@@ -98,21 +98,22 @@ See [FEEL_LIKE_BROWSING.md](./FEEL_LIKE_BROWSING.md).
 - Sync Trakt genres onto the watchable on list refresh unless `genres_locked`; derive `moods` from the DB genre→mood map every refresh (including locked titles).
 - Editing genres on a watchable sets `genres_locked` and recomputes moods; custom genres are upserted into the `Genres` catalog.
 - Saving moods/mappings via `PUT /api/moods` recomputes moods on all watchables.
-- List filters (single-select each, **AND** combined): `genre`, `mood`, `decade`, `media_type`, `q`.
-- `personId` is reserved / ignored until People recommenders ship — [PEOPLE_RECOMMENDERS.md](./PEOPLE_RECOMMENDERS.md).
-- Vote session create with `use_list_filters: true` plus the same facet fields subsets `pool_ids`.
+- List filters (single-select each, **AND** combined): `genre`, `mood`, `decade`, `media_type`, `q`, `personId`.
+- Vote session create with `use_list_filters: true` plus the same facet fields (including `personId`) subsets `pool_ids`.
 
 ---
 
 # People and recommenders
 
-*(Target rules from [PEOPLE_RECOMMENDERS.md](./PEOPLE_RECOMMENDERS.md).)*
+See [PEOPLE_RECOMMENDERS.md](./PEOPLE_RECOMMENDERS.md).
 
 - People belong to the logged-in account (`userId`); not Trakt users or cast/crew.
-- Many-to-many with watchables; `personIds` on add/edit replaces the recommender set.
+- Many-to-many with watchables via `WatchablePeople`; `personIds` on add/edit replaces the recommender set.
 - Deleting a person removes join rows; deleting a watchable removes its joins.
-- API exposes `recommenders[]` on watchable payloads; `?personId=` filters lists.
-- Optional: vote session `personId` subsets the pool.
+- Browse/watchlist payloads include snake_case `recommenders: [{ id, name, avatar_url }]`.
+- Vote serialize includes camelCase `recommenders: [{ id, name, avatarUrl }]`.
+- `GET /api/watchlist/...?personId=` filters to titles linked to that person.
+- Vote session create may pass `personId` with `use_list_filters` to subset `pool_ids`.
 
 ---
 

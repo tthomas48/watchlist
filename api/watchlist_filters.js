@@ -20,7 +20,6 @@ function jsonArrayContains(column, value) {
 
 /**
  * Parse list-filter query/body fields into a normalized object.
- * `personId` is reserved (ignored until People recommenders ship).
  * @param {Record<string, unknown>} raw
  */
 function parseListFilters(raw = {}) {
@@ -45,8 +44,16 @@ function parseListFilters(raw = {}) {
   const q = raw.q != null && String(raw.q).trim() !== ''
     ? String(raw.q).trim()
     : null;
+  let personId = null;
+  const rawPerson = raw.personId != null ? raw.personId : raw.person_id;
+  if (rawPerson != null && String(rawPerson).trim() !== '') {
+    const n = Number(rawPerson);
+    if (Number.isFinite(n) && n > 0) {
+      personId = Math.trunc(n);
+    }
+  }
   return {
-    genre, mood, decade, media_type: mediaType, q,
+    genre, mood, decade, media_type: mediaType, q, personId,
   };
 }
 
@@ -61,13 +68,14 @@ function hasActiveListFilters(filters) {
     || filters.mood
     || filters.decade != null
     || filters.media_type
-    || filters.q,
+    || filters.q
+    || filters.personId != null,
   );
 }
 
 /**
  * Build Sequelize where for watchlist listing / filtered vote pools.
- * All set facets combine with AND. personId is ignored (reserved).
+ * All set facets combine with AND.
  *
  * @param {object} opts
  * @param {string} opts.traktListId
@@ -77,6 +85,7 @@ function hasActiveListFilters(filters) {
  * @param {number|null} [opts.decade]
  * @param {string|null} [opts.media_type]
  * @param {string|null} [opts.q]
+ * @param {number|null} [opts.personId]
  */
 function buildWatchlistWhere({
   traktListId,
@@ -86,6 +95,7 @@ function buildWatchlistWhere({
   decade = null,
   media_type: mediaType = null,
   q = null,
+  personId = null,
 }) {
   const and = [{ trakt_list_id: String(traktListId) }];
 
@@ -113,6 +123,16 @@ function buildWatchlistWhere({
   }
   if (q) {
     and.push({ title: { [Op.like]: `%${q}%` } });
+  }
+  if (personId != null && Number.isFinite(Number(personId)) && Number(personId) > 0) {
+    const pid = Math.trunc(Number(personId));
+    and.push({
+      id: {
+        [Op.in]: Sequelize.literal(
+          `(SELECT watchableId FROM WatchablePeople WHERE personId = ${pid})`,
+        ),
+      },
+    });
   }
 
   return { [Op.and]: and };

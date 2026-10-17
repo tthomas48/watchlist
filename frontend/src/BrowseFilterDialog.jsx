@@ -41,6 +41,12 @@ function BrowseFilterDialog({ open, onClose, filters, setFilters }) {
     enabled: open,
     staleTime: 60_000,
   });
+  const peopleQuery = useQuery({
+    queryKey: ['people'],
+    queryFn: async () => api.getPeople(),
+    enabled: open,
+    staleTime: 60_000,
+  });
 
   const moodOptions = (moodsQuery.data?.moods?.length
     ? moodsQuery.data.moods.map((m) => ({ id: m.slug, label: m.label }))
@@ -48,6 +54,7 @@ function BrowseFilterDialog({ open, onClose, filters, setFilters }) {
   const genreOptions = (genresQuery.data?.length
     ? genresQuery.data.map((g) => g.slug)
     : GENRE_OPTIONS);
+  const peopleOptions = peopleQuery.data || [];
 
   return (
     <Dialog
@@ -145,12 +152,19 @@ function BrowseFilterDialog({ open, onClose, filters, setFilters }) {
             inputProps={{ 'aria-label': 'search titles' }}
           />
 
-          <FormControl fullWidth size="small" disabled>
+          <FormControl fullWidth size="small">
             <InputLabel variant="standard" htmlFor="browse-person" shrink>
               Recommended by
             </InputLabel>
-            <NativeSelect id="browse-person" value="" disabled>
-              <option value="">Soon</option>
+            <NativeSelect
+              id="browse-person"
+              value={filters.personId || ''}
+              onChange={(e) => update({ personId: e.target.value })}
+            >
+              <option value="">Anyone</option>
+              {peopleOptions.map((p) => (
+                <option key={p.id} value={String(p.id)}>{p.name}</option>
+              ))}
             </NativeSelect>
           </FormControl>
         </Box>

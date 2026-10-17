@@ -21,6 +21,7 @@ describe('watchlist_filters', () => {
         decade: 1980,
         media_type: 'movie',
         q: 'blade',
+        personId: 99,
       });
     });
 
@@ -31,6 +32,7 @@ describe('watchlist_filters', () => {
         decade: null,
         media_type: null,
         q: null,
+        personId: null,
       });
     });
   });
@@ -43,6 +45,7 @@ describe('watchlist_filters', () => {
     it('is true when any facet set', () => {
       expect(hasActiveListFilters(parseListFilters({ mood: 'comfort' }))).toBe(true);
       expect(hasActiveListFilters(parseListFilters({ decade: 1990 }))).toBe(true);
+      expect(hasActiveListFilters(parseListFilters({ personId: 3 }))).toBe(true);
     });
   });
 
@@ -84,6 +87,16 @@ describe('watchlist_filters', () => {
         (c) => c[Op.or] && JSON.stringify(c).includes('hidden'),
       );
       expect(hasHidden).toBe(false);
+    });
+
+    it('ANDs personId via WatchablePeople subquery', () => {
+      const where = buildWatchlistWhere({ traktListId: 'list-1', personId: 7 });
+      const personClause = where[Op.and].find((c) => c.id && c.id[Op.in]);
+      expect(personClause).toBeTruthy();
+      expect(String(personClause.id[Op.in].val || personClause.id[Op.in])).toContain(
+        'WatchablePeople',
+      );
+      expect(String(personClause.id[Op.in].val || personClause.id[Op.in])).toContain('7');
     });
   });
 });

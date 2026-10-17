@@ -26,11 +26,19 @@ function mountVoteSessionRoutes(apiRouter, deps) {
         decade,
         media_type: mediaType,
         q,
+        personId,
         use_list_filters: useListFilters,
       } = reqBody;
       if (!traktListId || !traktListUserSlug) {
         res.status(400).json({ message: 'trakt_list_id and trakt_list_user_slug are required' });
         return;
+      }
+      let parsedPersonId = null;
+      if (personId != null && personId !== '') {
+        const n = Number(personId);
+        if (Number.isFinite(n) && n > 0) {
+          parsedPersonId = Math.trunc(n);
+        }
       }
       const service = getService(req);
       const session = await service.createSession({
@@ -43,6 +51,7 @@ function mountVoteSessionRoutes(apiRouter, deps) {
         decade: decade != null && decade !== '' ? Number(decade) : null,
         media_type: mediaType || null,
         q: q || null,
+        personId: parsedPersonId,
         use_list_filters: Boolean(useListFilters),
       });
       const sessionBody = await service.buildSessionResponse(session);
