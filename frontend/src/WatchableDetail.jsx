@@ -12,6 +12,7 @@ import {
 import Edit from '@mui/icons-material/Edit';
 import LiveTv from '@mui/icons-material/LiveTv';
 import PlayButton from './PlayButton';
+import TrailerButton from './TrailerButton';
 import getStreamingServiceIcon from './streamingServiceIcon';
 
 const OVERVIEW_COLLAPSED_LINES = 4;
@@ -112,6 +113,11 @@ export function WatchableDetailContent({
       </DialogContent>
       <DialogActions sx={{ px: 3, py: 2, gap: 1, flexWrap: 'wrap' }}>
         <PlayButton player={player} id={item.id} disabled={!item.web_url} />
+        <TrailerButton
+          id={item.id}
+          trailerUrl={item.trailer_url}
+          title={item.title}
+        />
         <Button
           variant="outlined"
           color="primary"

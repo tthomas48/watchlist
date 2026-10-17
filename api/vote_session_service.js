@@ -134,6 +134,7 @@ function serializeWatchable(w, sessionCode) {
     overview: w.overview || null,
     year: w.year ?? null,
     rogerebertUrl: w.rogerebert_url || null,
+    trailerUrl: w.trailer_url || null,
     webUrl: w.web_url || null,
   };
 }

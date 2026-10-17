@@ -16,6 +16,7 @@ describe('api', () => {
         homepage: 'https://example.com',
         overview: null,
         year: 2021,
+        trailer_url: null,
         imdb_id: 'tt1234',
         media_type: 'movie',
         title: 'A Movie',
@@ -30,6 +31,7 @@ describe('api', () => {
         homepage: undefined,
         overview: null,
         year: null,
+        trailer_url: null,
         imdb_id: undefined,
         media_type: undefined,
         title: null,
@@ -67,6 +69,60 @@ describe('api', () => {
       expect(models.Watchable.create).toHaveBeenCalledWith(
         expect.objectContaining({ trakt_list_user_slug: 'list-owner' }),
       );
+    });
+
+    it('persists trailer_url from Trakt full payload when present', () => {
+      const api = new Api();
+      const models = {
+        Watchable: { create: jest.fn().mockReturnValue(Promise.resolve({})) },
+        WatchableUrl: { },
+      };
+      api.createWatchable(models, '1234', {
+        type: 'movie',
+        movie: {
+          ids: { trakt: '1111' },
+          title: 'A Movie',
+          trailer: 'https://youtube.com/watch?v=abc',
+        },
+      });
+      expect(models.Watchable.create).toHaveBeenCalledWith(
+        expect.objectContaining({ trailer_url: 'https://youtube.com/watch?v=abc' }),
+      );
+    });
+  });
+
+  describe('updateWatchable', () => {
+    it('updates trailer_url from Trakt full payload', async () => {
+      const api = new Api();
+      const watchable = {
+        save: jest.fn().mockResolvedValue(undefined),
+      };
+      await api.updateWatchable({
+        type: 'show',
+        show: {
+          homepage: 'https://example.com',
+          overview: 'synopsis',
+          year: 2020,
+          trailer: 'https://youtu.be/xyz',
+          ids: { imdb: 'tt1', tmdb: 2 },
+        },
+      }, watchable);
+      expect(watchable.trailer_url).toBe('https://youtu.be/xyz');
+      expect(watchable.overview).toBe('synopsis');
+      expect(watchable.save).toHaveBeenCalled();
+    });
+
+    it('clears trailer_url when Trakt omits trailer', async () => {
+      const api = new Api();
+      const watchable = {
+        trailer_url: 'https://youtu.be/old',
+        save: jest.fn().mockResolvedValue(undefined),
+      };
+      await api.updateWatchable({
+        type: 'movie',
+        movie: { ids: {} },
+      }, watchable);
+      expect(watchable.trailer_url).toBeNull();
     });
   });
 

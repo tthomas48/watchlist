@@ -31,7 +31,8 @@ Looking at a poster (especially while something else is on the TV) is a weak rem
 - Keep returning Sequelize-style **snake_case** rows so watchlisttv’s `Item` parser keeps working.
 - Add (or surface) fields additively; older clients ignore unknown keys:
   - Already present: `overview`, `year`, `rogerebert_url`, …
-  - Planned: `genres`, `moods`, streaming snapshot fields, recommenders join data, `trailer_url` (see sibling docs).
+  - Shipped: `trailer_url` (see [TRAILERS.md](./TRAILERS.md)).
+  - Planned: `genres`, `moods`, streaming snapshot fields, recommenders join data.
 
 Example watchlist row shape (illustrative; not a full dump):
 
@@ -65,7 +66,7 @@ Automation (if any) uses these same main routes with session or Bearer `AUTOMATI
 
 ### Vote serialize (camelCase)
 
-Voting host/phones already use camelCase via `serializeWatchable` in [`api/vote_session_service.js`](../api/vote_session_service.js). Extend it with at least `year`, and later `genres`, `recommenders`, `trailerUrl` as those land — so voting and browse stay consistent in *content*, even if key casing differs by endpoint family.
+Voting host/phones already use camelCase via `serializeWatchable` in [`api/vote_session_service.js`](../api/vote_session_service.js) (`year`, `trailerUrl`, …). Extend with `genres`, `recommenders` as those land — so voting and browse stay consistent in *content*, even if key casing differs by endpoint family.
 
 ### Roger Ebert
 

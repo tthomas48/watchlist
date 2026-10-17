@@ -207,6 +207,34 @@ class TraktClient {
   }
 
   /**
+   * Trakt videos for a movie or show (trailers, teasers, etc.).
+   * Not exposed by trakt.tv methods.json yet, so call via _call.
+   * @param {'movie'|'show'} mediaType
+   * @param {string|number} id - slug or numeric trakt id
+   * @returns {Promise<Array>}
+   */
+  async getVideos(mediaType, id) {
+    let collection;
+    if (mediaType === 'show') {
+      collection = 'shows';
+    } else if (mediaType === 'movie') {
+      collection = 'movies';
+    } else {
+      throw new Error('type must be movie or show');
+    }
+    if (id == null || String(id).trim() === '') {
+      throw new Error('invalid id');
+    }
+    // eslint-disable-next-line no-underscore-dangle
+    const videos = await this.traktClient._call({
+      opts: {},
+      method: 'GET',
+      url: `/${collection}/:id/videos`,
+    }, { id });
+    return Array.isArray(videos) ? videos : [];
+  }
+
+  /**
    * @param {string|number} id - Show slug or numeric trakt id
    */
   async showPeople(id) {

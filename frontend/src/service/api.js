@@ -310,6 +310,13 @@ class Api {
     return this.handleResponse(res);
   }
 
+  async getTrailer(id) {
+    const res = await fetch(`/api/watchables/${id}/trailer`, {
+      withCredentials: true,
+    });
+    return this.handleResponse(res);
+  }
+
   async createVoteSession({ traktListId, traktListUserSlug, serviceType }) {
     const res = await fetch('/api/vote-sessions', {
       method: 'POST',
