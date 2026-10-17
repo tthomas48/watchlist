@@ -259,6 +259,48 @@ class Api {
     return refreshStatusModel.save();
   }
 
+  /** Rolling window after which GET /watchlist may sync from Trakt again. */
+  static get STALE_REFRESH_MS() {
+    return 1000 * 60 * 60 * 24;
+  }
+
+  /**
+   * Start a Trakt list refresh without awaiting; log and report failures so the
+   * floating promise does not become an unhandled rejection.
+   */
+  refreshInBackground(req, traktListUserId, traktListId, existingWatchables) {
+    this.refresh(req, traktListUserId, traktListId, existingWatchables).catch((e) => {
+      debug('background refresh failed', e);
+      Sentry.captureException(e);
+    });
+  }
+
+  /**
+   * If lastRefresh is older than 24h, kick off a Trakt list refresh.
+   * When awaitIfEmpty is true and the list has no DB rows, awaits the refresh so a
+   * never-synced list is not returned as []. Otherwise starts refresh in the background.
+   * @returns {{ awaited: boolean }} true when refresh was awaited (caller should re-query)
+   */
+  async maybeRefreshIfStale(req, traktListUserId, traktListId, { awaitIfEmpty = true } = {}) {
+    const mostRecentUpdate = await this.lastRefresh(req.models, traktListId);
+    debug(`Most recent update ${mostRecentUpdate}`);
+    const staleCutoff = new Date(Date.now() - Api.STALE_REFRESH_MS);
+    if (mostRecentUpdate >= staleCutoff) {
+      return { awaited: false };
+    }
+    debug(`Refreshing because ${mostRecentUpdate} is more than a day ago`);
+    const allWatchables = await req.models.Watchable.findAll({
+      where: { trakt_list_id: traktListId },
+    });
+    const shouldAwait = awaitIfEmpty && allWatchables.length === 0;
+    if (shouldAwait) {
+      await this.refresh(req, traktListUserId, traktListId, allWatchables);
+      return { awaited: true };
+    }
+    this.refreshInBackground(req, traktListUserId, traktListId, allWatchables);
+    return { awaited: false };
+  }
+
   /**
    * Writes poster JPEGs after list refresh: skips watchables that already have a non-placeholder
    * file; if the file is byte-identical to images/movie.jpg, tries again to fetch a real poster.
@@ -525,7 +567,7 @@ class Api {
         let existingWatchables = await req.models.Watchable.findAll(
           { where: { trakt_list_id: traktListId } },
         );
-        this.refresh(
+        this.refreshInBackground(
           req,
           traktListUserId,
           traktListId,
@@ -743,20 +785,12 @@ class Api {
           order,
         };
         let existingWatchables = await req.models.Watchable.findAll(findAllOptions);
-        const mostRecentUpdate = await this.lastRefresh(req.models, traktListId);
-        debug(`Most recent update ${mostRecentUpdate}`);
-        // if the most recent_update is more than a day ago then we should call refresh
-        if (mostRecentUpdate < new Date(Date.now() - 1000 * 60 * 60 * 24)) {
-          debug(`Refreshing because ${mostRecentUpdate} is more than a day ago`);
-          const allWatchables = await req.models.Watchable.findAll(
-            { where: { trakt_list_id: traktListId } },
-          );
-          await this.refresh(
-            req,
-            traktListUserId,
-            traktListId,
-            allWatchables,
-          );
+        const { awaited } = await this.maybeRefreshIfStale(
+          req,
+          traktListUserId,
+          traktListId,
+        );
+        if (awaited) {
           existingWatchables = await req.models.Watchable.findAll(findAllOptions);
         }
         res.json(existingWatchables);
