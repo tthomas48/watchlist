@@ -15,6 +15,7 @@ import ContentCopyIcon from '@mui/icons-material/ContentCopy';
 import ManageSearchIcon from '@mui/icons-material/ManageSearch';
 import { MessageContext } from './context/MessageContext';
 import Api from './service/api';
+import PeopleMultiSelect from './PeopleMultiSelect';
 
 const genreFilter = createFilterOptions();
 
@@ -68,6 +69,7 @@ export function WatchableEditor({ id, onClose }) {
   const [tabIndex, setTabIndex] = useState(0);
   const [checked, setChecked] = useState([]);
   const [selectedGenres, setSelectedGenres] = useState([]);
+  const [selectedPeople, setSelectedPeople] = useState([]);
   const queryClient = useQueryClient();
   const {
     register, handleSubmit, getValues, setValue,
@@ -77,6 +79,7 @@ export function WatchableEditor({ id, onClose }) {
     setTabIndex(0);
     setChecked([]);
     setSelectedGenres([]);
+    setSelectedPeople([]);
   }, [id]);
 
   const { mutate } = useMutation({
@@ -85,10 +88,12 @@ export function WatchableEditor({ id, onClose }) {
         await api.saveWatchable(id, {
           ...watchable,
           genres: selectedGenres.map((g) => g.slug || g),
+          personIds: selectedPeople.map((p) => p.id),
         });
         queryClient.invalidateQueries({ queryKey: ['watchable', id] });
         queryClient.invalidateQueries({ queryKey: ['watchlist'] });
         queryClient.invalidateQueries({ queryKey: ['genres'] });
+        queryClient.invalidateQueries({ queryKey: ['people'] });
         onClose();
         return true;
       } catch (e) {
@@ -126,6 +131,14 @@ export function WatchableEditor({ id, onClose }) {
       const found = catalog.find((g) => g.slug === slug);
       return found || { slug, label: slug };
     }));
+    const recommenders = Array.isArray(data.watchable.recommenders)
+      ? data.watchable.recommenders
+      : [];
+    setSelectedPeople(recommenders.map((p) => ({
+      id: p.id,
+      name: p.name,
+      avatarUrl: p.avatar_url || p.avatarUrl || null,
+    })));
   // eslint-disable-next-line react-hooks/exhaustive-deps -- intentionally omit genresQuery.data
   }, [data?.watchable]);
 
@@ -442,6 +455,15 @@ export function WatchableEditor({ id, onClose }) {
                 <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mt: 0.5 }}>
                   Type to search; choose “Add …” if the genre is new. Editing locks tags against Trakt refresh.
                   {data.watchable.genres_locked ? ' (currently locked)' : ''}
+                </Typography>
+              </Box>
+              <Box sx={{ width: '100%' }}>
+                <PeopleMultiSelect
+                  value={selectedPeople}
+                  onChange={setSelectedPeople}
+                />
+                <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mt: 0.5 }}>
+                  Who recommended this title. Type a new name to add someone quickly.
                 </Typography>
               </Box>
               <Stack

@@ -75,9 +75,9 @@ Replace semantics for the set of recommenders on update (full replace of join ro
 
 ### List / detail (watchlist)
 
-Additive on watchable payloads from `GET /api/watchlist/...` ([TV_BROWSE_METADATA.md](./TV_BROWSE_METADATA.md)). Prefer snake_case for browse rows to match watchlisttv, e.g. nested recommenders or a compact JSON column — document the chosen shape at implementation time. Vote serialize may use camelCase `recommenders` / `avatarUrl`.
+Additive on watchable payloads from `GET /api/watchlist/...` and `GET /api/watchables/:id` ([TV_BROWSE_METADATA.md](./TV_BROWSE_METADATA.md)).
 
-Example (illustrative):
+**Browse (snake_case):**
 
 ```json
 {
@@ -87,15 +87,19 @@ Example (illustrative):
 }
 ```
 
+`avatar_url` is `/api/img/people/:id` when a local avatar file exists, else a stored `https://…` URL, else `null` (clients show initials).
+
+**Vote serialize (camelCase):** `recommenders: [{ id, name, avatarUrl }]`.
+
 ### Filter
 
 ```http
 GET /api/watchlist/:user/:listId/?personId=1
 ```
 
-### Voting (optional, with Feel Like)
+### Voting (with Feel Like)
 
-`POST /vote-sessions` may accept `personId` to subset `pool_ids` (“only swipe Sam’s recommendations”).
+`POST /vote-sessions` accepts `personId` when `use_list_filters: true` to subset `pool_ids` (“only swipe Sam’s recommendations”).
 
 ## WebUI presentation (in scope when implementing)
 
@@ -128,11 +132,11 @@ Rough lean-back design later:
 
 ## Phased next steps
 
-1. Migrations + models + CRUD routes + ownership tests.
-2. `personIds` on add/edit; include `recommenders` on watchlist list/detail and vote serialize.
-3. WebUI People manager, badges, filter, detail list.
-4. Optional vote-session `personId`.
-5. Avatar upload hardening (size/type limits).
+1. ~~Migrations + models + CRUD routes + ownership tests.~~
+2. ~~`personIds` on add/edit; include `recommenders` on watchlist list/detail and vote serialize.~~
+3. ~~WebUI People manager, badges, filter, detail list.~~
+4. ~~Vote-session `personId`.~~
+5. Avatar upload hardening (further size/type limits beyond v1 checks).
 
 ## Tests
 

@@ -19,6 +19,7 @@ import getStreamingServiceIcon from './streamingServiceIcon';
 import { formatGenreLabel, MOOD_OPTIONS } from './browseFilters';
 import { MessageContext } from './context/MessageContext';
 import Api from './service/api';
+import PersonAvatar from './PersonAvatar';
 
 const OVERVIEW_COLLAPSED_LINES = 4;
 
@@ -45,6 +46,7 @@ export function WatchableDetailContent({
   const hasOverview = Boolean(item.overview);
   const genres = Array.isArray(item.genres) ? item.genres : [];
   const moods = Array.isArray(item.moods) ? item.moods : [];
+  const recommenders = Array.isArray(item.recommenders) ? item.recommenders : [];
 
   const moodLabel = (id) => (
     moodsQuery.data?.moods?.find((m) => m.slug === id)?.label
@@ -102,6 +104,21 @@ export function WatchableDetailContent({
                 <Typography variant="body2" color="text.secondary">
                   {serviceIcon.alt}
                 </Typography>
+              </Stack>
+            )}
+            {recommenders.length > 0 && (
+              <Stack spacing={1} sx={{ mb: 1.5 }}>
+                <Typography variant="caption" color="text.secondary">
+                  Recommended by
+                </Typography>
+                <Stack direction="row" flexWrap="wrap" useFlexGap spacing={1} alignItems="center">
+                  {recommenders.map((person) => (
+                    <Stack key={person.id} direction="row" spacing={0.75} alignItems="center">
+                      <PersonAvatar person={person} size={28} />
+                      <Typography variant="body2">{person.name}</Typography>
+                    </Stack>
+                  ))}
+                </Stack>
               </Stack>
             )}
             {(genres.length > 0 || moods.length > 0) && (

@@ -227,6 +227,55 @@ class Api {
     return this.handleResponse(res);
   }
 
+  async getPeople() {
+    const res = await fetch('/api/people', { withCredentials: true });
+    return this.handleResponse(res);
+  }
+
+  async createPerson({ name, avatarUrl }) {
+    const body = { name };
+    if (avatarUrl) body.avatarUrl = avatarUrl;
+    const res = await fetch('/api/people', {
+      method: 'POST',
+      withCredentials: true,
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(body),
+    });
+    return this.handleResponse(res);
+  }
+
+  async updatePerson(id, { name, avatarUrl }) {
+    const body = {};
+    if (name !== undefined) body.name = name;
+    if (avatarUrl !== undefined) body.avatarUrl = avatarUrl;
+    const res = await fetch(`/api/people/${id}`, {
+      method: 'PATCH',
+      withCredentials: true,
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(body),
+    });
+    return this.handleResponse(res);
+  }
+
+  async deletePerson(id) {
+    const res = await fetch(`/api/people/${id}`, {
+      method: 'DELETE',
+      withCredentials: true,
+    });
+    return this.handleResponse(res);
+  }
+
+  async uploadPersonAvatar(id, file) {
+    const form = new FormData();
+    form.append('avatar', file);
+    const res = await fetch(`/api/people/${id}/avatar`, {
+      method: 'POST',
+      withCredentials: true,
+      body: form,
+    });
+    return this.handleResponse(res);
+  }
+
   async getWatchable(id) {
     const res = await fetch(`/api/watchables/${id}/`, {
       withCredentials: true,
@@ -370,6 +419,7 @@ class Api {
       if (filters.decade) body.decade = Number(filters.decade);
       if (filters.media_type) body.media_type = filters.media_type;
       if (filters.q) body.q = filters.q;
+      if (filters.personId) body.personId = Number(filters.personId);
     }
     const res = await fetch('/api/vote-sessions', {
       method: 'POST',

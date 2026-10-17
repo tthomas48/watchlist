@@ -37,6 +37,7 @@ const {
 const mountVoteSessionRoutes = require('./routes/vote_sessions');
 const mountRogerEbertRoutes = require('./routes/rogerebert');
 const mountTrailerRoutes = require('./routes/trailer');
+const mountPeopleRoutes = require('./routes/people');
 const { normalizeTrailerField } = require('./trailer');
 const { serveWatchablePoster } = require('./poster_serve');
 const {
@@ -52,6 +53,11 @@ const {
   applyWatchableGenres,
 } = require('./moods_service');
 const { buildWatchlistWhere, parseListFilters } = require('./watchlist_filters');
+const {
+  setWatchablePeople,
+  recommendersInclude,
+  watchableToBrowseJson,
+} = require('./people_service');
 
 const defaultPosterImagePath = path.join(__dirname, '../images/movie.jpg');
 let cachedDefaultPosterSha256 = null;
@@ -773,7 +779,6 @@ class Api {
         }
         const showHidden = req.query.hidden === 'true';
         const filters = parseListFilters(req.query);
-        // personId is reserved for People recommenders — ignored for now
         const where = buildWatchlistWhere({
           traktListId,
           showHidden,
@@ -783,6 +788,7 @@ class Api {
         const findAllOptions = {
           where,
           order,
+          include: [recommendersInclude(req.models)],
         };
         let existingWatchables = await req.models.Watchable.findAll(findAllOptions);
         const { awaited } = await this.maybeRefreshIfStale(
@@ -793,7 +799,7 @@ class Api {
         if (awaited) {
           existingWatchables = await req.models.Watchable.findAll(findAllOptions);
         }
-        res.json(existingWatchables);
+        res.json(existingWatchables.map(watchableToBrowseJson));
       } catch (e) {
         this.handleError(res, e);
       }
@@ -881,25 +887,41 @@ class Api {
     });
 
     apiRouter.put('/watchables/', this.authProvider.requireLogin, async (req, res) => {
-      const watchablesCreate = req.body;
-      const watchable = req.models.Watchable.build(watchablesCreate);
-      await watchable.save();
-      res.json(watchable);
+      try {
+        const watchablesCreate = { ...req.body };
+        const { personIds } = watchablesCreate;
+        delete watchablesCreate.personIds;
+        const watchable = req.models.Watchable.build(watchablesCreate);
+        await watchable.save();
+        if (personIds !== undefined) {
+          await setWatchablePeople(req.models, watchable.id, personIds, req.user.id);
+        }
+        const withPeople = await req.models.Watchable.findOne({
+          where: { id: watchable.id },
+          include: [recommendersInclude(req.models)],
+        });
+        res.json(watchableToBrowseJson(withPeople));
+      } catch (e) {
+        if (e.status) {
+          res.status(e.status).json({ message: e.message });
+          return;
+        }
+        this.handleError(res, e);
+      }
     });
 
     apiRouter.get('/watchables/:id', this.authProvider.requireLogin, async (req, res) => {
       try {
         const watchable = await req.models.Watchable.findOne({
           where: { id: req.params.id },
+          include: [recommendersInclude(req.models)],
         });
         if (!watchable) {
           res.status(404).json({ message: 'not found' });
           return;
         }
-        watchable.providers = [];
-        // const providers = await sourceApi.getProviders(watchable);
         const providers = [];
-        res.json({ watchable, providers });
+        res.json({ watchable: watchableToBrowseJson(watchable), providers });
       } catch (e) {
         this.handleError(res, e);
       }
@@ -949,33 +971,53 @@ class Api {
     });
 
     apiRouter.post('/watchables/:id', this.authProvider.requireLogin, async (req, res) => {
-      const watchableUpdate = req.body;
-      const watchable = await req.models.Watchable.findOne({
-        where: { id: req.params.id },
-      });
-      if (!watchable) {
-        res.status(404).json({ error: 'not found' });
-        return;
-      }
-      watchable.hidden = watchableUpdate.hidden;
-      watchable.comment = watchableUpdate.comment;
-      watchable.web_url = watchableUpdate.webUrl;
-      watchable.streaming_service_id = ProviderFactory.resolveStreamingServiceIdFromUrl(
-        watchable.web_url,
-      );
-      if (Object.prototype.hasOwnProperty.call(watchableUpdate, 'streamingAddonId')) {
-        watchable.streaming_addon_id = watchableUpdate.streamingAddonId;
-      }
-      watchable.noautoadvance = watchableUpdate.noautoadvance;
-      if (Object.prototype.hasOwnProperty.call(watchableUpdate, 'rogerebertUrl')) {
-        watchable.rogerebert_url = watchableUpdate.rogerebertUrl || null;
-      }
-      if (Object.prototype.hasOwnProperty.call(watchableUpdate, 'genres')) {
-        await applyWatchableGenres(req.models, watchable, watchableUpdate.genres);
-      }
+      try {
+        const watchableUpdate = req.body;
+        const watchable = await req.models.Watchable.findOne({
+          where: { id: req.params.id },
+        });
+        if (!watchable) {
+          res.status(404).json({ error: 'not found' });
+          return;
+        }
+        watchable.hidden = watchableUpdate.hidden;
+        watchable.comment = watchableUpdate.comment;
+        watchable.web_url = watchableUpdate.webUrl;
+        watchable.streaming_service_id = ProviderFactory.resolveStreamingServiceIdFromUrl(
+          watchable.web_url,
+        );
+        if (Object.prototype.hasOwnProperty.call(watchableUpdate, 'streamingAddonId')) {
+          watchable.streaming_addon_id = watchableUpdate.streamingAddonId;
+        }
+        watchable.noautoadvance = watchableUpdate.noautoadvance;
+        if (Object.prototype.hasOwnProperty.call(watchableUpdate, 'rogerebertUrl')) {
+          watchable.rogerebert_url = watchableUpdate.rogerebertUrl || null;
+        }
+        if (Object.prototype.hasOwnProperty.call(watchableUpdate, 'genres')) {
+          await applyWatchableGenres(req.models, watchable, watchableUpdate.genres);
+        }
 
-      await watchable.save();
-      res.json(watchable);
+        await watchable.save();
+        if (Object.prototype.hasOwnProperty.call(watchableUpdate, 'personIds')) {
+          await setWatchablePeople(
+            req.models,
+            watchable.id,
+            watchableUpdate.personIds,
+            req.user.id,
+          );
+        }
+        const withPeople = await req.models.Watchable.findOne({
+          where: { id: watchable.id },
+          include: [recommendersInclude(req.models)],
+        });
+        res.json(watchableToBrowseJson(withPeople));
+      } catch (e) {
+        if (e.status) {
+          res.status(e.status).json({ message: e.message });
+          return;
+        }
+        this.handleError(res, e);
+      }
     });
 
     apiRouter.get('/watchables/:id/episodes', this.authProvider.requireLogin, async (req, res) => {
@@ -1059,6 +1101,9 @@ class Api {
       await provider.pushButton(button);
       res.status(200).json('ok');
     });
+
+    // People img must register before /img/:watchable_id
+    mountPeopleRoutes(apiRouter, { authProvider: this.authProvider });
 
     apiRouter.get('/img/trakt/:media_type/:trakt_id', this.authProvider.requireLogin, async (req, res) => {
       const traktPath = traktPosterDiskPath(req.params.media_type, req.params.trakt_id);

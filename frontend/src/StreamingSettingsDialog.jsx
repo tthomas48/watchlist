@@ -8,6 +8,7 @@ import StreamIcon from '@mui/icons-material/Stream';
 import StreamingAccess from './StreamingAccess';
 import Settings from './Settings';
 import MoodsSettings from './MoodsSettings';
+import PeopleSettings from './PeopleSettings';
 
 const StreamingSettingsContext = createContext(null);
 
@@ -81,6 +82,11 @@ export function StreamingSettingsProvider({ children }) {
               id="streaming-settings-tab-2"
               aria-controls="streaming-settings-tabpanel-2"
             />
+            <Tab
+              label="People"
+              id="streaming-settings-tab-3"
+              aria-controls="streaming-settings-tabpanel-3"
+            />
           </Tabs>
         </DialogTitle>
         <DialogContent dividers>
@@ -92,6 +98,9 @@ export function StreamingSettingsProvider({ children }) {
           </TabPanel>
           <TabPanel value={tab} index={2}>
             <MoodsSettings onClose={closeDialog} embedded />
+          </TabPanel>
+          <TabPanel value={tab} index={3}>
+            <PeopleSettings onClose={closeDialog} embedded />
           </TabPanel>
         </DialogContent>
       </Dialog>

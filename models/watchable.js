@@ -14,6 +14,12 @@ module.exports = (sequelize, DataTypes) => {
       models.Watchable.hasMany(models.Episode, {
         as: 'episodes', foreignKey: 'watchable_id', onDelete: 'CASCADE', type: DataTypes.INTEGER,
       });
+      models.Watchable.belongsToMany(models.Person, {
+        through: models.WatchablePerson,
+        foreignKey: 'watchableId',
+        otherKey: 'personId',
+        as: 'recommenders',
+      });
     }
   }
   Watchable.init({

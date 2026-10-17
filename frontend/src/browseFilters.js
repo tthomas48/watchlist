@@ -44,6 +44,7 @@ export const defaultBrowseFilters = () => ({
   decade: '',
   mediaType: '',
   q: '',
+  personId: '',
   viewMode: 'flat',
 });
 
@@ -54,7 +55,8 @@ export function hasActiveBrowseFilters(filters) {
     || filters.genre
     || filters.decade
     || filters.mediaType
-    || (filters.q && String(filters.q).trim()),
+    || (filters.q && String(filters.q).trim())
+    || filters.personId,
   );
 }
 
@@ -68,9 +70,11 @@ export function clearBrowseFacets(filters) {
 
 /**
  * Active facet chips for the SortBar summary.
+ * @param {object} filters
+ * @param {{ id: number|string, name: string }[]} [people]
  * @returns {{ key: string, label: string }[]}
  */
-export function activeFilterChips(filters) {
+export function activeFilterChips(filters, people = []) {
   if (!filters) return [];
   const chips = [];
   if (filters.mood) {
@@ -90,6 +94,13 @@ export function activeFilterChips(filters) {
   if (filters.q && String(filters.q).trim()) {
     chips.push({ key: 'q', label: `Search: ${String(filters.q).trim()}` });
   }
+  if (filters.personId) {
+    const person = people.find((p) => String(p.id) === String(filters.personId));
+    chips.push({
+      key: 'personId',
+      label: person?.name ? `From: ${person.name}` : `From: #${filters.personId}`,
+    });
+  }
   return chips;
 }
 
@@ -105,6 +116,7 @@ export function browseFiltersToQuery(filters) {
   if (filters.decade) query.decade = filters.decade;
   if (filters.mediaType) query.media_type = filters.mediaType;
   if (filters.q && String(filters.q).trim()) query.q = String(filters.q).trim();
+  if (filters.personId) query.personId = String(filters.personId);
   return query;
 }
 
