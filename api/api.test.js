@@ -96,6 +96,27 @@ describe('api', () => {
       );
     });
 
+    it('persists added_at from Trakt listed_at', () => {
+      const api = new Api();
+      const models = {
+        Watchable: { create: jest.fn().mockReturnValue(Promise.resolve({})) },
+        WatchableUrl: { },
+      };
+      api.createWatchable(models, '1234', {
+        type: 'movie',
+        listed_at: '2024-06-01T12:00:00.000Z',
+        movie: {
+          ids: { trakt: '1111' },
+          title: 'A Movie',
+        },
+      });
+      expect(models.Watchable.create).toHaveBeenCalledWith(
+        expect.objectContaining({
+          added_at: new Date('2024-06-01T12:00:00.000Z'),
+        }),
+      );
+    });
+
     it('persists genres and derived moods from Trakt full payload', () => {
       const api = new Api();
       const models = {
@@ -168,6 +189,26 @@ describe('api', () => {
       }, watchable, null, { horror: ['scary'] });
       expect(watchable.genres).toEqual(['horror']);
       expect(watchable.moods).toEqual(['scary']);
+    });
+
+    it('sets added_at from Trakt listed_at and leaves it when listed_at is missing', async () => {
+      const api = new Api();
+      const watchable = {
+        added_at: new Date('2020-01-01T00:00:00.000Z'),
+        save: jest.fn().mockResolvedValue(undefined),
+      };
+      await api.updateWatchable({
+        type: 'movie',
+        listed_at: '2024-06-01T12:00:00.000Z',
+        movie: { ids: {} },
+      }, watchable);
+      expect(watchable.added_at).toEqual(new Date('2024-06-01T12:00:00.000Z'));
+
+      await api.updateWatchable({
+        type: 'movie',
+        movie: { ids: {} },
+      }, watchable);
+      expect(watchable.added_at).toEqual(new Date('2024-06-01T12:00:00.000Z'));
     });
 
     it('preserves locked genres on refresh but recomputes moods', async () => {

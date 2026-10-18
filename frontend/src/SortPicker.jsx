@@ -6,6 +6,7 @@ function SortPicker({ sort, setSort }) {
   const options = [
     { label: 'Least Recently Watched', value: 'least-watched' },
     { label: 'Recently Watched', value: 'most-watched' },
+    { label: 'Recently Added', value: 'recently-added' },
     { label: 'A-Z', value: 'alpha-asc' },
     { label: 'Z-A', value: 'alpha-desc' },
   ];

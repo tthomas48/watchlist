@@ -34,6 +34,7 @@ module.exports = (sequelize, DataTypes) => {
     image: DataTypes.STRING,
     media_type: DataTypes.STRING,
     last_played: DataTypes.DATE,
+    added_at: DataTypes.DATE,
     comment: DataTypes.TEXT,
     hidden: DataTypes.BOOLEAN,
     local: DataTypes.BOOLEAN,
@@ -61,6 +62,9 @@ module.exports = (sequelize, DataTypes) => {
   });
   Watchable.beforeCreate(async (user) => {
     user.sortable_title = user.title.toLowerCase().replace(/^(the|a|an) /, '');
+    if (user.added_at == null) {
+      user.added_at = new Date();
+    }
   });
   Watchable.beforeUpdate(async (user) => {
     user.sortable_title = user.title.toLowerCase().replace(/^(the|a|an) /, '');

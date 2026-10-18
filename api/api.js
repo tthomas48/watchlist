@@ -7,7 +7,9 @@ const axios = require('axios');
 const singleflight = require('node-singleflight');
 const Sentry = require('@sentry/node');
 const TraktClient = require('./traktclient');
-const { getTitle, getTraktId, getTraktIds } = require('./helpers');
+const {
+  getTitle, getTraktId, getTraktIds, listedAtFromTraktItem,
+} = require('./helpers');
 const {
   MAX_RECOMMENDATION_FETCH,
   traktIdsFromRecommendationItems,
@@ -67,6 +69,7 @@ const {
   applyWatchableGenres,
 } = require('./moods_service');
 const { buildWatchlistWhere, parseListFilters } = require('./watchlist_filters');
+const { watchlistSortOrder } = require('./watchlist_sort');
 const {
   setWatchablePeople,
   recommendersInclude,
@@ -202,6 +205,10 @@ class Api {
     if (traktListUserSlug != null && String(traktListUserSlug).trim() !== '') {
       props.trakt_list_user_slug = traktListUserSlug;
     }
+    const addedAt = listedAtFromTraktItem(traktItem);
+    if (addedAt) {
+      props.added_at = addedAt;
+    }
     return models.Watchable.create(props);
   }
 
@@ -226,6 +233,10 @@ class Api {
     }
     if (traktListUserSlug != null && String(traktListUserSlug).trim() !== '') {
       watchable.trakt_list_user_slug = traktListUserSlug;
+    }
+    const addedAt = listedAtFromTraktItem(traktItem);
+    if (addedAt) {
+      watchable.added_at = addedAt;
     }
     return watchable.save();
   }
@@ -881,22 +892,7 @@ class Api {
         const traktListId = req.params.trakt_list_id;
         const traktListUserId = req.params.trakt_list_user_id;
         const sort = req.query.sort || 'least_watched';
-        const order = [];
-        switch (sort) {
-          case 'most-watched':
-            order.push(['last_played', 'DESC']);
-            break;
-          case 'alpha-asc':
-            order.push(['sortable_title', 'ASC']);
-            break;
-          case 'alpha-desc':
-            order.push(['sortable_title', 'DESC']);
-            break;
-          case 'least-watched':
-          default:
-            order.push(['last_played', 'ASC']);
-            break;
-        }
+        const order = watchlistSortOrder(sort);
         const showHidden = req.query.hidden === 'true';
         const filters = parseListFilters(req.query);
         const where = buildWatchlistWhere({

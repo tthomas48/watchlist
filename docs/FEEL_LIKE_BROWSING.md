@@ -10,7 +10,7 @@ The watchlist is a flat poster pile. Old video stores at least sliced by Comedy 
 
 | Capability | Today |
 |------------|--------|
-| Sort | `last_played`, `sortable_title` via `SortPicker` |
+| Sort | `last_played`, `added_at` (recently added), `sortable_title` via `SortPicker` |
 | Hidden | Per-item hide + show-hidden toggle |
 | List switch | Trakt lists via `ListPicker` (manual “shelves” only by using multiple lists) |
 | Genres / moods | Persisted on refresh; moods from genre→mood map |

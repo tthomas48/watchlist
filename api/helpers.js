@@ -23,10 +23,22 @@ function getTraktId(item) {
   return traktId;
 }
 
-
+/** When a title was added to the Trakt list, or null if the payload has no usable timestamp. */
+function listedAtFromTraktItem(item) {
+  const raw = item?.listed_at;
+  if (raw == null || raw === '') {
+    return null;
+  }
+  const parsed = new Date(raw);
+  if (Number.isNaN(parsed.getTime())) {
+    return null;
+  }
+  return parsed;
+}
 
 module.exports = {
   getTitle,
   getTraktId,
   getTraktIds,
+  listedAtFromTraktItem,
 };

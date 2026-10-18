@@ -62,6 +62,13 @@ Related: [VOTING_SESSIONS.md](./VOTING_SESSIONS.md), [ANDROID_VOTING_HOST.md](./
 - Manual `GET /api/refresh/...` always starts refresh in the background and returns current rows.
 - `POST` add-to-list still **awaits** refresh after mutating Trakt.
 
+## List sort
+
+- Sort options: least recently watched, recently watched, recently added, A–Z, Z–A.
+- **Recently added** orders by `Watchables.added_at` descending (then id).
+- Trakt list items store `listed_at` in `added_at` on create and on refresh.
+- Local-only items and rows that have not been refreshed yet use when the row was created. The `added_at` migration backfills existing rows from `createdAt`.
+
 ## Watchable metadata
 
 - `overview` and `year` sync from Trakt on list refresh.
