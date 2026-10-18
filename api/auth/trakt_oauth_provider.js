@@ -132,12 +132,25 @@ class TraktOauthProvider {
     res.redirect('/');
   }
 
-  requireLogin(req, res, next) {
+  async requireLogin(req, res, next) {
     if (req.user) {
       next();
       return;
     }
-    res.status(401).send('Unauthorized');
+    // Flutter web cannot use cookie jars; accept Trakt Bearer like vote routes.
+    const { parseBearerToken } = require('./require_auth');
+    const token = parseBearerToken(req);
+    if (!token) {
+      res.status(401).send('Unauthorized');
+      return;
+    }
+    try {
+      const user = await this.authenticateAccessToken(req.models, token);
+      req.user = user;
+      next();
+    } catch (e) {
+      res.status(401).send('Unauthorized');
+    }
   }
 
   addRoutes(apiRouter) {
