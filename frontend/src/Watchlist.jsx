@@ -140,7 +140,6 @@ function Watchlist() {
                           saveWatchable={saveWatchableMutation.mutate}
                           notifications={notificationsRequest.data}
                           list={list}
-                          compactActions
                         />
                       </Box>
                     ))}

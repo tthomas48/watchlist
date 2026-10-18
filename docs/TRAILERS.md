@@ -66,7 +66,8 @@ Canonical field also listed in [TV_BROWSE_METADATA.md](./TV_BROWSE_METADATA.md).
 
 | Surface | Behavior |
 |---------|----------|
-| **Card actions / detail sheet** | **Trailer** control next to **Play**. Hidden or disabled when `trailerUrl` is null (optional: Trailer still calls on-demand endpoint once before hiding). |
+| **Watchlist cards** | **Play** in the card footer; **Trailer** (and Comment) live in the overflow / more-actions menu. Same layout for grid and shelves. |
+| **Detail sheet** | **Trailer** control next to **Play**. Hidden or disabled when `trailerUrl` is null (optional: Trailer still calls on-demand endpoint once before hiding). |
 | **Player** | Modal/dialog with embedded YouTube (or current best npm player package — **check npm for latest** at implementation time). Distinct from Play-to-TV. |
 | **VoteHost (nice-to-have)** | Trailer on round-1 candidate card for web host — same dialog pattern. |
 | **Accessibility** | Focus trap in dialog; Esc closes; stop playback on close. |

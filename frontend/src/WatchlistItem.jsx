@@ -50,8 +50,6 @@ function WatchlistItem({
   saveWatchable,
   notifications,
   list,
-  /** Narrow shelf cards: Trailer + Comment live in the overflow menu */
-  compactActions = false,
 }) {
   const messageContext = useContext(MessageContext);
   const [closedNotification, setClosedNotification] = useState(false);
@@ -353,31 +351,20 @@ function WatchlistItem({
       </Box>
       <CardActions disableSpacing sx={{ color: 'primary.main', flexShrink: 0, mt: 'auto' }}>
         <PlayButton player={player} id={item.id} disabled={!item.web_url} />
-        {compactActions ? (
-          // Keep triggers mounted (hidden) so Trailer/Comment dialogs survive menu close
-          <Box sx={{ display: 'none' }} aria-hidden>
-            <TrailerButton
-              id={item.id}
-              trailerUrl={item.trailer_url}
-              title={item.title}
-              buttonRef={trailerTriggerRef}
-            />
-            <CommentButton
-              item={item}
-              saveWatchable={saveWatchable}
-              buttonRef={commentTriggerRef}
-            />
-          </Box>
-        ) : (
-          <>
-            <TrailerButton
-              id={item.id}
-              trailerUrl={item.trailer_url}
-              title={item.title}
-            />
-            <CommentButton item={item} saveWatchable={saveWatchable} />
-          </>
-        )}
+        {/* Keep triggers mounted (hidden) so Trailer/Comment dialogs survive menu close */}
+        <Box sx={{ display: 'none' }} aria-hidden>
+          <TrailerButton
+            id={item.id}
+            trailerUrl={item.trailer_url}
+            title={item.title}
+            buttonRef={trailerTriggerRef}
+          />
+          <CommentButton
+            item={item}
+            saveWatchable={saveWatchable}
+            buttonRef={commentTriggerRef}
+          />
+        </Box>
         <IconButton
           id={`watchlist-item-menu-${item.id}`}
           color="primary"
@@ -398,34 +385,30 @@ function WatchlistItem({
             'aria-labelledby': `watchlist-item-menu-${item.id}`,
           }}
         >
-          {compactActions && (
-            <>
-              <MenuItem
-                onClick={() => {
-                  handleClose();
-                  // Defer so triggers stay mounted after menu unmount cycle
-                  window.setTimeout(() => trailerTriggerRef.current?.click(), 0);
-                }}
-              >
-                <Button startIcon={<OndemandVideo />} tabIndex={-1}>
-                  Trailer
-                </Button>
-              </MenuItem>
-              <MenuItem
-                onClick={() => {
-                  handleClose();
-                  window.setTimeout(() => commentTriggerRef.current?.click(), 0);
-                }}
-              >
-                <Button
-                  startIcon={item.comment ? <CommentIcon /> : <AddCommentIcon />}
-                  tabIndex={-1}
-                >
-                  {item.comment ? 'Comment' : 'Add comment'}
-                </Button>
-              </MenuItem>
-            </>
-          )}
+          <MenuItem
+            onClick={() => {
+              handleClose();
+              // Defer so triggers stay mounted after menu unmount cycle
+              window.setTimeout(() => trailerTriggerRef.current?.click(), 0);
+            }}
+          >
+            <Button startIcon={<OndemandVideo />} tabIndex={-1}>
+              Trailer
+            </Button>
+          </MenuItem>
+          <MenuItem
+            onClick={() => {
+              handleClose();
+              window.setTimeout(() => commentTriggerRef.current?.click(), 0);
+            }}
+          >
+            <Button
+              startIcon={item.comment ? <CommentIcon /> : <AddCommentIcon />}
+              tabIndex={-1}
+            >
+              {item.comment ? 'Comment' : 'Add comment'}
+            </Button>
+          </MenuItem>
           <MenuItem onClick={handleClose}><EditButton id={item.id} /></MenuItem>
           <MenuItem onClick={handleClose}>
             <ViewOnTraktButton disabled={item.local} traktId={item.trakt_id}

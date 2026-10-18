@@ -129,6 +129,7 @@ See [TRAILERS.md](./TRAILERS.md).
 - `GET /api/watchables/:id/trailer` returns `{ trailerUrl }`; on miss, looks up Trakt videos, write-through when found.
 - Watchlist rows expose `trailer_url`; vote serialize exposes `trailerUrl`.
 - **Trailer** and **Play** are separate actions; trailer never overwrites `web_url`.
+- On watchlist cards, **Play** stays in the footer; **Trailer** is in the overflow menu (with Comment). Detail sheet keeps Trailer next to Play.
 - WebUI plays trailers in a dialog (`react-player`); non-embeddable URLs open in a new tab.
 - Null trailer is allowed; Trailer control hides after an on-demand miss.
 - TV cast of trailers is deferred; API still exposes `trailerUrl` for later clients.
