@@ -84,6 +84,9 @@ class TraktOauthProvider {
       }
     }));
     this.authenticateAccessToken = this.authenticateAccessToken.bind(this);
+    // Express strips `this` when the method is passed as middleware.
+    this.requireLogin = this.requireLogin.bind(this);
+    this.callback = this.callback.bind(this);
   }
 
   async authenticateAccessToken(models, token) {
@@ -149,6 +152,8 @@ class TraktOauthProvider {
       req.user = user;
       next();
     } catch (e) {
+      // eslint-disable-next-line no-console
+      console.error('requireLogin bearer auth failed:', e?.message || e);
       res.status(401).send('Unauthorized');
     }
   }
