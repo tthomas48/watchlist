@@ -30,13 +30,11 @@ minimumReleaseAgeExclude:
   - body-parser@2.4.0
   - undici@6.29.1 || 8.12.2
   - multer@2.5.0
-  - node-forge@1.4.1
 
 overrides:
   browserslist@<=4.28.6: ^4.28.7
   got@<11.8.5: ^11.8.5
   ip-address@<=10.1.0: ^10.1.1
-  node-forge@<=1.4.0: ^1.4.1
   tar@<=7.5.15: ^7.5.16
   undici@>=6.23.0 <6.29.1: ^6.29.1
   undici@>=6.5.0 <6.29.1: ^6.29.1

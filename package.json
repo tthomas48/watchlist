@@ -5,7 +5,7 @@
   "main": "index.js",
   "packageManager": "pnpm@11.10.0",
   "engines": {
-    "node": ">=22"
+    "node": "24.22.1"
   },
   "scripts": {
     "build-ui": "DISABLE_ESLINT_PLUGIN=true vite build frontend --outDir ../build --emptyOutDir",
