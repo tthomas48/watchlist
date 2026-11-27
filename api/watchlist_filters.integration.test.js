@@ -27,6 +27,7 @@ describe('watchlist_filters SQLite integration', () => {
         genres: ['science-fiction', 'thriller'],
         moods: ['smart', 'tense'],
         hidden: false,
+        web_url: 'https://example.com/play',
       },
       {
         title: 'The Hangover',
@@ -36,6 +37,7 @@ describe('watchlist_filters SQLite integration', () => {
         genres: ['comedy'],
         moods: ['light'],
         hidden: false,
+        web_url: 'https://example.com/play',
       },
       {
         title: 'Hidden Gem',
@@ -45,6 +47,17 @@ describe('watchlist_filters SQLite integration', () => {
         genres: ['comedy'],
         moods: ['light'],
         hidden: true,
+        web_url: 'https://example.com/play',
+      },
+      {
+        // No web_url: only visible in Video Store Mode.
+        title: 'Rental Only',
+        trakt_list_id: 'list-1',
+        media_type: 'movie',
+        year: 2001,
+        genres: ['drama'],
+        moods: ['light'],
+        hidden: false,
       },
     ]);
   });
@@ -96,5 +109,26 @@ describe('watchlist_filters SQLite integration', () => {
       }),
     });
     expect(rows.map((r) => r.title)).toEqual(['Hidden Gem']);
+  });
+
+  it('excludes titles without web_url unless video_store', async () => {
+    const playable = await Watchable.findAll({
+      where: buildWatchlistWhere({ traktListId: 'list-1' }),
+    });
+    expect(playable.map((r) => r.title).sort()).toEqual(['Blade Runner', 'The Hangover']);
+
+    const shelf = await Watchable.findAll({
+      where: buildWatchlistWhere({
+        traktListId: 'list-1',
+        video_store: true,
+        showHidden: true,
+      }),
+    });
+    expect(shelf.map((r) => r.title).sort()).toEqual([
+      'Blade Runner',
+      'Hidden Gem',
+      'Rental Only',
+      'The Hangover',
+    ]);
   });
 });
