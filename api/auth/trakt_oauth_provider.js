@@ -2,6 +2,7 @@ const passport = require('passport');
 const TraktStrategy = require('passport-trakt').Strategy;
 const AccessTokenStrategy = require('passport-access-token').Strategy;
 const TraktClient = require('../traktclient');
+const { parseBearerToken } = require('./require_auth');
 const ErrorWithStatus = require('../../ErrorWithStatus');
 
 function isSafeReturnTo(value) {
@@ -141,7 +142,6 @@ class TraktOauthProvider {
       return;
     }
     // Flutter web cannot use cookie jars; accept Trakt Bearer like vote routes.
-    const { parseBearerToken } = require('./require_auth');
     const token = parseBearerToken(req);
     if (!token) {
       res.status(401).send('Unauthorized');
