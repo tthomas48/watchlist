@@ -39,7 +39,13 @@ class Server {
 
     if (app.get('env') === 'production') {
       app.set('trust proxy', 1); // trust first proxy
+      // Embedded contexts (e.g. a Home Assistant panel iframe) are third-party:
+      // modern browsers and Android WebView only carry the session cookie there
+      // when it is marked SameSite=None; Secure. Anything else is treated as
+      // SameSite=Lax and dropped inside the iframe, which 401s the SPA and
+      // bounces it back into the Trakt OAuth redirect loop.
       sessionSettings.cookie.secure = true; // serve secure cookies
+      sessionSettings.cookie.sameSite = 'none';
     }
     app.use(session(sessionSettings));
     app.use((req, res, next) => {
